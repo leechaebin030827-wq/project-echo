@@ -1,0 +1,19 @@
+{
+  "name": "echo-nevada-experience",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5176 --strictPort",
+    "build": "vite build",
+    "test:face": "node --test tests/face-identity.test.js",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "0.10.21",
+    "three": "0.184.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.0"
+  }
+}
