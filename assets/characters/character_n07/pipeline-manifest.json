@@ -1,0 +1,109 @@
+{
+  "id": "N07",
+  "base": "character_n07",
+  "concept": "Local diner customer on a bright cold morning",
+  "presentation": "feminine",
+  "age": 44,
+  "height_meters": 1.63,
+  "body": "slightly stocky, natural proportions",
+  "hair": "chestnut wavy hair gathered behind the neck, no face-covering strands",
+  "clothing": "soft coral padded jacket open over a cream crewneck, light warm-gray jeans, taupe ankle boots",
+  "palette": [
+    "soft coral",
+    "cream",
+    "light warm gray",
+    "taupe"
+  ],
+  "nevada_fit": "Warm but casual clothing suits short winter trips around a small town.",
+  "neutral_face": "Moderate facial proportions, gently rounded jaw, soft cheeks, relaxed mouth; no glasses or earrings.",
+  "turnaround": {
+    "front": "assets/characters/character_n07/turnaround/front.png",
+    "side": "assets/characters/character_n07/turnaround/side.png",
+    "back": "assets/characters/character_n07/turnaround/back.png"
+  },
+  "prompt": "assets/characters/character_n07/turnaround/prompt.txt",
+  "meshy": {
+    "model": "meshy-7.1",
+    "pose_mode": "t-pose",
+    "target_polycount": 50000,
+    "action_ids": [
+      0,
+      613,
+      64
+    ],
+    "stages": [
+      {
+        "stage": "generation",
+        "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+        "task_id": "01a13415-148c-7772-b7e3-e4dd1839d853",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n07/character_n07_generated.glb",
+        "bytes": 5488308,
+        "sha256": "5532445d630f2b1327937461dd4df632b52d6aa11ccb305a437d8ad2992674b6",
+        "consumed_credits": 30
+      },
+      {
+        "stage": "remesh",
+        "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+        "task_id": "01a13422-b37c-7318-b8f2-bc47e87a8f97",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n07/character_n07_optimized.glb",
+        "bytes": 12967652,
+        "sha256": "7a84b520fcd9625efcc518c26f73be54782739453547202ea2d981ff08e35ac2",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "rigging",
+        "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+        "task_id": "01a13427-acd3-77ba-942e-3ded327daf23",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n07/character_n07_rigged.glb",
+        "bytes": 14977464,
+        "sha256": "b66b53964e57b9dac0f732a1f95c82cf933ed37b10ad40c125df37dcc0f288d9",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "animations",
+        "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+        "task_id": "01a1342c-e8aa-7284-902e-502626a2502a",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n07/character_n07_animated.glb",
+        "bytes": 9048852,
+        "sha256": "924da591eda3f839a51aca22d43b580abc9808f335a39f00c8e57a1644072bc2",
+        "consumed_credits": 9
+      }
+    ],
+    "total_consumed_credits": 49
+  },
+  "semantic": {
+    "final_glb": "public/models/semantic/character_n07_face_ready.glb",
+    "package_alias": "assets/characters/character_n07/face_ready.glb",
+    "final_sha256": "b68af3ab344e366e3ff60967d90bee54dd608c18e64b0fa23107ba5fd02dd270",
+    "face_polygon_count": 689,
+    "triangle_count": 51784,
+    "bone_count": 24,
+    "clips": [
+      "All_Night_Dance",
+      "Casual_Walk_inplace",
+      "Idle"
+    ],
+    "preservation_passed": true,
+    "face_contract_passed": true,
+    "gltf_errors": 0,
+    "gltf_warnings": 1,
+    "diagnostic_images": [
+      "public/debug/semantic/character_n07/diagnostic-front.png",
+      "public/debug/semantic/character_n07/diagnostic-left.png",
+      "public/debug/semantic/character_n07/diagnostic-right.png"
+    ],
+    "mapping": "public/debug/semantic/character_n07/character_n07_face_mapping.json",
+    "preservation_validation": "public/debug/semantic/character_n07/preservation-validation.json",
+    "contract_validation": "public/debug/semantic/character_n07/contract-validation.json",
+    "gltf_validation": "public/debug/semantic/character_n07/gltf-validation.json"
+  },
+  "review": {
+    "status": "QA_READY",
+    "note": "Clear face and separated hair; suitable first composite QA candidate.",
+    "visitor_composite_test": "PENDING"
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "id": "N06",
+  "base": "character_n06",
+  "concept": "Rest-stop traveler stretching his legs after a drive",
+  "presentation": "masculine",
+  "age": 42,
+  "height_meters": 1.78,
+  "body": "average",
+  "hair": "short salt-and-pepper hair, no forehead fringe",
+  "clothing": "sand fleece zip jacket open over a pale blue sweatshirt, light olive chinos, warm tan walking shoes",
+  "palette": [
+    "sand",
+    "pale blue",
+    "light olive",
+    "tan"
+  ],
+  "nevada_fit": "Comfortable fleece and walking shoes are believable road-trip winter layers.",
+  "neutral_face": "Subtle age cues with smooth average bone structure, unremarkable jaw and brow, clean-shaven neutral face.",
+  "turnaround": {
+    "front": "assets/characters/character_n06/turnaround/front.png",
+    "side": "assets/characters/character_n06/turnaround/side.png",
+    "back": "assets/characters/character_n06/turnaround/back.png"
+  },
+  "prompt": "assets/characters/character_n06/turnaround/prompt.txt",
+  "meshy": {
+    "model": "meshy-7.1",
+    "pose_mode": "t-pose",
+    "target_polycount": 50000,
+    "action_ids": [
+      0,
+      613,
+      64
+    ],
+    "stages": [
+      {
+        "stage": "generation",
+        "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+        "task_id": "01a13415-01f2-743d-9d7a-d9827e6bfed5",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n06/character_n06_generated.glb",
+        "bytes": 4925804,
+        "sha256": "df73f303aad2e78b0921495f9ed5bba813131f8751bd50dea6269b73148234ae",
+        "consumed_credits": 30
+      },
+      {
+        "stage": "remesh",
+        "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+        "task_id": "01a13422-a680-7038-9093-f5ee78a4216c",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n06/character_n06_optimized.glb",
+        "bytes": 12011188,
+        "sha256": "210f08c029b0d479d44a1d23179b28428a97d71ddfecb4d12dcb4f1f883f3f07",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "rigging",
+        "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+        "task_id": "01a13427-8b52-7572-8bdd-657e58236d98",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n06/character_n06_rigged.glb",
+        "bytes": 13783428,
+        "sha256": "f90f75c58e252c453323096f5c908a17ea74332eec966a64f4a997ab185195a0",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "animations",
+        "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+        "task_id": "01a1342c-dc47-76f2-8908-2fb43980de06",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n06/character_n06_animated.glb",
+        "bytes": 8370380,
+        "sha256": "5e5e2a895fb1d6ec0f74e7f5bfdabb3e15eb6b4eccfc7501879410c5469e84d0",
+        "consumed_credits": 9
+      }
+    ],
+    "total_consumed_credits": 49
+  },
+  "semantic": {
+    "final_glb": "public/models/semantic/character_n06_face_ready.glb",
+    "package_alias": "assets/characters/character_n06/face_ready.glb",
+    "final_sha256": "60f4a01837f31d96e9088e92ef6231b9696c25f67be457e0047c4ae22ea36ed1",
+    "face_polygon_count": 759,
+    "triangle_count": 51403,
+    "bone_count": 24,
+    "clips": [
+      "All_Night_Dance",
+      "Casual_Walk_inplace",
+      "Idle"
+    ],
+    "preservation_passed": true,
+    "face_contract_passed": true,
+    "gltf_errors": 0,
+    "gltf_warnings": 1,
+    "diagnostic_images": [
+      "public/debug/semantic/character_n06/diagnostic-front.png",
+      "public/debug/semantic/character_n06/diagnostic-left.png",
+      "public/debug/semantic/character_n06/diagnostic-right.png"
+    ],
+    "mapping": "public/debug/semantic/character_n06/character_n06_face_mapping.json",
+    "preservation_validation": "public/debug/semantic/character_n06/preservation-validation.json",
+    "contract_validation": "public/debug/semantic/character_n06/contract-validation.json",
+    "gltf_validation": "public/debug/semantic/character_n06/gltf-validation.json"
+  },
+  "review": {
+    "status": "QA_READY",
+    "note": "Clear face; age cues around the eyes should be checked in a visitor composite.",
+    "visitor_composite_test": "PENDING"
+  }
+}
