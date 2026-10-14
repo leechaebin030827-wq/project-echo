@@ -1,0 +1,20 @@
+{
+  "id": "01a1342b-fd3c-7607-8aa5-6adf8f569d5a",
+  "type": "animate",
+  "name": "",
+  "status": "SUCCEEDED",
+  "created_at": 1791876660820,
+  "progress": 100,
+  "started_at": 1791876661082,
+  "finished_at": 1791876683924,
+  "expires_at": 1792135883924,
+  "task_error": null,
+  "result": {
+    "animation_glb_url": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a1342b-fd3c-7607-8aa5-6adf8f569d5a/output/merged_animations.glb",
+    "animation_fbx_url": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a1342b-fd3c-7607-8aa5-6adf8f569d5a/output/merged_animations.fbx",
+    "processed_usdz_url": "",
+    "processed_armature_fbx_url": "",
+    "processed_animation_fps_fbx_url": ""
+  },
+  "consumed_credits": 9
+}
