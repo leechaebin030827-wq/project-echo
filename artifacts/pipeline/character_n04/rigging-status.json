@@ -1,0 +1,25 @@
+{
+  "id": "01a13422-2444-72c5-a520-85f742752826",
+  "type": "rig",
+  "name": "",
+  "status": "SUCCEEDED",
+  "created_at": 1791876019078,
+  "progress": 100,
+  "started_at": 1791876527465,
+  "finished_at": 1791876546034,
+  "expires_at": 1792135746034,
+  "task_error": null,
+  "result": {
+    "rigged_character_fbx_url": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13422-2444-72c5-a520-85f742752826/output/Character_output.fbx",
+    "rigged_character_glb_url": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13422-2444-72c5-a520-85f742752826/output/Character_output.glb",
+    "basic_animations": {
+      "walking_glb_url": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13422-2444-72c5-a520-85f742752826/output/Animation_Walking_withSkin.glb",
+      "walking_fbx_url": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13422-2444-72c5-a520-85f742752826/output/Animation_Walking_withSkin.fbx",
+      "walking_armature_glb_url": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13422-2444-72c5-a520-85f742752826/output/Animation_Walking_withSkin_armature.glb",
+      "running_glb_url": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13422-2444-72c5-a520-85f742752826/output/Animation_Running_withSkin.glb",
+      "running_fbx_url": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13422-2444-72c5-a520-85f742752826/output/Animation_Running_withSkin.fbx",
+      "running_armature_glb_url": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13422-2444-72c5-a520-85f742752826/output/Animation_Running_withSkin_armature.glb"
+    }
+  },
+  "consumed_credits": 5
+}

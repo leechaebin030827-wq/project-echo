@@ -1,0 +1,11 @@
+{
+  "endpoint": "animations",
+  "payload": {
+    "rig_task_id": "01a13422-2444-72c5-a520-85f742752826",
+    "action_ids": [
+      0,
+      613,
+      64
+    ]
+  }
+}

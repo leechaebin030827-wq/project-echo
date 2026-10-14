@@ -1,0 +1,23 @@
+{
+  "endpoint": "multi-image-to-3d",
+  "payload": {
+    "image_urls": [
+      "[embedded asset omitted]",
+      "[embedded asset omitted]",
+      "[embedded asset omitted]"
+    ],
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "standard",
+    "should_texture": true,
+    "enable_pbr": false,
+    "texture_resolution": "2k",
+    "should_remesh": true,
+    "topology": "triangle",
+    "target_polycount": 50000,
+    "pose_mode": "t-pose",
+    "target_formats": [
+      "glb"
+    ],
+    "remove_lighting": true
+  }
+}
