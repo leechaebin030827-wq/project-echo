@@ -1,0 +1,18 @@
+Local test and model resources
+
+MediaPipe Face Landmarker and Selfie Multiclass model bundles:
+https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker
+https://developers.google.com/edge/mediapipe/solutions/vision/image_segmenter
+Downloaded from Google's official storage.googleapis.com/mediapipe-models distribution.
+
+Canonical landmark UV template:
+https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/modules/face_geometry/data/canonical_face_model.obj
+MediaPipe project, Apache License 2.0.
+
+Static development portrait (not visitor data):
+https://storage.googleapis.com/mediapipe-assets/portrait.jpg
+Public MediaPipe test fixture used in official Face Landmarker tests:
+https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/tasks/python/test/vision/face_landmarker_test.py
+
+The static portrait is a development diagnostic, not an exhibition default.
+Visitor camera frames are never written to these files or uploaded.
