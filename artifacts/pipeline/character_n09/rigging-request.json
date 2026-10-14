@@ -1,0 +1,7 @@
+{
+  "endpoint": "rigging",
+  "payload": {
+    "input_task_id": "01a13423-6805-7318-9bba-a42f745b51e3",
+    "height_meters": 1.65
+  }
+}
