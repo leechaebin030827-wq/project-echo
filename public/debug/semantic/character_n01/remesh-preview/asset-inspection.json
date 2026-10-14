@@ -1,0 +1,113 @@
+{
+  "source": "/Users/chaebin/2026 Graduation Project/1007 Final Project/artifacts/pipeline/character_n01/character_n01_optimized.glb",
+  "sha256": "1908ef85e20afdb3b466bd6bc69f960d15c2c10eabe7bf20a91e940eb3a1c561",
+  "blender_version": "3.2.1",
+  "coordinate_system": "Blender: Z up; exported glTF/Three.js: Y up",
+  "bounds": {
+    "min": [
+      -0.44788798689842224,
+      -0.1966690570116043,
+      -0.9516599774360657
+    ],
+    "max": [
+      0.44712600111961365,
+      0.19208498299121857,
+      0.9503659605979919
+    ],
+    "size": [
+      0.8950139880180359,
+      0.3887540400028229,
+      1.9020259380340576
+    ]
+  },
+  "approximate_height": 1.9020259380340576,
+  "height_units": "Blender units; raw scale is not proof of real-world dimensions",
+  "mesh_names": [
+    "output_unwrapped"
+  ],
+  "meshes": [
+    {
+      "name": "output_unwrapped",
+      "data_name": "output_unwrapped",
+      "vertex_count": 45338,
+      "triangle_count": 51574,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "materials": [
+        "BakedMaterial"
+      ],
+      "armature_modifiers": [],
+      "shape_keys": [],
+      "surface_uv_signature": "f0467466486914dfa17a16445547d89a9ef709c73168627487964107ff23bb39"
+    }
+  ],
+  "vertex_count": 45338,
+  "triangle_count": 51574,
+  "material_names": [
+    "BakedMaterial"
+  ],
+  "armatures": [],
+  "animation_clips": [],
+  "hierarchy": [
+    {
+      "name": "output_unwrapped",
+      "type": "MESH",
+      "parent": null,
+      "children": [],
+      "world_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    }
+  ],
+  "images": [
+    {
+      "name": "Image_0",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    },
+    {
+      "name": "Image_1",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    },
+    {
+      "name": "Image_2",
+      "size": [
+        4096,
+        4096
+      ],
+      "packed": true
+    }
+  ],
+  "face_materials": []
+}

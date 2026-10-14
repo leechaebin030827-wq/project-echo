@@ -1,0 +1,27 @@
+{
+  "base": "character_n07",
+  "triangle_count": 51784,
+  "vertex_count": 53667,
+  "materials": [
+    "BakedMaterial",
+    "FACE"
+  ],
+  "bone_count": 24,
+  "glb_bytes": 10125764,
+  "clips": [
+    "All_Night_Dance",
+    "Casual_Walk_inplace",
+    "Idle"
+  ],
+  "original_triangle_geometry_body_uv_and_skin_weights_preserved": true,
+  "maximum_geometry_uv_numeric_error": 2.131641740315942e-06,
+  "maximum_weight_numeric_error": 1.1920928955078125e-07,
+  "sampled_vertices": 200,
+  "sampled_times_per_clip": 5,
+  "maximum_animation_position_error_m": {
+    "Idle": 2.341385082623452e-06,
+    "Casual_Walk_inplace": 1.7560962292698943e-06,
+    "All_Night_Dance": 4.504645346856398e-06
+  },
+  "passed": true
+}

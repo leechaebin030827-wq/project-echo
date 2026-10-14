@@ -1,0 +1,167 @@
+{
+  "source": "/Users/chaebin/2026 Graduation Project/1007 Final Project/artifacts/pipeline/character_n10/character_n10_animated.glb",
+  "sha256": "b98f83d4d9c5fe0d188b73e22241b16aba780d457f93a6050d388a847509c053",
+  "blender_version": "3.2.1",
+  "coordinate_system": "Blender: Z up; exported glTF/Three.js: Y up",
+  "bounds": {
+    "min": [
+      -0.8994733095169067,
+      -0.18640580773353577,
+      2.6884603698817955e-07
+    ],
+    "max": [
+      0.8994731903076172,
+      0.18640637397766113,
+      1.799999475479126
+    ],
+    "size": [
+      1.798946499824524,
+      0.3728121817111969,
+      1.799999206633089
+    ]
+  },
+  "approximate_height": 1.799999206633089,
+  "height_units": "Blender units; raw scale is not proof of real-world dimensions",
+  "mesh_names": [
+    "char1"
+  ],
+  "meshes": [
+    {
+      "name": "char1",
+      "data_name": "char1",
+      "vertex_count": 46285,
+      "triangle_count": 51412,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "materials": [
+        "BakedMaterial"
+      ],
+      "armature_modifiers": [
+        "Armature"
+      ],
+      "shape_keys": [],
+      "surface_uv_signature": "fe2ef4dc547315020475045b1a72bff38dcfc6afa7ca5f7dfcba4ef6f35d3a79"
+    }
+  ],
+  "vertex_count": 46285,
+  "triangle_count": 51412,
+  "material_names": [
+    "BakedMaterial"
+  ],
+  "armatures": [
+    {
+      "name": "Armature",
+      "bones": [
+        "Hips",
+        "Spine02",
+        "Spine01",
+        "Spine",
+        "neck",
+        "Head",
+        "head_end",
+        "headfront",
+        "LeftShoulder",
+        "LeftArm",
+        "LeftForeArm",
+        "LeftHand",
+        "RightShoulder",
+        "RightArm",
+        "RightForeArm",
+        "RightHand",
+        "LeftUpLeg",
+        "LeftLeg",
+        "LeftFoot",
+        "LeftToeBase",
+        "RightUpLeg",
+        "RightLeg",
+        "RightFoot",
+        "RightToeBase"
+      ]
+    }
+  ],
+  "animation_clips": [
+    "All_Night_Dance_Armature",
+    "Casual_Walk_inplace_Armature",
+    "Idle_Armature"
+  ],
+  "hierarchy": [
+    {
+      "name": "Armature",
+      "type": "ARMATURE",
+      "parent": null,
+      "children": [
+        "char1"
+      ],
+      "world_matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "char1",
+      "type": "MESH",
+      "parent": "Armature",
+      "children": [],
+      "world_matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    }
+  ],
+  "images": [
+    {
+      "name": "Image_0",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    }
+  ],
+  "face_materials": []
+}

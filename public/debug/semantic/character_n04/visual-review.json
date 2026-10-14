@@ -1,0 +1,13 @@
+{
+  "base": "character_n04",
+  "status": "QA_READY",
+  "reviewed_images": [
+    "front.png",
+    "diagnostic-front.png",
+    "diagnostic-left.png",
+    "diagnostic-right.png"
+  ],
+  "note": "Face is open; check subtle source facial hair and brow in visitor composite.",
+  "visitor_composite_test": "PENDING",
+  "release_decision": "Developer QA only; do not add to exhibition selection yet."
+}

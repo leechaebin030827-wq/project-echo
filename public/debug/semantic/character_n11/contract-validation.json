@@ -1,0 +1,9 @@
+{
+  "input": "public/models/semantic/character_n11_face_ready.glb",
+  "passed": false,
+  "validator": "tools/validate_face_contract.py",
+  "failed_check": "FACE mesh is too small for ECHO",
+  "face_triangle_count": 280,
+  "minimum_face_triangle_count": 300,
+  "note": "The diagnostic images show the central face covered and hair, neck, and ears excluded, but the existing 300-triangle contract is not met. No topology-changing repair was applied."
+}

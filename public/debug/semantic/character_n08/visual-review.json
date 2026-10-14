@@ -1,0 +1,13 @@
+{
+  "base": "character_n08",
+  "status": "QA_READY",
+  "reviewed_images": [
+    "front.png",
+    "diagnostic-front.png",
+    "diagnostic-left.png",
+    "diagnostic-right.png"
+  ],
+  "note": "Gray hair has an irregular edge near the upper forehead; review the blend at the hairline.",
+  "visitor_composite_test": "PENDING",
+  "release_decision": "Developer QA only; do not add to exhibition selection yet."
+}

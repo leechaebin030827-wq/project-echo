@@ -1,0 +1,13 @@
+{
+  "base": "character_n06",
+  "status": "QA_READY",
+  "reviewed_images": [
+    "front.png",
+    "diagnostic-front.png",
+    "diagnostic-left.png",
+    "diagnostic-right.png"
+  ],
+  "note": "Clear face; age cues around the eyes should be checked in a visitor composite.",
+  "visitor_composite_test": "PENDING",
+  "release_decision": "Developer QA only; do not add to exhibition selection yet."
+}

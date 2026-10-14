@@ -1,0 +1,13 @@
+{
+  "base": "character_n10",
+  "status": "QA_READY",
+  "reviewed_images": [
+    "front.png",
+    "diagnostic-front.png",
+    "diagnostic-left.png",
+    "diagnostic-right.png"
+  ],
+  "note": "Clear face but FACE upper boundary is jagged at hairline; review with varied skin tones.",
+  "visitor_composite_test": "PENDING",
+  "release_decision": "Developer QA only; do not add to exhibition selection yet."
+}

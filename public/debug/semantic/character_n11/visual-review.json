@@ -1,0 +1,13 @@
+{
+  "base": "character_n11",
+  "status": "HOLD",
+  "reviewed_images": [
+    "front.png",
+    "diagnostic-front.png",
+    "diagnostic-left.png",
+    "diagnostic-right.png"
+  ],
+  "note": "FACE covers the central features but has 280 triangles, below the existing 300-triangle contract.",
+  "visitor_composite_test": "PENDING",
+  "release_decision": "Developer QA only; do not add to exhibition selection yet."
+}

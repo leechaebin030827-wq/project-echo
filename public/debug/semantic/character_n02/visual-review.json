@@ -1,0 +1,13 @@
+{
+  "base": "character_n02",
+  "status": "HOLD",
+  "reviewed_images": [
+    "front.png",
+    "diagnostic-front.png",
+    "face-ready-front.png"
+  ],
+  "face_region": "Eyes, nose, mouth, cheeks, and chin are covered by FACE; ears and neck are excluded.",
+  "blocking_issue": "Meshy generated long hair strands hanging across the left brow, eye, and nose despite the unobstructed short-hair turnaround. This geometry remains in front of the FACE material and would occlude a visitor face texture.",
+  "technical_contract": "Preservation and FACE contract pass; visual suitability fails.",
+  "release_decision": "Do not add to exhibition character selection pending a geometry fix or separately authorized Meshy regeneration."
+}

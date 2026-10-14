@@ -1,0 +1,97 @@
+{
+  "source": "/Users/chaebin/2026 Graduation Project/1007 Final Project/artifacts/pipeline/character_n01/character_n01_generated.glb",
+  "sha256": "796fa66588f001df4f6d9d596dd3e802869a8b48bde54cb39c19fb5b4d32d718",
+  "blender_version": "3.2.1",
+  "coordinate_system": "Blender: Z up; exported glTF/Three.js: Y up",
+  "bounds": {
+    "min": [
+      -0.44788798689842224,
+      -0.1966690719127655,
+      -0.9516600370407104
+    ],
+    "max": [
+      0.44712600111961365,
+      0.19208499789237976,
+      0.9506059885025024
+    ],
+    "size": [
+      0.8950139880180359,
+      0.38875406980514526,
+      1.902266025543213
+    ]
+  },
+  "approximate_height": 1.902266025543213,
+  "height_units": "Blender units; raw scale is not proof of real-world dimensions",
+  "mesh_names": [
+    "Mesh_0"
+  ],
+  "meshes": [
+    {
+      "name": "Mesh_0",
+      "data_name": "Mesh_0",
+      "vertex_count": 46180,
+      "triangle_count": 51635,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "materials": [
+        "Material_0"
+      ],
+      "armature_modifiers": [],
+      "shape_keys": [],
+      "surface_uv_signature": "64f4e89d47918917507db75fb076f5d4999234877d124540bb37e3e463b2c3ed"
+    }
+  ],
+  "vertex_count": 46180,
+  "triangle_count": 51635,
+  "material_names": [
+    "Material_0"
+  ],
+  "armatures": [],
+  "animation_clips": [],
+  "hierarchy": [
+    {
+      "name": "Mesh_0",
+      "type": "MESH",
+      "parent": null,
+      "children": [],
+      "world_matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    }
+  ],
+  "images": [
+    {
+      "name": "Image_0",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    }
+  ],
+  "face_materials": []
+}

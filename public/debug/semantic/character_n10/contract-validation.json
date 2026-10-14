@@ -1,0 +1,25 @@
+{
+  "input": "public/models/semantic/character_n10_face_ready.glb",
+  "passed": true,
+  "face_material": "FACE",
+  "face_texture_texcoord": 1,
+  "face_uv_layer_in_blender": "FACE_UV",
+  "face_uv_export_attribute": "TEXCOORD_1",
+  "face_primitive_count": 1,
+  "face_triangle_count": 935,
+  "face_vertex_count": 890,
+  "face_uv_bounds": {
+    "min_u": 0.04084615409374237,
+    "max_u": 0.9573978781700134,
+    "min_v": 0.13340473175048828,
+    "max_v": 0.9414730668067932
+  },
+  "total_triangle_count": 51412,
+  "bone_count": 24,
+  "clips": [
+    "All_Night_Dance",
+    "Casual_Walk_inplace",
+    "Idle"
+  ],
+  "all_primitives_have_position_normal_uv0_uv1_joints_weights": true
+}
