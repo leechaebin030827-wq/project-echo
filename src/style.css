@@ -649,24 +649,12 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .echo-return-track img.visible { opacity: 1; transform: translateY(0) scale(1); }
 
-.echo-return-question {
-  position: absolute;
-  inset: 3% 4% auto;
-  z-index: 1;
-  color: #fff;
-  text-align: center;
+.echo-return.is-fading-to-quote { background: #000; }
+.echo-return.is-fading-to-quote .echo-return-track,
+.echo-return.is-fading-to-quote .echo-return-question {
   opacity: 0;
-  transform: translateY(10px);
-  transition: opacity .5s ease, transform .5s ease;
-  text-shadow: 0 2px 15px #000;
-  padding: 2.5cqw 1cqw;
-  background: rgba(4, 8, 15, .68);
+  transition: opacity 1.3s ease;
 }
-
-.echo-return-question.visible { opacity: 1; transform: translateY(0); }
-.echo-return-question p { margin: 0; }
-.echo-return-question p:first-child { font-size: clamp(15px, 3.9cqw, 24px); font-weight: 700; line-height: 1.35; }
-.echo-return-question p:last-child { margin-top: .5em; font-size: clamp(10px, 2.3cqw, 14px); line-height: 1.4; }
 
 .echo-return-quote {
   position: absolute;
@@ -688,10 +676,6 @@ button { -webkit-tap-highlight-color: transparent; }
   opacity: 1;
   visibility: visible;
   transition: opacity 1.2s ease;
-}
-.echo-return.show-quote .echo-return-quote.is-ending {
-  opacity: 0;
-  transition: opacity 1.8s ease;
 }
 .echo-return-quote p { margin: 0; white-space: pre-line; font-family: "SFMono-Regular", monospace; }
 .echo-return-quote .quote-korean {

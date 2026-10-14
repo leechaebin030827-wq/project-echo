@@ -4,6 +4,7 @@ import {
   CHARACTER_CAMERA_CONFIG,
   EXPERIENCE_STATES,
 } from '../config.js';
+import { getEchoLaunchPose } from '../world/EchoTravelAnimator.js';
 
 const smoothStep = (value) => value * value * (3 - 2 * value);
 
@@ -615,6 +616,7 @@ export class CinematicCameraController {
         .add(new THREE.Vector3(0, height + this.echoSize.y * 0.08, 0)),
       destinationTarget: this.echoCenter.clone().add(new THREE.Vector3(0, height, 0)),
       duration,
+      launchHeight: height,
       startedAt: performance.now(),
     };
     this.setState(EXPERIENCE_STATES.WORLD_JUMP_SKY);
@@ -748,7 +750,10 @@ export class CinematicCameraController {
         if (progress >= 1) this.startEchoOrbit();
         return;
       }
-      const eased = smoothStep(progress);
+      const eased = this.state === EXPERIENCE_STATES.WORLD_JUMP_SKY
+        && this.transition.launchHeight
+        ? getEchoLaunchPose(progress, this.transition.launchHeight).lift / this.transition.launchHeight
+        : smoothStep(progress);
       this.camera.position.lerpVectors(this.transition.fromPosition, this.transition.destination, eased);
       this.target.lerpVectors(this.transition.fromTarget, this.transition.destinationTarget, eased);
       this.camera.lookAt(this.target);
@@ -763,10 +768,6 @@ export class CinematicCameraController {
         this.camera.position.lerpVectors(this.transition.fromPosition, this.transition.destination, eased);
         this.target.lerpVectors(this.transition.fromTarget, this.transition.destinationTarget, eased);
         if (progress >= 1) this.transition = null;
-      } else {
-        this.tempA.subVectors(this.camera.position, this.target)
-          .applyAxisAngle(THREE.Object3D.DEFAULT_UP, delta * Math.PI * 2 / this.config.introOrbitDuration);
-        this.camera.position.copy(this.target).add(this.tempA);
       }
       this.camera.lookAt(this.target);
       return;

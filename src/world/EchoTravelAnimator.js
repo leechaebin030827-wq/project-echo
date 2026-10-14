@@ -344,7 +344,7 @@ export class EchoTravelAnimator {
         smooth((boundedProgress - 0.88) / 0.12));
     } else if (this.phase === 'spin' || this.phase === 'loading-spin') {
       this.setPose(this.height, 0, 1,
-        this.spinStart + Math.PI * 2 * (this.phase === 'spin' ? boundedProgress : progress), 0, 1);
+        this.spinStart + Math.PI * 2 * progress, 0, 1);
     } else if (this.phase === 'arrival') {
       const alignment = smooth(boundedProgress);
       if (this.arrivalTarget) {

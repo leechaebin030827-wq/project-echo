@@ -13,7 +13,7 @@ export class EchoReturnSequence {
     this.overlay = document.createElement('section');
     this.overlay.className = 'echo-return';
     this.overlay.setAttribute('aria-label', 'ECHO 귀환');
-    this.overlay.innerHTML = '<div class="echo-return-track"></div><div class="echo-return-question"></div><div class="echo-return-quote"></div>';
+    this.overlay.innerHTML = '<div class="echo-return-track"></div><div class="echo-return-question echo-caption"></div><div class="echo-return-quote"></div>';
     this.stage.append(this.overlay);
     this.canvas = document.createElement('canvas');
     this.canvas.width = WIDTH;
@@ -138,14 +138,19 @@ export class EchoReturnSequence {
         const [korean, english] = lines[lineIndex];
         question.replaceChildren();
         const ko = document.createElement('p');
+        ko.className = 'echo-caption-korean';
         ko.textContent = korean;
         const en = document.createElement('p');
+        en.className = 'echo-caption-english';
         en.textContent = english;
         question.append(ko, en);
         question.classList.add('visible');
       }
       await this.delay(1700);
     }
+    if (this.cancelled) return;
+    this.overlay.classList.add('is-fading-to-quote');
+    await this.delay(1400);
     if (this.cancelled) return;
     const quote = this.overlay.querySelector('.echo-return-quote');
     quote.innerHTML = '<p class="quote-korean"></p><p class="quote-english"></p><p class="quote-source"></p>';
@@ -166,10 +171,7 @@ export class EchoReturnSequence {
     await type('.quote-source', INTRO_TEXT.quote.source);
     if (this.cancelled) return;
     quote.classList.add('is-korean-visible');
-    await this.delay(TIMING.QUOTE_HOLD_DURATION + 1200);
-    if (this.cancelled) return;
-    quote.classList.add('is-ending');
-    await this.delay(TIMING.QUOTE_FADE_DURATION);
+    await this.delay(3000);
   }
 
   dispose() {
