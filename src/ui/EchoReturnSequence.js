@@ -1,0 +1,182 @@
+import * as THREE from 'three';
+import { INTRO_TEXT, TIMING } from '../intro/config.js';
+
+const WIDTH = 450;
+const HEIGHT = 800;
+const FRAME_COUNT = 10;
+const MAX_CANDIDATES = 50;
+
+export class EchoReturnSequence {
+  constructor(stage, renderer) {
+    this.stage = stage;
+    this.renderer = renderer;
+    this.overlay = document.createElement('section');
+    this.overlay.className = 'echo-return';
+    this.overlay.setAttribute('aria-label', 'ECHO 귀환');
+    this.overlay.innerHTML = '<div class="echo-return-track"></div><div class="echo-return-question"></div><div class="echo-return-quote"></div>';
+    this.stage.append(this.overlay);
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = WIDTH;
+    this.canvas.height = HEIGHT;
+    this.context = this.canvas.getContext('2d');
+    this.candidates = [];
+    this.lastCaptureAt = -Infinity;
+    this.head = new THREE.Vector3();
+    this.forward = new THREE.Vector3();
+    this.toCamera = new THREE.Vector3();
+    this.projected = new THREE.Vector3();
+    this.timers = [];
+    this.cancelled = false;
+  }
+
+  recordFrame(camera, cameraController, now = performance.now()) {
+    if (this.cancelled || now - this.lastCaptureAt < 700 || cameraController.transition) return;
+    const height = this.stage.clientHeight;
+    if (!height || !this.renderer.domElement.width) return;
+    const entity = cameraController.focused
+      ?? cameraController.danceGroup?.members?.[cameraController.danceHeroIndex];
+    if (!entity) return;
+    let best = null;
+    for (const candidate of [entity]) {
+      if (!candidate.root.visible || !candidate.getHeadWorldPosition) continue;
+      candidate.getHeadWorldPosition(this.head);
+      candidate.getHeadDirection(this.forward);
+      this.toCamera.subVectors(camera.position, this.head);
+      const distance = this.toCamera.length();
+      const facing = this.forward.dot(this.toCamera.normalize());
+      if (facing < 0.58 || distance > 12) continue;
+      this.projected.copy(this.head).project(camera);
+      if (this.projected.z <= -1 || this.projected.z >= 1
+        || Math.abs(this.projected.x) > 0.48 || Math.abs(this.projected.y) > 0.54) continue;
+      const focalPixels = height * camera.zoom
+        / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+      const facePixels = candidate.height * 0.24 * focalPixels / distance;
+      if (facePixels < 58) continue;
+      const center = 1 - Math.hypot(this.projected.x, this.projected.y) * 0.28;
+      const score = facePixels * facing * center;
+      if (!best || score > best.score) {
+        best = { id: candidate.id, score, x: this.projected.x, y: this.projected.y };
+      }
+    }
+    if (!best) return;
+    const previous = this.candidates.at(-1);
+    if (previous?.id === best.id && now - previous.time < 1250
+      && Math.hypot(previous.x - best.x, previous.y - best.y) < 0.13) return;
+    // Read the completed world frame while WebGL's drawing buffer is available.
+    this.context.drawImage(this.renderer.domElement, 0, 0, WIDTH, HEIGHT);
+    this.candidates.push({ ...best, time: now, source: this.canvas.toDataURL('image/jpeg', 0.84) });
+    this.lastCaptureAt = now;
+    if (this.candidates.length > MAX_CANDIDATES) {
+      const weakest = this.candidates.reduce((index, item, next) => (
+        item.score < this.candidates[index].score ? next : index
+      ), 0);
+      this.candidates.splice(weakest, 1);
+    }
+  }
+
+  selectFrames() {
+    const remaining = [...this.candidates];
+    const selected = [];
+    while (remaining.length && selected.length < FRAME_COUNT) {
+      let bestIndex = 0;
+      let bestValue = -Infinity;
+      remaining.forEach((candidate, index) => {
+        const samePerson = selected.filter((frame) => frame.id === candidate.id).length;
+        const nearestTime = selected.length
+          ? Math.min(...selected.map((frame) => Math.abs(frame.time - candidate.time))) : Infinity;
+        const value = candidate.score / (1 + samePerson * 0.9)
+          + Math.min(nearestTime / 1000, 5) * 7;
+        if (value > bestValue) { bestValue = value; bestIndex = index; }
+      });
+      selected.push(remaining.splice(bestIndex, 1)[0]);
+    }
+    selected.sort((a, b) => a.time - b.time);
+    return selected;
+  }
+
+  delay(ms) {
+    return new Promise((resolve) => {
+      const timer = window.setTimeout(() => {
+        this.timers = this.timers.filter((item) => item !== timer);
+        resolve();
+      }, ms);
+      this.timers.push(timer);
+    });
+  }
+
+  async play() {
+    const frames = this.selectFrames();
+    const track = this.overlay.querySelector('.echo-return-track');
+    track.replaceChildren();
+    for (const [index, frame] of frames.entries()) {
+      const card = document.createElement('img');
+      card.src = frame.source;
+      card.alt = `관람 중 기록된 얼굴 ${index + 1}`;
+      track.append(card);
+    }
+    this.overlay.classList.add('visible');
+    const question = this.overlay.querySelector('.echo-return-question');
+    const lines = [
+      ['프로젝트 에코는', 'PROJECT ECHO'],
+      ['당신이 업로드한 사진의 흔적을 따라', 'followed the trace of the photo you uploaded'],
+      ['클라우드 너머로 향했습니다.', 'and traveled beyond the cloud.'],
+      ['그 너머의 공간을 보았나요?', 'Did you see the space beyond it?'],
+      ['그곳에서 마주한 것은 정말 당신이었나요?', 'Was what you encountered there really you?'],
+    ];
+    const steps = Math.max(frames.length, lines.length);
+    let activeLine = -1;
+    for (let index = 0; index < steps; index += 1) {
+      if (this.cancelled) return;
+      const card = track.children[index];
+      if (card) {
+        card.classList.add('visible');
+        track.style.transform = `translateX(${-3 - index * 50.8}cqw)`;
+      }
+      const lineIndex = Math.min(lines.length - 1, Math.floor(index * lines.length / steps));
+      if (lineIndex !== activeLine) {
+        activeLine = lineIndex;
+        const [korean, english] = lines[lineIndex];
+        question.replaceChildren();
+        const ko = document.createElement('p');
+        ko.textContent = korean;
+        const en = document.createElement('p');
+        en.textContent = english;
+        question.append(ko, en);
+        question.classList.add('visible');
+      }
+      await this.delay(1700);
+    }
+    if (this.cancelled) return;
+    const quote = this.overlay.querySelector('.echo-return-quote');
+    quote.innerHTML = '<p class="quote-korean"></p><p class="quote-english"></p><p class="quote-source"></p>';
+    quote.querySelector('.quote-korean').textContent = INTRO_TEXT.quote.korean;
+    this.overlay.classList.add('show-quote');
+    await this.delay(700);
+    const type = async (selector, value) => {
+      const element = quote.querySelector(selector);
+      for (const character of value) {
+        if (this.cancelled) return;
+        element.textContent += character;
+        await this.delay(TIMING.QUOTE_TYPING_SPEED);
+      }
+    };
+    await type('.quote-english', INTRO_TEXT.quote.english);
+    if (this.cancelled) return;
+    await this.delay(TIMING.QUOTE_SECTION_DELAY);
+    await type('.quote-source', INTRO_TEXT.quote.source);
+    if (this.cancelled) return;
+    quote.classList.add('is-korean-visible');
+    await this.delay(TIMING.QUOTE_HOLD_DURATION + 1200);
+    if (this.cancelled) return;
+    quote.classList.add('is-ending');
+    await this.delay(TIMING.QUOTE_FADE_DURATION);
+  }
+
+  dispose() {
+    this.cancelled = true;
+    for (const timer of this.timers) window.clearTimeout(timer);
+    this.timers = [];
+    this.candidates = [];
+    this.overlay.remove();
+  }
+}
