@@ -1,0 +1,109 @@
+{
+  "id": "N05",
+  "base": "character_n05",
+  "concept": "Suburban-edge motel guest heading out for breakfast",
+  "presentation": "feminine",
+  "age": 36,
+  "height_meters": 1.69,
+  "body": "slim average",
+  "hair": "dark hair in a low loose bun with forehead and ears visible",
+  "clothing": "light sage quilted vest over an ivory long-sleeve knit, beige casual trousers, light tan sneakers",
+  "palette": [
+    "light sage",
+    "ivory",
+    "beige",
+    "tan"
+  ],
+  "nevada_fit": "A vest and knit layer suit cool mornings and warmer desert afternoons.",
+  "neutral_face": "Average soft oval structure, gentle jaw, medium lips and nose, relaxed expression; no bangs or glasses.",
+  "turnaround": {
+    "front": "assets/characters/character_n05/turnaround/front.png",
+    "side": "assets/characters/character_n05/turnaround/side.png",
+    "back": "assets/characters/character_n05/turnaround/back.png"
+  },
+  "prompt": "assets/characters/character_n05/turnaround/prompt.txt",
+  "meshy": {
+    "model": "meshy-7.1",
+    "pose_mode": "t-pose",
+    "target_polycount": 50000,
+    "action_ids": [
+      0,
+      613,
+      64
+    ],
+    "stages": [
+      {
+        "stage": "generation",
+        "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+        "task_id": "01a1340c-9386-7643-bb29-6126d4bd1507",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n05/character_n05_generated.glb",
+        "bytes": 5408804,
+        "sha256": "75995d5c68ac6f1e3907ce8d19176a2647b14d634fe92ea9531750a3da01d037",
+        "consumed_credits": 30
+      },
+      {
+        "stage": "remesh",
+        "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+        "task_id": "01a13412-b764-760e-9b58-23cbe4e5736f",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n05/character_n05_optimized.glb",
+        "bytes": 12291960,
+        "sha256": "468cb9044f4d50375a5f91ebb984aa63ec94677a80423dccd8e6351ad6655df2",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "rigging",
+        "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+        "task_id": "01a13422-3bfd-752a-b0a1-10870ca86d81",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n05/character_n05_rigged.glb",
+        "bytes": 14100776,
+        "sha256": "38ae0c6ac40ef767c6a68cee3829e255f70f4b1feeefef90a1960513065aa937",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "animations",
+        "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+        "task_id": "01a1342c-2186-77ae-b054-49c0e197009b",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n05/character_n05_animated.glb",
+        "bytes": 8333472,
+        "sha256": "f90f6a7af59347d693ecda32db9d197f5e1c291412b95d6fc7030b351aced033",
+        "consumed_credits": 9
+      }
+    ],
+    "total_consumed_credits": 49
+  },
+  "semantic": {
+    "final_glb": "public/models/semantic/character_n05_face_ready.glb",
+    "package_alias": "assets/characters/character_n05/face_ready.glb",
+    "final_sha256": "f3e3f35d2524e4f4e5b4b6316bba7e3aef573d89c70d02905fec5b500ebca75f",
+    "face_polygon_count": 440,
+    "triangle_count": 46944,
+    "bone_count": 24,
+    "clips": [
+      "All_Night_Dance",
+      "Casual_Walk_inplace",
+      "Idle"
+    ],
+    "preservation_passed": true,
+    "face_contract_passed": true,
+    "gltf_errors": 0,
+    "gltf_warnings": 1,
+    "diagnostic_images": [
+      "public/debug/semantic/character_n05/diagnostic-front.png",
+      "public/debug/semantic/character_n05/diagnostic-left.png",
+      "public/debug/semantic/character_n05/diagnostic-right.png"
+    ],
+    "mapping": "public/debug/semantic/character_n05/character_n05_face_mapping.json",
+    "preservation_validation": "public/debug/semantic/character_n05/preservation-validation.json",
+    "contract_validation": "public/debug/semantic/character_n05/contract-validation.json",
+    "gltf_validation": "public/debug/semantic/character_n05/gltf-validation.json"
+  },
+  "review": {
+    "status": "QA_READY",
+    "note": "Clear forehead and face; source face has a slight closed-mouth smile.",
+    "visitor_composite_test": "PENDING"
+  }
+}

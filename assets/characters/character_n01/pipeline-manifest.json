@@ -1,0 +1,97 @@
+{
+  "id": "character_n01",
+  "concept": "Everyday Nevada winter traveler, woman in her early thirties, neutral average face base",
+  "turnaround": {
+    "generation_method": "built-in image_gen, one sheet cropped into three independent PNGs",
+    "sheet": "assets/characters/character_n01/turnaround/sheet.png",
+    "inputs": [
+      "assets/characters/character_n01/turnaround/front.png",
+      "assets/characters/character_n01/turnaround/side.png",
+      "assets/characters/character_n01/turnaround/back.png"
+    ],
+    "prompt": "assets/characters/character_n01/turnaround/prompt.txt"
+  },
+  "meshy": {
+    "stages": [
+      {
+        "stage": "generation",
+        "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+        "task_id": "01a133c3-8985-75b4-af5d-89859863e8af",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n01/character_n01_generated.glb",
+        "bytes": 4959636,
+        "sha256": "796fa66588f001df4f6d9d596dd3e802869a8b48bde54cb39c19fb5b4d32d718",
+        "consumed_credits": 30
+      },
+      {
+        "stage": "remesh",
+        "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+        "task_id": "01a133c7-4e89-71be-80af-75fd8ba2ca68",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n01/character_n01_optimized.glb",
+        "bytes": 12065888,
+        "sha256": "1908ef85e20afdb3b466bd6bc69f960d15c2c10eabe7bf20a91e940eb3a1c561",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "rigging",
+        "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+        "task_id": "01a133c9-1d6b-74e5-acc5-7e529f037707",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n01/character_n01_rigged.glb",
+        "bytes": 13779120,
+        "sha256": "1bf09c330abca34a4cc1c5fd42d292b2e67ed6639176d37500eabd1481cef8ce",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "animations",
+        "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+        "task_id": "01a133c9-f38e-7174-83f8-a1252e59dd2d",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n01/character_n01_animated.glb",
+        "bytes": 8388624,
+        "sha256": "ca014cf008ef4463670e6dba9d16cdba2d81ba0bc67e7204bb9a0793ac05f685",
+        "consumed_credits": 9
+      }
+    ],
+    "model": "meshy-7.1",
+    "target_polycount": 50000,
+    "generation_should_remesh": true,
+    "rig_height_meters": 1.68,
+    "action_ids": [
+      0,
+      613,
+      64
+    ],
+    "action_names": [
+      "Idle",
+      "Casual Walk (in place)",
+      "All Night Dance"
+    ]
+  },
+  "semantic": {
+    "method": "MediaPipe face contour + skin segmenter + Blender visible-surface ray projection",
+    "final_glb": "public/models/semantic/character_n01_face_ready.glb",
+    "package_alias": "assets/characters/character_n01/face_ready.glb",
+    "final_sha256": "0526cacf36417f2d8194d948650862524642ba7828ab6761691331e0aecdb11d",
+    "mapping": "public/debug/semantic/character_n01/character_n01_face_mapping.json",
+    "preservation_validation": "public/debug/semantic/character_n01/preservation-validation.json",
+    "contract_validation": "public/debug/semantic/character_n01/contract-validation.json",
+    "gltf_validation": "public/debug/semantic/character_n01/gltf-validation.json",
+    "diagnostic_images": [
+      "public/debug/semantic/character_n01/diagnostic-front.png",
+      "public/debug/semantic/character_n01/diagnostic-left.png",
+      "public/debug/semantic/character_n01/diagnostic-right.png"
+    ]
+  },
+  "review": {
+    "technical_contract": "passed",
+    "visual_review": "manual approval recommended",
+    "notes": [
+      "FACE includes eyes, nose, mouth, cheeks and chin; ear, hair, neck largely excluded",
+      "Upper forehead stays on body material because MediaPipe oval contour begins below hairline",
+      "Source has a slight closed-mouth smile; test visitor-face replacement under exhibition lighting before adding to AVAILABLE_BASES",
+      "Existing A/B/C and face runtime were not modified"
+    ]
+  }
+}

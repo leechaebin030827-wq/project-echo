@@ -1,0 +1,109 @@
+{
+  "id": "N02",
+  "base": "character_n02",
+  "concept": "Young road-trip passenger stopping for snacks at a highway convenience store",
+  "presentation": "masculine",
+  "age": 24,
+  "height_meters": 1.76,
+  "body": "slim average",
+  "hair": "short softly wavy brown hair, clear forehead",
+  "clothing": "pale teal lightweight winter shell open over an ivory hoodie, sand chinos, cream sneakers",
+  "palette": [
+    "pale teal",
+    "ivory",
+    "sand",
+    "cream"
+  ],
+  "nevada_fit": "Light layers suit a sunny, cold roadside stop without implying a profession.",
+  "neutral_face": "Average oval face, soft jaw, restrained brow and nose, relaxed closed mouth; no beard or eyewear.",
+  "turnaround": {
+    "front": "assets/characters/character_n02/turnaround/front.png",
+    "side": "assets/characters/character_n02/turnaround/side.png",
+    "back": "assets/characters/character_n02/turnaround/back.png"
+  },
+  "prompt": "assets/characters/character_n02/turnaround/prompt.txt",
+  "meshy": {
+    "model": "meshy-7.1",
+    "pose_mode": "t-pose",
+    "target_polycount": 50000,
+    "action_ids": [
+      0,
+      613,
+      64
+    ],
+    "stages": [
+      {
+        "stage": "generation",
+        "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+        "task_id": "01a13406-9102-75d7-8207-e31302100cf2",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n02/character_n02_generated.glb",
+        "bytes": 5426128,
+        "sha256": "25cd055a71b87ea31c8b6ae8223751671ac1ecef77103a78b7cbfcc61425a379",
+        "consumed_credits": 30
+      },
+      {
+        "stage": "remesh",
+        "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+        "task_id": "01a1340b-b226-7455-a930-660417c8a228",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n02/character_n02_optimized.glb",
+        "bytes": 12429912,
+        "sha256": "5e2fcc5aad4945eb6eb0ea2b3d6fa15c278b88bfc174948f3285cbd0f98c8c95",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "rigging",
+        "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+        "task_id": "01a1340e-9f21-7016-aeb5-4b51bbcebea1",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n02/character_n02_rigged.glb",
+        "bytes": 14357364,
+        "sha256": "c989a4c6c2b76d8a60e1135edc81843d90c4da74538e7af24186ab041a46efb9",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "animations",
+        "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+        "task_id": "01a13411-e9f7-7053-a437-00d6407b227f",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n02/character_n02_animated.glb",
+        "bytes": 8731000,
+        "sha256": "bf5d3aa13cf202f310d735d40a5f60983ab6ffb355f536157bc572aef8c68fdf",
+        "consumed_credits": 9
+      }
+    ],
+    "total_consumed_credits": 49
+  },
+  "semantic": {
+    "final_glb": "public/models/semantic/character_n02_face_ready.glb",
+    "package_alias": null,
+    "final_sha256": "76587d0c08b7792e774c25fc33b21f51c10882318150ea9bd39991fbde1ee393",
+    "face_polygon_count": 555,
+    "triangle_count": 50737,
+    "bone_count": 24,
+    "clips": [
+      "All_Night_Dance",
+      "Casual_Walk_inplace",
+      "Idle"
+    ],
+    "preservation_passed": true,
+    "face_contract_passed": true,
+    "gltf_errors": 0,
+    "gltf_warnings": 1,
+    "diagnostic_images": [
+      "public/debug/semantic/character_n02/diagnostic-front.png",
+      "public/debug/semantic/character_n02/diagnostic-left.png",
+      "public/debug/semantic/character_n02/diagnostic-right.png"
+    ],
+    "mapping": "public/debug/semantic/character_n02/character_n02_face_mapping.json",
+    "preservation_validation": "public/debug/semantic/character_n02/preservation-validation.json",
+    "contract_validation": "public/debug/semantic/character_n02/contract-validation.json",
+    "gltf_validation": "public/debug/semantic/character_n02/gltf-validation.json"
+  },
+  "review": {
+    "status": "HOLD",
+    "note": "3D hair strands cover the left brow, eye, and nose; visitor texture would remain occluded.",
+    "visitor_composite_test": "PENDING"
+  }
+}
