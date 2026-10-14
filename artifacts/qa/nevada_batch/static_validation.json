@@ -1,0 +1,514 @@
+{
+  "title": "Nevada batch static asset validation",
+  "method": "Read-only verification of existing GLBs, validator reports, mapping JSON, and UV rasterization; no Meshy or GLB edits",
+  "qa_candidates": {
+    "N03": {
+      "glb": "public/models/semantic/character_n03_face_ready.glb",
+      "sha256_matches_manifest": true,
+      "face_triangles": 816,
+      "face_vertices": 753,
+      "texcoord_1": true,
+      "bone_count": 24,
+      "clips": [
+        "All_Night_Dance",
+        "Casual_Walk_inplace",
+        "Idle"
+      ],
+      "contract_passed": true,
+      "mapping_landmark_coverage": {
+        "left_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "right_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "left_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "right_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "nose": {
+          "selected": 14,
+          "mapped": 14
+        },
+        "lips": {
+          "selected": 40,
+          "mapped": 40
+        },
+        "forehead_contour": {
+          "selected": 0,
+          "mapped": 1
+        },
+        "chin_tip": {
+          "selected": 0,
+          "mapped": 1
+        }
+      },
+      "uv_area_sum": 0.5134,
+      "uv_median_triangle_area": 0.000322,
+      "upper_forehead_uv_triangles": 124
+    },
+    "N04": {
+      "glb": "public/models/semantic/character_n04_face_ready.glb",
+      "sha256_matches_manifest": true,
+      "face_triangles": 912,
+      "face_vertices": 736,
+      "texcoord_1": true,
+      "bone_count": 24,
+      "clips": [
+        "All_Night_Dance",
+        "Casual_Walk_inplace",
+        "Idle"
+      ],
+      "contract_passed": true,
+      "mapping_landmark_coverage": {
+        "left_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "right_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "left_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "right_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "nose": {
+          "selected": 14,
+          "mapped": 14
+        },
+        "lips": {
+          "selected": 40,
+          "mapped": 40
+        },
+        "forehead_contour": {
+          "selected": 0,
+          "mapped": 1
+        },
+        "chin_tip": {
+          "selected": 0,
+          "mapped": 1
+        }
+      },
+      "uv_area_sum": 0.5376,
+      "uv_median_triangle_area": 0.000337,
+      "upper_forehead_uv_triangles": 137
+    },
+    "N05": {
+      "glb": "public/models/semantic/character_n05_face_ready.glb",
+      "sha256_matches_manifest": true,
+      "face_triangles": 440,
+      "face_vertices": 379,
+      "texcoord_1": true,
+      "bone_count": 24,
+      "clips": [
+        "All_Night_Dance",
+        "Casual_Walk_inplace",
+        "Idle"
+      ],
+      "contract_passed": true,
+      "mapping_landmark_coverage": {
+        "left_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "right_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "left_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "right_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "nose": {
+          "selected": 14,
+          "mapped": 14
+        },
+        "lips": {
+          "selected": 40,
+          "mapped": 40
+        },
+        "forehead_contour": {
+          "selected": 0,
+          "mapped": 1
+        },
+        "chin_tip": {
+          "selected": 0,
+          "mapped": 1
+        }
+      },
+      "uv_area_sum": 0.4743,
+      "uv_median_triangle_area": 0.000704,
+      "upper_forehead_uv_triangles": 48
+    },
+    "N06": {
+      "glb": "public/models/semantic/character_n06_face_ready.glb",
+      "sha256_matches_manifest": true,
+      "face_triangles": 759,
+      "face_vertices": 748,
+      "texcoord_1": true,
+      "bone_count": 24,
+      "clips": [
+        "All_Night_Dance",
+        "Casual_Walk_inplace",
+        "Idle"
+      ],
+      "contract_passed": true,
+      "mapping_landmark_coverage": {
+        "left_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "right_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "left_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "right_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "nose": {
+          "selected": 14,
+          "mapped": 14
+        },
+        "lips": {
+          "selected": 40,
+          "mapped": 40
+        },
+        "forehead_contour": {
+          "selected": 0,
+          "mapped": 1
+        },
+        "chin_tip": {
+          "selected": 0,
+          "mapped": 1
+        }
+      },
+      "uv_area_sum": 0.5294,
+      "uv_median_triangle_area": 0.000402,
+      "upper_forehead_uv_triangles": 100
+    },
+    "N07": {
+      "glb": "public/models/semantic/character_n07_face_ready.glb",
+      "sha256_matches_manifest": true,
+      "face_triangles": 689,
+      "face_vertices": 679,
+      "texcoord_1": true,
+      "bone_count": 24,
+      "clips": [
+        "All_Night_Dance",
+        "Casual_Walk_inplace",
+        "Idle"
+      ],
+      "contract_passed": true,
+      "mapping_landmark_coverage": {
+        "left_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "right_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "left_eyebrow": {
+          "selected": 8,
+          "mapped": 10
+        },
+        "right_eyebrow": {
+          "selected": 9,
+          "mapped": 10
+        },
+        "nose": {
+          "selected": 14,
+          "mapped": 14
+        },
+        "lips": {
+          "selected": 40,
+          "mapped": 40
+        },
+        "forehead_contour": {
+          "selected": 0,
+          "mapped": 1
+        },
+        "chin_tip": {
+          "selected": 0,
+          "mapped": 1
+        }
+      },
+      "uv_area_sum": 0.4933,
+      "uv_median_triangle_area": 0.000407,
+      "upper_forehead_uv_triangles": 31
+    },
+    "N08": {
+      "glb": "public/models/semantic/character_n08_face_ready.glb",
+      "sha256_matches_manifest": true,
+      "face_triangles": 717,
+      "face_vertices": 714,
+      "texcoord_1": true,
+      "bone_count": 24,
+      "clips": [
+        "All_Night_Dance",
+        "Casual_Walk_inplace",
+        "Idle"
+      ],
+      "contract_passed": true,
+      "mapping_landmark_coverage": {
+        "left_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "right_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "left_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "right_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "nose": {
+          "selected": 14,
+          "mapped": 14
+        },
+        "lips": {
+          "selected": 40,
+          "mapped": 40
+        },
+        "forehead_contour": {
+          "selected": 0,
+          "mapped": 1
+        },
+        "chin_tip": {
+          "selected": 0,
+          "mapped": 1
+        }
+      },
+      "uv_area_sum": 0.5203,
+      "uv_median_triangle_area": 0.000426,
+      "upper_forehead_uv_triangles": 80
+    },
+    "N09": {
+      "glb": "public/models/semantic/character_n09_face_ready.glb",
+      "sha256_matches_manifest": true,
+      "face_triangles": 857,
+      "face_vertices": 826,
+      "texcoord_1": true,
+      "bone_count": 24,
+      "clips": [
+        "All_Night_Dance",
+        "Casual_Walk_inplace",
+        "Idle"
+      ],
+      "contract_passed": true,
+      "mapping_landmark_coverage": {
+        "left_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "right_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "left_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "right_eyebrow": {
+          "selected": 9,
+          "mapped": 10
+        },
+        "nose": {
+          "selected": 14,
+          "mapped": 14
+        },
+        "lips": {
+          "selected": 40,
+          "mapped": 40
+        },
+        "forehead_contour": {
+          "selected": 0,
+          "mapped": 1
+        },
+        "chin_tip": {
+          "selected": 0,
+          "mapped": 1
+        }
+      },
+      "uv_area_sum": 0.5306,
+      "uv_median_triangle_area": 0.000316,
+      "upper_forehead_uv_triangles": 104
+    },
+    "N10": {
+      "glb": "public/models/semantic/character_n10_face_ready.glb",
+      "sha256_matches_manifest": true,
+      "face_triangles": 935,
+      "face_vertices": 890,
+      "texcoord_1": true,
+      "bone_count": 24,
+      "clips": [
+        "All_Night_Dance",
+        "Casual_Walk_inplace",
+        "Idle"
+      ],
+      "contract_passed": true,
+      "mapping_landmark_coverage": {
+        "left_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "right_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "left_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "right_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "nose": {
+          "selected": 14,
+          "mapped": 14
+        },
+        "lips": {
+          "selected": 40,
+          "mapped": 40
+        },
+        "forehead_contour": {
+          "selected": 0,
+          "mapped": 1
+        },
+        "chin_tip": {
+          "selected": 0,
+          "mapped": 1
+        }
+      },
+      "uv_area_sum": 0.5492,
+      "uv_median_triangle_area": 0.000317,
+      "upper_forehead_uv_triangles": 100
+    }
+  },
+  "held": {
+    "N02": {
+      "glb": "public/models/semantic/character_n02_face_ready.glb",
+      "sha256_matches_manifest": true,
+      "face_triangles": 555,
+      "face_vertices": 571,
+      "texcoord_1": true,
+      "bone_count": 24,
+      "clips": [
+        "All_Night_Dance",
+        "Casual_Walk_inplace",
+        "Idle"
+      ],
+      "contract_passed": true,
+      "mapping_landmark_coverage": {
+        "left_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "right_eye": {
+          "selected": 13,
+          "mapped": 16
+        },
+        "left_eyebrow": {
+          "selected": 9,
+          "mapped": 10
+        },
+        "right_eyebrow": {
+          "selected": 5,
+          "mapped": 10
+        },
+        "nose": {
+          "selected": 14,
+          "mapped": 14
+        },
+        "lips": {
+          "selected": 40,
+          "mapped": 40
+        },
+        "forehead_contour": {
+          "selected": 0,
+          "mapped": 1
+        },
+        "chin_tip": {
+          "selected": 0,
+          "mapped": 1
+        }
+      },
+      "uv_area_sum": 0.4676,
+      "uv_median_triangle_area": 0.00045,
+      "upper_forehead_uv_triangles": 32
+    },
+    "N11": {
+      "glb": "public/models/semantic/character_n11_face_ready.glb",
+      "sha256_matches_manifest": true,
+      "face_triangles": 280,
+      "face_vertices": null,
+      "texcoord_1": false,
+      "bone_count": null,
+      "clips": null,
+      "contract_passed": false,
+      "mapping_landmark_coverage": {
+        "left_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "right_eye": {
+          "selected": 16,
+          "mapped": 16
+        },
+        "left_eyebrow": {
+          "selected": 8,
+          "mapped": 10
+        },
+        "right_eyebrow": {
+          "selected": 10,
+          "mapped": 10
+        },
+        "nose": {
+          "selected": 14,
+          "mapped": 14
+        },
+        "lips": {
+          "selected": 40,
+          "mapped": 40
+        },
+        "forehead_contour": {
+          "selected": 0,
+          "mapped": 1
+        },
+        "chin_tip": {
+          "selected": 0,
+          "mapped": 1
+        }
+      },
+      "uv_area_sum": 0.456,
+      "uv_median_triangle_area": 0.001047,
+      "upper_forehead_uv_triangles": 17
+    }
+  }
+}

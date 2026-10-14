@@ -1,0 +1,11 @@
+{
+  "endpoint": "remesh",
+  "payload": {
+    "input_task_id": "01a13418-2ef3-72e0-b95a-8a185805eeb9",
+    "target_formats": [
+      "glb"
+    ],
+    "topology": "triangle",
+    "target_polycount": 50000
+  }
+}

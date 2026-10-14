@@ -1,0 +1,35 @@
+{
+  "id": "01a13423-7e87-77f8-b6e1-d8c5750a1037",
+  "type": "remesh",
+  "name": "",
+  "art_style": "",
+  "object_prompt": "",
+  "style_prompt": "",
+  "negative_prompt": "",
+  "texture_prompt": "",
+  "texture_image_url": "",
+  "text_style_prompt": "",
+  "image_style_url": "",
+  "status": "SUCCEEDED",
+  "created_at": 1791876103856,
+  "progress": 100,
+  "started_at": 1791876114144,
+  "finished_at": 1791876199378,
+  "expires_at": 1792135399378,
+  "task_error": null,
+  "model_url": "",
+  "model_urls": {
+    "glb": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13423-7e87-77f8-b6e1-d8c5750a1037/output/model.glb"
+  },
+  "thumbnail_url": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13423-7e87-77f8-b6e1-d8c5750a1037/output/preview.png",
+  "texture_urls": [
+    {
+      "base_color": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13423-7e87-77f8-b6e1-d8c5750a1037/output/texture_0.png",
+      "metallic": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13423-7e87-77f8-b6e1-d8c5750a1037/output/texture_0_metallic.png",
+      "roughness": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13423-7e87-77f8-b6e1-d8c5750a1037/output/texture_0_roughness.png",
+      "normal": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13423-7e87-77f8-b6e1-d8c5750a1037/output/texture_0_normal.png",
+      "metallic_roughness": "https://assets.meshy.ai/70c207ba-100a-45ac-9dc9-01f22a13782b/tasks/01a13423-7e87-77f8-b6e1-d8c5750a1037/output/texture_0_metallic_roughness.png"
+    }
+  ],
+  "consumed_credits": 5
+}
