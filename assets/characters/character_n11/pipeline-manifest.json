@@ -1,0 +1,109 @@
+{
+  "id": "N11",
+  "base": "character_n11",
+  "concept": "Young traveler walking back to a parked car after a diner stop",
+  "presentation": "feminine",
+  "age": 23,
+  "height_meters": 1.67,
+  "body": "slim",
+  "hair": "medium curly hair tied in a low ponytail, curls kept behind the face",
+  "clothing": "sand zip jacket open over a pale teal sweatshirt, ivory casual pants, light beige sneakers",
+  "palette": [
+    "sand",
+    "pale teal",
+    "ivory",
+    "light beige"
+  ],
+  "nevada_fit": "Casual layers and sneakers suit mild desert sun with winter chill.",
+  "neutral_face": "Unaccented average face shape, softly rounded jaw, modest brow and lips, neutral expression without accessories.",
+  "turnaround": {
+    "front": "assets/characters/character_n11/turnaround/front.png",
+    "side": "assets/characters/character_n11/turnaround/side.png",
+    "back": "assets/characters/character_n11/turnaround/back.png"
+  },
+  "prompt": "assets/characters/character_n11/turnaround/prompt.txt",
+  "meshy": {
+    "model": "meshy-7.1",
+    "pose_mode": "t-pose",
+    "target_polycount": 50000,
+    "action_ids": [
+      0,
+      613,
+      64
+    ],
+    "stages": [
+      {
+        "stage": "generation",
+        "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+        "task_id": "01a13418-4107-7743-988f-c536cb13a663",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n11/character_n11_generated.glb",
+        "bytes": 5489684,
+        "sha256": "5fa31f79906b41e46c59c41bdd354730e9e146346d6216c6145de9e40c949a9f",
+        "consumed_credits": 30
+      },
+      {
+        "stage": "remesh",
+        "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+        "task_id": "01a13423-7e87-77f8-b6e1-d8c5750a1037",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n11/character_n11_optimized.glb",
+        "bytes": 13231904,
+        "sha256": "94dd381de88794ab26a64eef85c155d6c393171aa7b1dbfb22c1982ac0398ab8",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "rigging",
+        "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+        "task_id": "01a13428-2901-7167-83ca-7b36c4ac9ce0",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n11/character_n11_rigged.glb",
+        "bytes": 15356328,
+        "sha256": "b7d0fa1436f2d37c6757be9e97ce50b760cdc2eed86aec2c61cc0261de09df86",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "animations",
+        "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+        "task_id": "01a1342d-2b25-77ac-8d59-82f53428aa8c",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n11/character_n11_animated.glb",
+        "bytes": 8841328,
+        "sha256": "1dcfd758d38580ac68085fc0139eaaa3d8c26705c574c468acf78c26c737c028",
+        "consumed_credits": 9
+      }
+    ],
+    "total_consumed_credits": 49
+  },
+  "semantic": {
+    "final_glb": "public/models/semantic/character_n11_face_ready.glb",
+    "package_alias": null,
+    "final_sha256": "61b474b0df0e36d03464bfb0fa62c88faf7aac9a183b7a2f6db321307098b1d4",
+    "face_polygon_count": 280,
+    "triangle_count": 50911,
+    "bone_count": 24,
+    "clips": [
+      "All_Night_Dance",
+      "Casual_Walk_inplace",
+      "Idle"
+    ],
+    "preservation_passed": true,
+    "face_contract_passed": false,
+    "gltf_errors": 0,
+    "gltf_warnings": 1,
+    "diagnostic_images": [
+      "public/debug/semantic/character_n11/diagnostic-front.png",
+      "public/debug/semantic/character_n11/diagnostic-left.png",
+      "public/debug/semantic/character_n11/diagnostic-right.png"
+    ],
+    "mapping": "public/debug/semantic/character_n11/character_n11_face_mapping.json",
+    "preservation_validation": "public/debug/semantic/character_n11/preservation-validation.json",
+    "contract_validation": "public/debug/semantic/character_n11/contract-validation.json",
+    "gltf_validation": "public/debug/semantic/character_n11/gltf-validation.json"
+  },
+  "review": {
+    "status": "HOLD",
+    "note": "FACE covers the central features but has 280 triangles, below the existing 300-triangle contract.",
+    "visitor_composite_test": "PENDING"
+  }
+}

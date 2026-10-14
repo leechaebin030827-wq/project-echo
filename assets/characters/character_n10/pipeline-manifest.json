@@ -1,0 +1,109 @@
+{
+  "id": "N10",
+  "base": "character_n10",
+  "concept": "Driver taking a quick break at a highway service area",
+  "presentation": "masculine",
+  "age": 29,
+  "height_meters": 1.8,
+  "body": "average athletic, not exaggerated",
+  "hair": "close-cropped black hair with an unobstructed forehead",
+  "clothing": "soft red quilted vest over a cream hoodie, washed light-blue jeans, off-white sneakers",
+  "palette": [
+    "soft red",
+    "cream",
+    "washed blue",
+    "off-white"
+  ],
+  "nevada_fit": "A vest and hoodie give flexible warmth for a sunny roadside stop.",
+  "neutral_face": "Balanced average face, gently rounded chin, moderate features, clean-shaven and relaxed.",
+  "turnaround": {
+    "front": "assets/characters/character_n10/turnaround/front.png",
+    "side": "assets/characters/character_n10/turnaround/side.png",
+    "back": "assets/characters/character_n10/turnaround/back.png"
+  },
+  "prompt": "assets/characters/character_n10/turnaround/prompt.txt",
+  "meshy": {
+    "model": "meshy-7.1",
+    "pose_mode": "t-pose",
+    "target_polycount": 50000,
+    "action_ids": [
+      0,
+      613,
+      64
+    ],
+    "stages": [
+      {
+        "stage": "generation",
+        "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+        "task_id": "01a13418-2ef3-72e0-b95a-8a185805eeb9",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n10/character_n10_generated.glb",
+        "bytes": 5153976,
+        "sha256": "e72c1fb76d574ca88b74f8fddf3f4907866c959ac0825710555d95fe64b00fc2",
+        "consumed_credits": 30
+      },
+      {
+        "stage": "remesh",
+        "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+        "task_id": "01a13423-7099-72fb-8e3b-5781e9f28d2c",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n10/character_n10_optimized.glb",
+        "bytes": 12625524,
+        "sha256": "dcd4452f03bf0144b76d5e1065d9a2545cb055c53ee70f3212b242132f809ad9",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "rigging",
+        "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+        "task_id": "01a13428-122b-7611-84cf-b24af053c53e",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n10/character_n10_rigged.glb",
+        "bytes": 14371868,
+        "sha256": "547de60741663e29eaf77911567c5dbe6fbec0aedaea55ee07687dd00e3b8ec1",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "animations",
+        "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+        "task_id": "01a1342d-18a9-702a-b00e-052ebaa85db3",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n10/character_n10_animated.glb",
+        "bytes": 8575428,
+        "sha256": "b98f83d4d9c5fe0d188b73e22241b16aba780d457f93a6050d388a847509c053",
+        "consumed_credits": 9
+      }
+    ],
+    "total_consumed_credits": 49
+  },
+  "semantic": {
+    "final_glb": "public/models/semantic/character_n10_face_ready.glb",
+    "package_alias": "assets/characters/character_n10/face_ready.glb",
+    "final_sha256": "719553edae470382290950e136d60f3ef9bb906d4ea1d4ab24a24897d177969b",
+    "face_polygon_count": 935,
+    "triangle_count": 51412,
+    "bone_count": 24,
+    "clips": [
+      "All_Night_Dance",
+      "Casual_Walk_inplace",
+      "Idle"
+    ],
+    "preservation_passed": true,
+    "face_contract_passed": true,
+    "gltf_errors": 0,
+    "gltf_warnings": 1,
+    "diagnostic_images": [
+      "public/debug/semantic/character_n10/diagnostic-front.png",
+      "public/debug/semantic/character_n10/diagnostic-left.png",
+      "public/debug/semantic/character_n10/diagnostic-right.png"
+    ],
+    "mapping": "public/debug/semantic/character_n10/character_n10_face_mapping.json",
+    "preservation_validation": "public/debug/semantic/character_n10/preservation-validation.json",
+    "contract_validation": "public/debug/semantic/character_n10/contract-validation.json",
+    "gltf_validation": "public/debug/semantic/character_n10/gltf-validation.json"
+  },
+  "review": {
+    "status": "QA_READY",
+    "note": "Clear face but FACE upper boundary is jagged at hairline; review with varied skin tones.",
+    "visitor_composite_test": "PENDING"
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "id": "N09",
+  "base": "character_n09",
+  "concept": "Small-town shopper stopping at a convenience store",
+  "presentation": "feminine",
+  "age": 53,
+  "height_meters": 1.65,
+  "body": "average",
+  "hair": "short chestnut bob tucked behind the ears, forehead visible",
+  "clothing": "pale blue casual winter coat open over an ivory sweatshirt, light beige pants, tan low boots",
+  "palette": [
+    "pale blue",
+    "ivory",
+    "light beige",
+    "tan"
+  ],
+  "nevada_fit": "Simple coat and sweatshirt fit everyday local errands in winter.",
+  "neutral_face": "Soft middle-aged face with ordinary width, light cheek definition, rounded jaw, neutral mouth and brows.",
+  "turnaround": {
+    "front": "assets/characters/character_n09/turnaround/front.png",
+    "side": "assets/characters/character_n09/turnaround/side.png",
+    "back": "assets/characters/character_n09/turnaround/back.png"
+  },
+  "prompt": "assets/characters/character_n09/turnaround/prompt.txt",
+  "meshy": {
+    "model": "meshy-7.1",
+    "pose_mode": "t-pose",
+    "target_polycount": 50000,
+    "action_ids": [
+      0,
+      613,
+      64
+    ],
+    "stages": [
+      {
+        "stage": "generation",
+        "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+        "task_id": "01a13418-1992-7729-a99d-55524cdd0723",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n09/character_n09_generated.glb",
+        "bytes": 5307516,
+        "sha256": "7d9b42427c40e281fe01cd10f45bd5187adc7f711add352a11827dca7d3323a8",
+        "consumed_credits": 30
+      },
+      {
+        "stage": "remesh",
+        "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+        "task_id": "01a13423-6805-7318-9bba-a42f745b51e3",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n09/character_n09_optimized.glb",
+        "bytes": 12798012,
+        "sha256": "0024a54e9b9f933e93b4f6e354f82c6da47f2fcd03522483531102fd1e775909",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "rigging",
+        "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+        "task_id": "01a13427-ea67-775a-8f7f-df89e800ab8c",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n09/character_n09_rigged.glb",
+        "bytes": 14653012,
+        "sha256": "ecbf28a3e644b8b8384a2d3cf3d43933951d4c2533b9d44712a5283d372b07dc",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "animations",
+        "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+        "task_id": "01a1342d-0db9-76d1-82eb-622bf722a27f",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n09/character_n09_animated.glb",
+        "bytes": 8700820,
+        "sha256": "146947b21b917c214adc5c216f58610b583579a7d0054d5d51bcb90a38c2dade",
+        "consumed_credits": 9
+      }
+    ],
+    "total_consumed_credits": 49
+  },
+  "semantic": {
+    "final_glb": "public/models/semantic/character_n09_face_ready.glb",
+    "package_alias": "assets/characters/character_n09/face_ready.glb",
+    "final_sha256": "e1d69392d954bbd74746a2c3973d44bf1e44333c9d3d6a0fe816f35358b3cb84",
+    "face_polygon_count": 857,
+    "triangle_count": 51076,
+    "bone_count": 24,
+    "clips": [
+      "All_Night_Dance",
+      "Casual_Walk_inplace",
+      "Idle"
+    ],
+    "preservation_passed": true,
+    "face_contract_passed": true,
+    "gltf_errors": 0,
+    "gltf_warnings": 1,
+    "diagnostic_images": [
+      "public/debug/semantic/character_n09/diagnostic-front.png",
+      "public/debug/semantic/character_n09/diagnostic-left.png",
+      "public/debug/semantic/character_n09/diagnostic-right.png"
+    ],
+    "mapping": "public/debug/semantic/character_n09/character_n09_face_mapping.json",
+    "preservation_validation": "public/debug/semantic/character_n09/preservation-validation.json",
+    "contract_validation": "public/debug/semantic/character_n09/contract-validation.json",
+    "gltf_validation": "public/debug/semantic/character_n09/gltf-validation.json"
+  },
+  "review": {
+    "status": "QA_READY",
+    "note": "Side hair approaches temple; review hairline and mature facial cues.",
+    "visitor_composite_test": "PENDING"
+  }
+}

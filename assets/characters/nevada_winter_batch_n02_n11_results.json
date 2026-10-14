@@ -1,0 +1,1111 @@
+{
+  "batch_id": "nevada_winter_n02_n11",
+  "character_count": 10,
+  "masculine_count": 5,
+  "feminine_count": 5,
+  "meshy_generation_submissions": 10,
+  "all_four_meshy_stages_succeeded": true,
+  "all_turnaround_images_present": true,
+  "all_face_ready_glbs_present": true,
+  "preservation_pass_count": 10,
+  "face_contract_pass_count": 9,
+  "gltf_zero_error_count": 10,
+  "qa_ready_count": 8,
+  "hold_ids": [
+    "N02",
+    "N11"
+  ],
+  "total_consumed_credits": 490,
+  "characters": [
+    {
+      "id": "N02",
+      "base": "character_n02",
+      "concept": "Young road-trip passenger stopping for snacks at a highway convenience store",
+      "presentation": "masculine",
+      "age": 24,
+      "height_meters": 1.76,
+      "body": "slim average",
+      "hair": "short softly wavy brown hair, clear forehead",
+      "clothing": "pale teal lightweight winter shell open over an ivory hoodie, sand chinos, cream sneakers",
+      "palette": [
+        "pale teal",
+        "ivory",
+        "sand",
+        "cream"
+      ],
+      "nevada_fit": "Light layers suit a sunny, cold roadside stop without implying a profession.",
+      "neutral_face": "Average oval face, soft jaw, restrained brow and nose, relaxed closed mouth; no beard or eyewear.",
+      "turnaround": {
+        "front": "assets/characters/character_n02/turnaround/front.png",
+        "side": "assets/characters/character_n02/turnaround/side.png",
+        "back": "assets/characters/character_n02/turnaround/back.png"
+      },
+      "prompt": "assets/characters/character_n02/turnaround/prompt.txt",
+      "meshy": {
+        "model": "meshy-7.1",
+        "pose_mode": "t-pose",
+        "target_polycount": 50000,
+        "action_ids": [
+          0,
+          613,
+          64
+        ],
+        "stages": [
+          {
+            "stage": "generation",
+            "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+            "task_id": "01a13406-9102-75d7-8207-e31302100cf2",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n02/character_n02_generated.glb",
+            "bytes": 5426128,
+            "sha256": "25cd055a71b87ea31c8b6ae8223751671ac1ecef77103a78b7cbfcc61425a379",
+            "consumed_credits": 30
+          },
+          {
+            "stage": "remesh",
+            "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+            "task_id": "01a1340b-b226-7455-a930-660417c8a228",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n02/character_n02_optimized.glb",
+            "bytes": 12429912,
+            "sha256": "5e2fcc5aad4945eb6eb0ea2b3d6fa15c278b88bfc174948f3285cbd0f98c8c95",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "rigging",
+            "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+            "task_id": "01a1340e-9f21-7016-aeb5-4b51bbcebea1",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n02/character_n02_rigged.glb",
+            "bytes": 14357364,
+            "sha256": "c989a4c6c2b76d8a60e1135edc81843d90c4da74538e7af24186ab041a46efb9",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "animations",
+            "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+            "task_id": "01a13411-e9f7-7053-a437-00d6407b227f",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n02/character_n02_animated.glb",
+            "bytes": 8731000,
+            "sha256": "bf5d3aa13cf202f310d735d40a5f60983ab6ffb355f536157bc572aef8c68fdf",
+            "consumed_credits": 9
+          }
+        ],
+        "total_consumed_credits": 49
+      },
+      "semantic": {
+        "final_glb": "public/models/semantic/character_n02_face_ready.glb",
+        "package_alias": null,
+        "final_sha256": "76587d0c08b7792e774c25fc33b21f51c10882318150ea9bd39991fbde1ee393",
+        "face_polygon_count": 555,
+        "triangle_count": 50737,
+        "bone_count": 24,
+        "clips": [
+          "All_Night_Dance",
+          "Casual_Walk_inplace",
+          "Idle"
+        ],
+        "preservation_passed": true,
+        "face_contract_passed": true,
+        "gltf_errors": 0,
+        "gltf_warnings": 1,
+        "diagnostic_images": [
+          "public/debug/semantic/character_n02/diagnostic-front.png",
+          "public/debug/semantic/character_n02/diagnostic-left.png",
+          "public/debug/semantic/character_n02/diagnostic-right.png"
+        ],
+        "mapping": "public/debug/semantic/character_n02/character_n02_face_mapping.json",
+        "preservation_validation": "public/debug/semantic/character_n02/preservation-validation.json",
+        "contract_validation": "public/debug/semantic/character_n02/contract-validation.json",
+        "gltf_validation": "public/debug/semantic/character_n02/gltf-validation.json"
+      },
+      "review": {
+        "status": "HOLD",
+        "note": "3D hair strands cover the left brow, eye, and nose; visitor texture would remain occluded.",
+        "visitor_composite_test": "PENDING"
+      }
+    },
+    {
+      "id": "N03",
+      "base": "character_n03",
+      "concept": "Diner visitor on a winter drive between Nevada towns",
+      "presentation": "feminine",
+      "age": 27,
+      "height_meters": 1.66,
+      "body": "average",
+      "hair": "shoulder-length dark auburn hair tucked behind both ears, face uncovered",
+      "clothing": "sky-blue short puffer jacket open over a warm white sweater, light denim jeans, cream ankle boots",
+      "palette": [
+        "sky blue",
+        "warm white",
+        "light denim",
+        "cream"
+      ],
+      "nevada_fit": "Practical puffer and denim read as everyday winter travel wear.",
+      "neutral_face": "Moderate face width and length, rounded jaw, modest cheeks and lips, neutral expression; no facial accessories.",
+      "turnaround": {
+        "front": "assets/characters/character_n03/turnaround/front.png",
+        "side": "assets/characters/character_n03/turnaround/side.png",
+        "back": "assets/characters/character_n03/turnaround/back.png"
+      },
+      "prompt": "assets/characters/character_n03/turnaround/prompt.txt",
+      "meshy": {
+        "model": "meshy-7.1",
+        "pose_mode": "t-pose",
+        "target_polycount": 50000,
+        "action_ids": [
+          0,
+          613,
+          64
+        ],
+        "stages": [
+          {
+            "stage": "generation",
+            "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+            "task_id": "01a1340c-6c37-77b3-98cb-f108fc91a868",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n03/character_n03_generated.glb",
+            "bytes": 5293464,
+            "sha256": "f74f33834c7885777dfe6666d670aad065915015400ae8c3218b81a73adea02d",
+            "consumed_credits": 30
+          },
+          {
+            "stage": "remesh",
+            "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+            "task_id": "01a13412-9287-74b1-b714-70068cd3e556",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n03/character_n03_optimized.glb",
+            "bytes": 12673836,
+            "sha256": "38d607912f4727737dee0035c614586fdf28911e919c765565f3d2b7a0ecdd3c",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "rigging",
+            "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+            "task_id": "01a13422-08f0-748f-a6a5-35f1568aeb9c",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n03/character_n03_rigged.glb",
+            "bytes": 14507596,
+            "sha256": "9b11ec41a4e0fec2518bac2495551fd5584ec8c182f2a810d588236815d94835",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "animations",
+            "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+            "task_id": "01a1342b-fd3c-7607-8aa5-6adf8f569d5a",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n03/character_n03_animated.glb",
+            "bytes": 8583876,
+            "sha256": "f0d1f09978229aa3872927ca65da0ef910ea7dd1162d5dfe13fd7f8001d5e7bc",
+            "consumed_credits": 9
+          }
+        ],
+        "total_consumed_credits": 49
+      },
+      "semantic": {
+        "final_glb": "public/models/semantic/character_n03_face_ready.glb",
+        "package_alias": "assets/characters/character_n03/face_ready.glb",
+        "final_sha256": "29da4b79b05a5f0603a4f5ae6110872189d6ed13307e36348669de2a63fc4b89",
+        "face_polygon_count": 816,
+        "triangle_count": 51310,
+        "bone_count": 24,
+        "clips": [
+          "All_Night_Dance",
+          "Casual_Walk_inplace",
+          "Idle"
+        ],
+        "preservation_passed": true,
+        "face_contract_passed": true,
+        "gltf_errors": 0,
+        "gltf_warnings": 1,
+        "diagnostic_images": [
+          "public/debug/semantic/character_n03/diagnostic-front.png",
+          "public/debug/semantic/character_n03/diagnostic-left.png",
+          "public/debug/semantic/character_n03/diagnostic-right.png"
+        ],
+        "mapping": "public/debug/semantic/character_n03/character_n03_face_mapping.json",
+        "preservation_validation": "public/debug/semantic/character_n03/preservation-validation.json",
+        "contract_validation": "public/debug/semantic/character_n03/contract-validation.json",
+        "gltf_validation": "public/debug/semantic/character_n03/gltf-validation.json"
+      },
+      "review": {
+        "status": "QA_READY",
+        "note": "Face is open and neutral; hair stays outside the projected face.",
+        "visitor_composite_test": "PENDING"
+      }
+    },
+    {
+      "id": "N04",
+      "base": "character_n04",
+      "concept": "Local resident picking up coffee at a gas-station forecourt",
+      "presentation": "masculine",
+      "age": 33,
+      "height_meters": 1.82,
+      "body": "slightly broad but realistic",
+      "hair": "short dark hair combed away from forehead",
+      "clothing": "light khaki canvas jacket open over a coral henley, faded blue straight jeans, tan casual boots",
+      "palette": [
+        "light khaki",
+        "coral",
+        "faded blue",
+        "tan"
+      ],
+      "nevada_fit": "Everyday canvas outerwear works for dry, sunny winter errands without looking like a uniform.",
+      "neutral_face": "Ordinary proportional features, soft lower face, unobtrusive cheekbones and nose, clean-shaven.",
+      "turnaround": {
+        "front": "assets/characters/character_n04/turnaround/front.png",
+        "side": "assets/characters/character_n04/turnaround/side.png",
+        "back": "assets/characters/character_n04/turnaround/back.png"
+      },
+      "prompt": "assets/characters/character_n04/turnaround/prompt.txt",
+      "meshy": {
+        "model": "meshy-7.1",
+        "pose_mode": "t-pose",
+        "target_polycount": 50000,
+        "action_ids": [
+          0,
+          613,
+          64
+        ],
+        "stages": [
+          {
+            "stage": "generation",
+            "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+            "task_id": "01a1340c-810a-77d1-a7d6-1d62891668a6",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n04/character_n04_generated.glb",
+            "bytes": 5034660,
+            "sha256": "081e9d0962aa74f0792913b08b88013ab0fd61fd79ee5c1d2832da144c718baf",
+            "consumed_credits": 30
+          },
+          {
+            "stage": "remesh",
+            "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+            "task_id": "01a13412-a272-7413-a455-bf9b605b8dfc",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n04/character_n04_optimized.glb",
+            "bytes": 12433364,
+            "sha256": "cd961d62cf04f7c208fe8c63da903c9b91ecc78211e18d95aab42c40e413ad0a",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "rigging",
+            "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+            "task_id": "01a13422-2444-72c5-a520-85f742752826",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n04/character_n04_rigged.glb",
+            "bytes": 14172088,
+            "sha256": "5b06ddb1143b6b5ffaee61eb9f6524ecf3050d29ddfd442660932f275938e14d",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "animations",
+            "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+            "task_id": "01a1342c-131e-7771-b70a-2d0b30ad0d8c",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n04/character_n04_animated.glb",
+            "bytes": 8523272,
+            "sha256": "996be4aafcdffff75a334f6a1f1845456a622cde77fdeb9229aebf18d4f788e9",
+            "consumed_credits": 9
+          }
+        ],
+        "total_consumed_credits": 49
+      },
+      "semantic": {
+        "final_glb": "public/models/semantic/character_n04_face_ready.glb",
+        "package_alias": "assets/characters/character_n04/face_ready.glb",
+        "final_sha256": "3cc16f750792e35ce5b6d6700a5c41f4742637902e931ac38bef948a4d1f0976",
+        "face_polygon_count": 912,
+        "triangle_count": 51186,
+        "bone_count": 24,
+        "clips": [
+          "All_Night_Dance",
+          "Casual_Walk_inplace",
+          "Idle"
+        ],
+        "preservation_passed": true,
+        "face_contract_passed": true,
+        "gltf_errors": 0,
+        "gltf_warnings": 1,
+        "diagnostic_images": [
+          "public/debug/semantic/character_n04/diagnostic-front.png",
+          "public/debug/semantic/character_n04/diagnostic-left.png",
+          "public/debug/semantic/character_n04/diagnostic-right.png"
+        ],
+        "mapping": "public/debug/semantic/character_n04/character_n04_face_mapping.json",
+        "preservation_validation": "public/debug/semantic/character_n04/preservation-validation.json",
+        "contract_validation": "public/debug/semantic/character_n04/contract-validation.json",
+        "gltf_validation": "public/debug/semantic/character_n04/gltf-validation.json"
+      },
+      "review": {
+        "status": "QA_READY",
+        "note": "Face is open; check subtle source facial hair and brow in visitor composite.",
+        "visitor_composite_test": "PENDING"
+      }
+    },
+    {
+      "id": "N05",
+      "base": "character_n05",
+      "concept": "Suburban-edge motel guest heading out for breakfast",
+      "presentation": "feminine",
+      "age": 36,
+      "height_meters": 1.69,
+      "body": "slim average",
+      "hair": "dark hair in a low loose bun with forehead and ears visible",
+      "clothing": "light sage quilted vest over an ivory long-sleeve knit, beige casual trousers, light tan sneakers",
+      "palette": [
+        "light sage",
+        "ivory",
+        "beige",
+        "tan"
+      ],
+      "nevada_fit": "A vest and knit layer suit cool mornings and warmer desert afternoons.",
+      "neutral_face": "Average soft oval structure, gentle jaw, medium lips and nose, relaxed expression; no bangs or glasses.",
+      "turnaround": {
+        "front": "assets/characters/character_n05/turnaround/front.png",
+        "side": "assets/characters/character_n05/turnaround/side.png",
+        "back": "assets/characters/character_n05/turnaround/back.png"
+      },
+      "prompt": "assets/characters/character_n05/turnaround/prompt.txt",
+      "meshy": {
+        "model": "meshy-7.1",
+        "pose_mode": "t-pose",
+        "target_polycount": 50000,
+        "action_ids": [
+          0,
+          613,
+          64
+        ],
+        "stages": [
+          {
+            "stage": "generation",
+            "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+            "task_id": "01a1340c-9386-7643-bb29-6126d4bd1507",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n05/character_n05_generated.glb",
+            "bytes": 5408804,
+            "sha256": "75995d5c68ac6f1e3907ce8d19176a2647b14d634fe92ea9531750a3da01d037",
+            "consumed_credits": 30
+          },
+          {
+            "stage": "remesh",
+            "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+            "task_id": "01a13412-b764-760e-9b58-23cbe4e5736f",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n05/character_n05_optimized.glb",
+            "bytes": 12291960,
+            "sha256": "468cb9044f4d50375a5f91ebb984aa63ec94677a80423dccd8e6351ad6655df2",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "rigging",
+            "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+            "task_id": "01a13422-3bfd-752a-b0a1-10870ca86d81",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n05/character_n05_rigged.glb",
+            "bytes": 14100776,
+            "sha256": "38ae0c6ac40ef767c6a68cee3829e255f70f4b1feeefef90a1960513065aa937",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "animations",
+            "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+            "task_id": "01a1342c-2186-77ae-b054-49c0e197009b",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n05/character_n05_animated.glb",
+            "bytes": 8333472,
+            "sha256": "f90f6a7af59347d693ecda32db9d197f5e1c291412b95d6fc7030b351aced033",
+            "consumed_credits": 9
+          }
+        ],
+        "total_consumed_credits": 49
+      },
+      "semantic": {
+        "final_glb": "public/models/semantic/character_n05_face_ready.glb",
+        "package_alias": "assets/characters/character_n05/face_ready.glb",
+        "final_sha256": "f3e3f35d2524e4f4e5b4b6316bba7e3aef573d89c70d02905fec5b500ebca75f",
+        "face_polygon_count": 440,
+        "triangle_count": 46944,
+        "bone_count": 24,
+        "clips": [
+          "All_Night_Dance",
+          "Casual_Walk_inplace",
+          "Idle"
+        ],
+        "preservation_passed": true,
+        "face_contract_passed": true,
+        "gltf_errors": 0,
+        "gltf_warnings": 1,
+        "diagnostic_images": [
+          "public/debug/semantic/character_n05/diagnostic-front.png",
+          "public/debug/semantic/character_n05/diagnostic-left.png",
+          "public/debug/semantic/character_n05/diagnostic-right.png"
+        ],
+        "mapping": "public/debug/semantic/character_n05/character_n05_face_mapping.json",
+        "preservation_validation": "public/debug/semantic/character_n05/preservation-validation.json",
+        "contract_validation": "public/debug/semantic/character_n05/contract-validation.json",
+        "gltf_validation": "public/debug/semantic/character_n05/gltf-validation.json"
+      },
+      "review": {
+        "status": "QA_READY",
+        "note": "Clear forehead and face; source face has a slight closed-mouth smile.",
+        "visitor_composite_test": "PENDING"
+      }
+    },
+    {
+      "id": "N06",
+      "base": "character_n06",
+      "concept": "Rest-stop traveler stretching his legs after a drive",
+      "presentation": "masculine",
+      "age": 42,
+      "height_meters": 1.78,
+      "body": "average",
+      "hair": "short salt-and-pepper hair, no forehead fringe",
+      "clothing": "sand fleece zip jacket open over a pale blue sweatshirt, light olive chinos, warm tan walking shoes",
+      "palette": [
+        "sand",
+        "pale blue",
+        "light olive",
+        "tan"
+      ],
+      "nevada_fit": "Comfortable fleece and walking shoes are believable road-trip winter layers.",
+      "neutral_face": "Subtle age cues with smooth average bone structure, unremarkable jaw and brow, clean-shaven neutral face.",
+      "turnaround": {
+        "front": "assets/characters/character_n06/turnaround/front.png",
+        "side": "assets/characters/character_n06/turnaround/side.png",
+        "back": "assets/characters/character_n06/turnaround/back.png"
+      },
+      "prompt": "assets/characters/character_n06/turnaround/prompt.txt",
+      "meshy": {
+        "model": "meshy-7.1",
+        "pose_mode": "t-pose",
+        "target_polycount": 50000,
+        "action_ids": [
+          0,
+          613,
+          64
+        ],
+        "stages": [
+          {
+            "stage": "generation",
+            "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+            "task_id": "01a13415-01f2-743d-9d7a-d9827e6bfed5",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n06/character_n06_generated.glb",
+            "bytes": 4925804,
+            "sha256": "df73f303aad2e78b0921495f9ed5bba813131f8751bd50dea6269b73148234ae",
+            "consumed_credits": 30
+          },
+          {
+            "stage": "remesh",
+            "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+            "task_id": "01a13422-a680-7038-9093-f5ee78a4216c",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n06/character_n06_optimized.glb",
+            "bytes": 12011188,
+            "sha256": "210f08c029b0d479d44a1d23179b28428a97d71ddfecb4d12dcb4f1f883f3f07",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "rigging",
+            "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+            "task_id": "01a13427-8b52-7572-8bdd-657e58236d98",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n06/character_n06_rigged.glb",
+            "bytes": 13783428,
+            "sha256": "f90f75c58e252c453323096f5c908a17ea74332eec966a64f4a997ab185195a0",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "animations",
+            "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+            "task_id": "01a1342c-dc47-76f2-8908-2fb43980de06",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n06/character_n06_animated.glb",
+            "bytes": 8370380,
+            "sha256": "5e5e2a895fb1d6ec0f74e7f5bfdabb3e15eb6b4eccfc7501879410c5469e84d0",
+            "consumed_credits": 9
+          }
+        ],
+        "total_consumed_credits": 49
+      },
+      "semantic": {
+        "final_glb": "public/models/semantic/character_n06_face_ready.glb",
+        "package_alias": "assets/characters/character_n06/face_ready.glb",
+        "final_sha256": "60f4a01837f31d96e9088e92ef6231b9696c25f67be457e0047c4ae22ea36ed1",
+        "face_polygon_count": 759,
+        "triangle_count": 51403,
+        "bone_count": 24,
+        "clips": [
+          "All_Night_Dance",
+          "Casual_Walk_inplace",
+          "Idle"
+        ],
+        "preservation_passed": true,
+        "face_contract_passed": true,
+        "gltf_errors": 0,
+        "gltf_warnings": 1,
+        "diagnostic_images": [
+          "public/debug/semantic/character_n06/diagnostic-front.png",
+          "public/debug/semantic/character_n06/diagnostic-left.png",
+          "public/debug/semantic/character_n06/diagnostic-right.png"
+        ],
+        "mapping": "public/debug/semantic/character_n06/character_n06_face_mapping.json",
+        "preservation_validation": "public/debug/semantic/character_n06/preservation-validation.json",
+        "contract_validation": "public/debug/semantic/character_n06/contract-validation.json",
+        "gltf_validation": "public/debug/semantic/character_n06/gltf-validation.json"
+      },
+      "review": {
+        "status": "QA_READY",
+        "note": "Clear face; age cues around the eyes should be checked in a visitor composite.",
+        "visitor_composite_test": "PENDING"
+      }
+    },
+    {
+      "id": "N07",
+      "base": "character_n07",
+      "concept": "Local diner customer on a bright cold morning",
+      "presentation": "feminine",
+      "age": 44,
+      "height_meters": 1.63,
+      "body": "slightly stocky, natural proportions",
+      "hair": "chestnut wavy hair gathered behind the neck, no face-covering strands",
+      "clothing": "soft coral padded jacket open over a cream crewneck, light warm-gray jeans, taupe ankle boots",
+      "palette": [
+        "soft coral",
+        "cream",
+        "light warm gray",
+        "taupe"
+      ],
+      "nevada_fit": "Warm but casual clothing suits short winter trips around a small town.",
+      "neutral_face": "Moderate facial proportions, gently rounded jaw, soft cheeks, relaxed mouth; no glasses or earrings.",
+      "turnaround": {
+        "front": "assets/characters/character_n07/turnaround/front.png",
+        "side": "assets/characters/character_n07/turnaround/side.png",
+        "back": "assets/characters/character_n07/turnaround/back.png"
+      },
+      "prompt": "assets/characters/character_n07/turnaround/prompt.txt",
+      "meshy": {
+        "model": "meshy-7.1",
+        "pose_mode": "t-pose",
+        "target_polycount": 50000,
+        "action_ids": [
+          0,
+          613,
+          64
+        ],
+        "stages": [
+          {
+            "stage": "generation",
+            "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+            "task_id": "01a13415-148c-7772-b7e3-e4dd1839d853",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n07/character_n07_generated.glb",
+            "bytes": 5488308,
+            "sha256": "5532445d630f2b1327937461dd4df632b52d6aa11ccb305a437d8ad2992674b6",
+            "consumed_credits": 30
+          },
+          {
+            "stage": "remesh",
+            "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+            "task_id": "01a13422-b37c-7318-b8f2-bc47e87a8f97",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n07/character_n07_optimized.glb",
+            "bytes": 12967652,
+            "sha256": "7a84b520fcd9625efcc518c26f73be54782739453547202ea2d981ff08e35ac2",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "rigging",
+            "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+            "task_id": "01a13427-acd3-77ba-942e-3ded327daf23",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n07/character_n07_rigged.glb",
+            "bytes": 14977464,
+            "sha256": "b66b53964e57b9dac0f732a1f95c82cf933ed37b10ad40c125df37dcc0f288d9",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "animations",
+            "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+            "task_id": "01a1342c-e8aa-7284-902e-502626a2502a",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n07/character_n07_animated.glb",
+            "bytes": 9048852,
+            "sha256": "924da591eda3f839a51aca22d43b580abc9808f335a39f00c8e57a1644072bc2",
+            "consumed_credits": 9
+          }
+        ],
+        "total_consumed_credits": 49
+      },
+      "semantic": {
+        "final_glb": "public/models/semantic/character_n07_face_ready.glb",
+        "package_alias": "assets/characters/character_n07/face_ready.glb",
+        "final_sha256": "b68af3ab344e366e3ff60967d90bee54dd608c18e64b0fa23107ba5fd02dd270",
+        "face_polygon_count": 689,
+        "triangle_count": 51784,
+        "bone_count": 24,
+        "clips": [
+          "All_Night_Dance",
+          "Casual_Walk_inplace",
+          "Idle"
+        ],
+        "preservation_passed": true,
+        "face_contract_passed": true,
+        "gltf_errors": 0,
+        "gltf_warnings": 1,
+        "diagnostic_images": [
+          "public/debug/semantic/character_n07/diagnostic-front.png",
+          "public/debug/semantic/character_n07/diagnostic-left.png",
+          "public/debug/semantic/character_n07/diagnostic-right.png"
+        ],
+        "mapping": "public/debug/semantic/character_n07/character_n07_face_mapping.json",
+        "preservation_validation": "public/debug/semantic/character_n07/preservation-validation.json",
+        "contract_validation": "public/debug/semantic/character_n07/contract-validation.json",
+        "gltf_validation": "public/debug/semantic/character_n07/gltf-validation.json"
+      },
+      "review": {
+        "status": "QA_READY",
+        "note": "Clear face and separated hair; suitable first composite QA candidate.",
+        "visitor_composite_test": "PENDING"
+      }
+    },
+    {
+      "id": "N08",
+      "base": "character_n08",
+      "concept": "Parking-lot visitor outside a roadside motel",
+      "presentation": "masculine",
+      "age": 51,
+      "height_meters": 1.74,
+      "body": "slightly stocky",
+      "hair": "short neat gray hair, clear hairline and face",
+      "clothing": "light denim jacket open over a muted orange crewneck sweater, cream chinos, sand boots",
+      "palette": [
+        "light denim",
+        "muted orange",
+        "cream",
+        "sand"
+      ],
+      "nevada_fit": "Denim and a sweater are ordinary dry-weather winter clothes, not occupational attire.",
+      "neutral_face": "Age shown mainly through hair; face keeps average proportions, soft jaw, modest nose and cheeks, no beard.",
+      "turnaround": {
+        "front": "assets/characters/character_n08/turnaround/front.png",
+        "side": "assets/characters/character_n08/turnaround/side.png",
+        "back": "assets/characters/character_n08/turnaround/back.png"
+      },
+      "prompt": "assets/characters/character_n08/turnaround/prompt.txt",
+      "meshy": {
+        "model": "meshy-7.1",
+        "pose_mode": "t-pose",
+        "target_polycount": 50000,
+        "action_ids": [
+          0,
+          613,
+          64
+        ],
+        "stages": [
+          {
+            "stage": "generation",
+            "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+            "task_id": "01a13415-2c04-7340-b981-362b29f68de3",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n08/character_n08_generated.glb",
+            "bytes": 5558248,
+            "sha256": "ebab59cf29e75013079d29d9a79bcff7b11616fd689ee4d980f80c1eb50f11fd",
+            "consumed_credits": 30
+          },
+          {
+            "stage": "remesh",
+            "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+            "task_id": "01a13422-c085-7530-843a-1c032a1a74f2",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n08/character_n08_optimized.glb",
+            "bytes": 13039432,
+            "sha256": "899c82abef57b269d0dbd2c627769766ce72a90c1a3ad766bb4cbbeba5f841eb",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "rigging",
+            "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+            "task_id": "01a13427-c7fe-767d-bad0-ce624cc166f6",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n08/character_n08_rigged.glb",
+            "bytes": 14891848,
+            "sha256": "2601e052ec129996cea939a9d4123c363e84f895b2fbff6b7e7c04bb09004444",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "animations",
+            "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+            "task_id": "01a1342c-ff35-7524-ab8f-49f56de45618",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n08/character_n08_animated.glb",
+            "bytes": 9067740,
+            "sha256": "2546d7e6942ae78febd6596829f3b67269a311307fa1a9ecd4bcb7f0a9dd5897",
+            "consumed_credits": 9
+          }
+        ],
+        "total_consumed_credits": 49
+      },
+      "semantic": {
+        "final_glb": "public/models/semantic/character_n08_face_ready.glb",
+        "package_alias": "assets/characters/character_n08/face_ready.glb",
+        "final_sha256": "12b150f3cabe1436f950feb17bb0f39b9afc03536a047024042d1b3cf3a7b67c",
+        "face_polygon_count": 717,
+        "triangle_count": 51128,
+        "bone_count": 24,
+        "clips": [
+          "All_Night_Dance",
+          "Casual_Walk_inplace",
+          "Idle"
+        ],
+        "preservation_passed": true,
+        "face_contract_passed": true,
+        "gltf_errors": 0,
+        "gltf_warnings": 1,
+        "diagnostic_images": [
+          "public/debug/semantic/character_n08/diagnostic-front.png",
+          "public/debug/semantic/character_n08/diagnostic-left.png",
+          "public/debug/semantic/character_n08/diagnostic-right.png"
+        ],
+        "mapping": "public/debug/semantic/character_n08/character_n08_face_mapping.json",
+        "preservation_validation": "public/debug/semantic/character_n08/preservation-validation.json",
+        "contract_validation": "public/debug/semantic/character_n08/contract-validation.json",
+        "gltf_validation": "public/debug/semantic/character_n08/gltf-validation.json"
+      },
+      "review": {
+        "status": "QA_READY",
+        "note": "Gray hair has an irregular edge near the upper forehead; review the blend at the hairline.",
+        "visitor_composite_test": "PENDING"
+      }
+    },
+    {
+      "id": "N09",
+      "base": "character_n09",
+      "concept": "Small-town shopper stopping at a convenience store",
+      "presentation": "feminine",
+      "age": 53,
+      "height_meters": 1.65,
+      "body": "average",
+      "hair": "short chestnut bob tucked behind the ears, forehead visible",
+      "clothing": "pale blue casual winter coat open over an ivory sweatshirt, light beige pants, tan low boots",
+      "palette": [
+        "pale blue",
+        "ivory",
+        "light beige",
+        "tan"
+      ],
+      "nevada_fit": "Simple coat and sweatshirt fit everyday local errands in winter.",
+      "neutral_face": "Soft middle-aged face with ordinary width, light cheek definition, rounded jaw, neutral mouth and brows.",
+      "turnaround": {
+        "front": "assets/characters/character_n09/turnaround/front.png",
+        "side": "assets/characters/character_n09/turnaround/side.png",
+        "back": "assets/characters/character_n09/turnaround/back.png"
+      },
+      "prompt": "assets/characters/character_n09/turnaround/prompt.txt",
+      "meshy": {
+        "model": "meshy-7.1",
+        "pose_mode": "t-pose",
+        "target_polycount": 50000,
+        "action_ids": [
+          0,
+          613,
+          64
+        ],
+        "stages": [
+          {
+            "stage": "generation",
+            "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+            "task_id": "01a13418-1992-7729-a99d-55524cdd0723",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n09/character_n09_generated.glb",
+            "bytes": 5307516,
+            "sha256": "7d9b42427c40e281fe01cd10f45bd5187adc7f711add352a11827dca7d3323a8",
+            "consumed_credits": 30
+          },
+          {
+            "stage": "remesh",
+            "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+            "task_id": "01a13423-6805-7318-9bba-a42f745b51e3",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n09/character_n09_optimized.glb",
+            "bytes": 12798012,
+            "sha256": "0024a54e9b9f933e93b4f6e354f82c6da47f2fcd03522483531102fd1e775909",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "rigging",
+            "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+            "task_id": "01a13427-ea67-775a-8f7f-df89e800ab8c",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n09/character_n09_rigged.glb",
+            "bytes": 14653012,
+            "sha256": "ecbf28a3e644b8b8384a2d3cf3d43933951d4c2533b9d44712a5283d372b07dc",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "animations",
+            "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+            "task_id": "01a1342d-0db9-76d1-82eb-622bf722a27f",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n09/character_n09_animated.glb",
+            "bytes": 8700820,
+            "sha256": "146947b21b917c214adc5c216f58610b583579a7d0054d5d51bcb90a38c2dade",
+            "consumed_credits": 9
+          }
+        ],
+        "total_consumed_credits": 49
+      },
+      "semantic": {
+        "final_glb": "public/models/semantic/character_n09_face_ready.glb",
+        "package_alias": "assets/characters/character_n09/face_ready.glb",
+        "final_sha256": "e1d69392d954bbd74746a2c3973d44bf1e44333c9d3d6a0fe816f35358b3cb84",
+        "face_polygon_count": 857,
+        "triangle_count": 51076,
+        "bone_count": 24,
+        "clips": [
+          "All_Night_Dance",
+          "Casual_Walk_inplace",
+          "Idle"
+        ],
+        "preservation_passed": true,
+        "face_contract_passed": true,
+        "gltf_errors": 0,
+        "gltf_warnings": 1,
+        "diagnostic_images": [
+          "public/debug/semantic/character_n09/diagnostic-front.png",
+          "public/debug/semantic/character_n09/diagnostic-left.png",
+          "public/debug/semantic/character_n09/diagnostic-right.png"
+        ],
+        "mapping": "public/debug/semantic/character_n09/character_n09_face_mapping.json",
+        "preservation_validation": "public/debug/semantic/character_n09/preservation-validation.json",
+        "contract_validation": "public/debug/semantic/character_n09/contract-validation.json",
+        "gltf_validation": "public/debug/semantic/character_n09/gltf-validation.json"
+      },
+      "review": {
+        "status": "QA_READY",
+        "note": "Side hair approaches temple; review hairline and mature facial cues.",
+        "visitor_composite_test": "PENDING"
+      }
+    },
+    {
+      "id": "N10",
+      "base": "character_n10",
+      "concept": "Driver taking a quick break at a highway service area",
+      "presentation": "masculine",
+      "age": 29,
+      "height_meters": 1.8,
+      "body": "average athletic, not exaggerated",
+      "hair": "close-cropped black hair with an unobstructed forehead",
+      "clothing": "soft red quilted vest over a cream hoodie, washed light-blue jeans, off-white sneakers",
+      "palette": [
+        "soft red",
+        "cream",
+        "washed blue",
+        "off-white"
+      ],
+      "nevada_fit": "A vest and hoodie give flexible warmth for a sunny roadside stop.",
+      "neutral_face": "Balanced average face, gently rounded chin, moderate features, clean-shaven and relaxed.",
+      "turnaround": {
+        "front": "assets/characters/character_n10/turnaround/front.png",
+        "side": "assets/characters/character_n10/turnaround/side.png",
+        "back": "assets/characters/character_n10/turnaround/back.png"
+      },
+      "prompt": "assets/characters/character_n10/turnaround/prompt.txt",
+      "meshy": {
+        "model": "meshy-7.1",
+        "pose_mode": "t-pose",
+        "target_polycount": 50000,
+        "action_ids": [
+          0,
+          613,
+          64
+        ],
+        "stages": [
+          {
+            "stage": "generation",
+            "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+            "task_id": "01a13418-2ef3-72e0-b95a-8a185805eeb9",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n10/character_n10_generated.glb",
+            "bytes": 5153976,
+            "sha256": "e72c1fb76d574ca88b74f8fddf3f4907866c959ac0825710555d95fe64b00fc2",
+            "consumed_credits": 30
+          },
+          {
+            "stage": "remesh",
+            "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+            "task_id": "01a13423-7099-72fb-8e3b-5781e9f28d2c",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n10/character_n10_optimized.glb",
+            "bytes": 12625524,
+            "sha256": "dcd4452f03bf0144b76d5e1065d9a2545cb055c53ee70f3212b242132f809ad9",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "rigging",
+            "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+            "task_id": "01a13428-122b-7611-84cf-b24af053c53e",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n10/character_n10_rigged.glb",
+            "bytes": 14371868,
+            "sha256": "547de60741663e29eaf77911567c5dbe6fbec0aedaea55ee07687dd00e3b8ec1",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "animations",
+            "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+            "task_id": "01a1342d-18a9-702a-b00e-052ebaa85db3",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n10/character_n10_animated.glb",
+            "bytes": 8575428,
+            "sha256": "b98f83d4d9c5fe0d188b73e22241b16aba780d457f93a6050d388a847509c053",
+            "consumed_credits": 9
+          }
+        ],
+        "total_consumed_credits": 49
+      },
+      "semantic": {
+        "final_glb": "public/models/semantic/character_n10_face_ready.glb",
+        "package_alias": "assets/characters/character_n10/face_ready.glb",
+        "final_sha256": "719553edae470382290950e136d60f3ef9bb906d4ea1d4ab24a24897d177969b",
+        "face_polygon_count": 935,
+        "triangle_count": 51412,
+        "bone_count": 24,
+        "clips": [
+          "All_Night_Dance",
+          "Casual_Walk_inplace",
+          "Idle"
+        ],
+        "preservation_passed": true,
+        "face_contract_passed": true,
+        "gltf_errors": 0,
+        "gltf_warnings": 1,
+        "diagnostic_images": [
+          "public/debug/semantic/character_n10/diagnostic-front.png",
+          "public/debug/semantic/character_n10/diagnostic-left.png",
+          "public/debug/semantic/character_n10/diagnostic-right.png"
+        ],
+        "mapping": "public/debug/semantic/character_n10/character_n10_face_mapping.json",
+        "preservation_validation": "public/debug/semantic/character_n10/preservation-validation.json",
+        "contract_validation": "public/debug/semantic/character_n10/contract-validation.json",
+        "gltf_validation": "public/debug/semantic/character_n10/gltf-validation.json"
+      },
+      "review": {
+        "status": "QA_READY",
+        "note": "Clear face but FACE upper boundary is jagged at hairline; review with varied skin tones.",
+        "visitor_composite_test": "PENDING"
+      }
+    },
+    {
+      "id": "N11",
+      "base": "character_n11",
+      "concept": "Young traveler walking back to a parked car after a diner stop",
+      "presentation": "feminine",
+      "age": 23,
+      "height_meters": 1.67,
+      "body": "slim",
+      "hair": "medium curly hair tied in a low ponytail, curls kept behind the face",
+      "clothing": "sand zip jacket open over a pale teal sweatshirt, ivory casual pants, light beige sneakers",
+      "palette": [
+        "sand",
+        "pale teal",
+        "ivory",
+        "light beige"
+      ],
+      "nevada_fit": "Casual layers and sneakers suit mild desert sun with winter chill.",
+      "neutral_face": "Unaccented average face shape, softly rounded jaw, modest brow and lips, neutral expression without accessories.",
+      "turnaround": {
+        "front": "assets/characters/character_n11/turnaround/front.png",
+        "side": "assets/characters/character_n11/turnaround/side.png",
+        "back": "assets/characters/character_n11/turnaround/back.png"
+      },
+      "prompt": "assets/characters/character_n11/turnaround/prompt.txt",
+      "meshy": {
+        "model": "meshy-7.1",
+        "pose_mode": "t-pose",
+        "target_polycount": 50000,
+        "action_ids": [
+          0,
+          613,
+          64
+        ],
+        "stages": [
+          {
+            "stage": "generation",
+            "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+            "task_id": "01a13418-4107-7743-988f-c536cb13a663",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n11/character_n11_generated.glb",
+            "bytes": 5489684,
+            "sha256": "5fa31f79906b41e46c59c41bdd354730e9e146346d6216c6145de9e40c949a9f",
+            "consumed_credits": 30
+          },
+          {
+            "stage": "remesh",
+            "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+            "task_id": "01a13423-7e87-77f8-b6e1-d8c5750a1037",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n11/character_n11_optimized.glb",
+            "bytes": 13231904,
+            "sha256": "94dd381de88794ab26a64eef85c155d6c393171aa7b1dbfb22c1982ac0398ab8",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "rigging",
+            "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+            "task_id": "01a13428-2901-7167-83ca-7b36c4ac9ce0",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n11/character_n11_rigged.glb",
+            "bytes": 15356328,
+            "sha256": "b7d0fa1436f2d37c6757be9e97ce50b760cdc2eed86aec2c61cc0261de09df86",
+            "consumed_credits": 5
+          },
+          {
+            "stage": "animations",
+            "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+            "task_id": "01a1342d-2b25-77ac-8d59-82f53428aa8c",
+            "status": "SUCCEEDED",
+            "output": "artifacts/pipeline/character_n11/character_n11_animated.glb",
+            "bytes": 8841328,
+            "sha256": "1dcfd758d38580ac68085fc0139eaaa3d8c26705c574c468acf78c26c737c028",
+            "consumed_credits": 9
+          }
+        ],
+        "total_consumed_credits": 49
+      },
+      "semantic": {
+        "final_glb": "public/models/semantic/character_n11_face_ready.glb",
+        "package_alias": null,
+        "final_sha256": "61b474b0df0e36d03464bfb0fa62c88faf7aac9a183b7a2f6db321307098b1d4",
+        "face_polygon_count": 280,
+        "triangle_count": 50911,
+        "bone_count": 24,
+        "clips": [
+          "All_Night_Dance",
+          "Casual_Walk_inplace",
+          "Idle"
+        ],
+        "preservation_passed": true,
+        "face_contract_passed": false,
+        "gltf_errors": 0,
+        "gltf_warnings": 1,
+        "diagnostic_images": [
+          "public/debug/semantic/character_n11/diagnostic-front.png",
+          "public/debug/semantic/character_n11/diagnostic-left.png",
+          "public/debug/semantic/character_n11/diagnostic-right.png"
+        ],
+        "mapping": "public/debug/semantic/character_n11/character_n11_face_mapping.json",
+        "preservation_validation": "public/debug/semantic/character_n11/preservation-validation.json",
+        "contract_validation": "public/debug/semantic/character_n11/contract-validation.json",
+        "gltf_validation": "public/debug/semantic/character_n11/gltf-validation.json"
+      },
+      "review": {
+        "status": "HOLD",
+        "note": "FACE covers the central features but has 280 triangles, below the existing 300-triangle contract.",
+        "visitor_composite_test": "PENDING"
+      }
+    }
+  ]
+}

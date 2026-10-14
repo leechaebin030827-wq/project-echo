@@ -1,0 +1,215 @@
+{
+  "batch_id": "nevada_winter_n02_n11",
+  "scope": "Exactly N02–N11; ten new characters, five masculine and five feminine presentations",
+  "status": "production_complete_with_qa_holds_n02_n11",
+  "results": "assets/characters/nevada_winter_batch_n02_n11_results.json",
+  "generation_pose_mode": "t-pose",
+  "target_polycount": 50000,
+  "action_ids": [
+    0,
+    613,
+    64
+  ],
+  "characters": [
+    {
+      "id": "N02",
+      "base": "character_n02",
+      "presentation": "masculine",
+      "age": 24,
+      "height_meters": 1.76,
+      "concept": "Young road-trip passenger stopping for snacks at a highway convenience store",
+      "body": "slim average",
+      "hair": "short softly wavy brown hair, clear forehead",
+      "clothing": "pale teal lightweight winter shell open over an ivory hoodie, sand chinos, cream sneakers",
+      "palette": [
+        "pale teal",
+        "ivory",
+        "sand",
+        "cream"
+      ],
+      "nevada_fit": "Light layers suit a sunny, cold roadside stop without implying a profession.",
+      "neutral_face": "Average oval face, soft jaw, restrained brow and nose, relaxed closed mouth; no beard or eyewear.",
+      "skin_tone": "light-medium warm"
+    },
+    {
+      "id": "N03",
+      "base": "character_n03",
+      "presentation": "feminine",
+      "age": 27,
+      "height_meters": 1.66,
+      "concept": "Diner visitor on a winter drive between Nevada towns",
+      "body": "average",
+      "hair": "shoulder-length dark auburn hair tucked behind both ears, face uncovered",
+      "clothing": "sky-blue short puffer jacket open over a warm white sweater, light denim jeans, cream ankle boots",
+      "palette": [
+        "sky blue",
+        "warm white",
+        "light denim",
+        "cream"
+      ],
+      "nevada_fit": "Practical puffer and denim read as everyday winter travel wear.",
+      "neutral_face": "Moderate face width and length, rounded jaw, modest cheeks and lips, neutral expression; no facial accessories.",
+      "skin_tone": "fair neutral"
+    },
+    {
+      "id": "N04",
+      "base": "character_n04",
+      "presentation": "masculine",
+      "age": 33,
+      "height_meters": 1.82,
+      "concept": "Local resident picking up coffee at a gas-station forecourt",
+      "body": "slightly broad but realistic",
+      "hair": "short dark hair combed away from forehead",
+      "clothing": "light khaki canvas jacket open over a coral henley, faded blue straight jeans, tan casual boots",
+      "palette": [
+        "light khaki",
+        "coral",
+        "faded blue",
+        "tan"
+      ],
+      "nevada_fit": "Everyday canvas outerwear works for dry, sunny winter errands without looking like a uniform.",
+      "neutral_face": "Ordinary proportional features, soft lower face, unobtrusive cheekbones and nose, clean-shaven.",
+      "skin_tone": "medium tan"
+    },
+    {
+      "id": "N05",
+      "base": "character_n05",
+      "presentation": "feminine",
+      "age": 36,
+      "height_meters": 1.69,
+      "concept": "Suburban-edge motel guest heading out for breakfast",
+      "body": "slim average",
+      "hair": "dark hair in a low loose bun with forehead and ears visible",
+      "clothing": "light sage quilted vest over an ivory long-sleeve knit, beige casual trousers, light tan sneakers",
+      "palette": [
+        "light sage",
+        "ivory",
+        "beige",
+        "tan"
+      ],
+      "nevada_fit": "A vest and knit layer suit cool mornings and warmer desert afternoons.",
+      "neutral_face": "Average soft oval structure, gentle jaw, medium lips and nose, relaxed expression; no bangs or glasses.",
+      "skin_tone": "medium warm"
+    },
+    {
+      "id": "N06",
+      "base": "character_n06",
+      "presentation": "masculine",
+      "age": 42,
+      "height_meters": 1.78,
+      "concept": "Rest-stop traveler stretching his legs after a drive",
+      "body": "average",
+      "hair": "short salt-and-pepper hair, no forehead fringe",
+      "clothing": "sand fleece zip jacket open over a pale blue sweatshirt, light olive chinos, warm tan walking shoes",
+      "palette": [
+        "sand",
+        "pale blue",
+        "light olive",
+        "tan"
+      ],
+      "nevada_fit": "Comfortable fleece and walking shoes are believable road-trip winter layers.",
+      "neutral_face": "Subtle age cues with smooth average bone structure, unremarkable jaw and brow, clean-shaven neutral face.",
+      "skin_tone": "light neutral"
+    },
+    {
+      "id": "N07",
+      "base": "character_n07",
+      "presentation": "feminine",
+      "age": 44,
+      "height_meters": 1.63,
+      "concept": "Local diner customer on a bright cold morning",
+      "body": "slightly stocky, natural proportions",
+      "hair": "chestnut wavy hair gathered behind the neck, no face-covering strands",
+      "clothing": "soft coral padded jacket open over a cream crewneck, light warm-gray jeans, taupe ankle boots",
+      "palette": [
+        "soft coral",
+        "cream",
+        "light warm gray",
+        "taupe"
+      ],
+      "nevada_fit": "Warm but casual clothing suits short winter trips around a small town.",
+      "neutral_face": "Moderate facial proportions, gently rounded jaw, soft cheeks, relaxed mouth; no glasses or earrings.",
+      "skin_tone": "medium warm"
+    },
+    {
+      "id": "N08",
+      "base": "character_n08",
+      "presentation": "masculine",
+      "age": 51,
+      "height_meters": 1.74,
+      "concept": "Parking-lot visitor outside a roadside motel",
+      "body": "slightly stocky",
+      "hair": "short neat gray hair, clear hairline and face",
+      "clothing": "light denim jacket open over a muted orange crewneck sweater, cream chinos, sand boots",
+      "palette": [
+        "light denim",
+        "muted orange",
+        "cream",
+        "sand"
+      ],
+      "nevada_fit": "Denim and a sweater are ordinary dry-weather winter clothes, not occupational attire.",
+      "neutral_face": "Age shown mainly through hair; face keeps average proportions, soft jaw, modest nose and cheeks, no beard.",
+      "skin_tone": "fair warm"
+    },
+    {
+      "id": "N09",
+      "base": "character_n09",
+      "presentation": "feminine",
+      "age": 53,
+      "height_meters": 1.65,
+      "concept": "Small-town shopper stopping at a convenience store",
+      "body": "average",
+      "hair": "short chestnut bob tucked behind the ears, forehead visible",
+      "clothing": "pale blue casual winter coat open over an ivory sweatshirt, light beige pants, tan low boots",
+      "palette": [
+        "pale blue",
+        "ivory",
+        "light beige",
+        "tan"
+      ],
+      "nevada_fit": "Simple coat and sweatshirt fit everyday local errands in winter.",
+      "neutral_face": "Soft middle-aged face with ordinary width, light cheek definition, rounded jaw, neutral mouth and brows.",
+      "skin_tone": "medium tan"
+    },
+    {
+      "id": "N10",
+      "base": "character_n10",
+      "presentation": "masculine",
+      "age": 29,
+      "height_meters": 1.8,
+      "concept": "Driver taking a quick break at a highway service area",
+      "body": "average athletic, not exaggerated",
+      "hair": "close-cropped black hair with an unobstructed forehead",
+      "clothing": "soft red quilted vest over a cream hoodie, washed light-blue jeans, off-white sneakers",
+      "palette": [
+        "soft red",
+        "cream",
+        "washed blue",
+        "off-white"
+      ],
+      "nevada_fit": "A vest and hoodie give flexible warmth for a sunny roadside stop.",
+      "neutral_face": "Balanced average face, gently rounded chin, moderate features, clean-shaven and relaxed.",
+      "skin_tone": "deep brown"
+    },
+    {
+      "id": "N11",
+      "base": "character_n11",
+      "presentation": "feminine",
+      "age": 23,
+      "height_meters": 1.67,
+      "concept": "Young traveler walking back to a parked car after a diner stop",
+      "body": "slim",
+      "hair": "medium curly hair tied in a low ponytail, curls kept behind the face",
+      "clothing": "sand zip jacket open over a pale teal sweatshirt, ivory casual pants, light beige sneakers",
+      "palette": [
+        "sand",
+        "pale teal",
+        "ivory",
+        "light beige"
+      ],
+      "nevada_fit": "Casual layers and sneakers suit mild desert sun with winter chill.",
+      "neutral_face": "Unaccented average face shape, softly rounded jaw, modest brow and lips, neutral expression without accessories.",
+      "skin_tone": "light brown"
+    }
+  ]
+}

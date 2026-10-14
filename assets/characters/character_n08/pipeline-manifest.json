@@ -1,0 +1,109 @@
+{
+  "id": "N08",
+  "base": "character_n08",
+  "concept": "Parking-lot visitor outside a roadside motel",
+  "presentation": "masculine",
+  "age": 51,
+  "height_meters": 1.74,
+  "body": "slightly stocky",
+  "hair": "short neat gray hair, clear hairline and face",
+  "clothing": "light denim jacket open over a muted orange crewneck sweater, cream chinos, sand boots",
+  "palette": [
+    "light denim",
+    "muted orange",
+    "cream",
+    "sand"
+  ],
+  "nevada_fit": "Denim and a sweater are ordinary dry-weather winter clothes, not occupational attire.",
+  "neutral_face": "Age shown mainly through hair; face keeps average proportions, soft jaw, modest nose and cheeks, no beard.",
+  "turnaround": {
+    "front": "assets/characters/character_n08/turnaround/front.png",
+    "side": "assets/characters/character_n08/turnaround/side.png",
+    "back": "assets/characters/character_n08/turnaround/back.png"
+  },
+  "prompt": "assets/characters/character_n08/turnaround/prompt.txt",
+  "meshy": {
+    "model": "meshy-7.1",
+    "pose_mode": "t-pose",
+    "target_polycount": 50000,
+    "action_ids": [
+      0,
+      613,
+      64
+    ],
+    "stages": [
+      {
+        "stage": "generation",
+        "endpoint": "https://api.meshy.ai/openapi/v1/multi-image-to-3d",
+        "task_id": "01a13415-2c04-7340-b981-362b29f68de3",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n08/character_n08_generated.glb",
+        "bytes": 5558248,
+        "sha256": "ebab59cf29e75013079d29d9a79bcff7b11616fd689ee4d980f80c1eb50f11fd",
+        "consumed_credits": 30
+      },
+      {
+        "stage": "remesh",
+        "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+        "task_id": "01a13422-c085-7530-843a-1c032a1a74f2",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n08/character_n08_optimized.glb",
+        "bytes": 13039432,
+        "sha256": "899c82abef57b269d0dbd2c627769766ce72a90c1a3ad766bb4cbbeba5f841eb",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "rigging",
+        "endpoint": "https://api.meshy.ai/openapi/v1/rigging",
+        "task_id": "01a13427-c7fe-767d-bad0-ce624cc166f6",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n08/character_n08_rigged.glb",
+        "bytes": 14891848,
+        "sha256": "2601e052ec129996cea939a9d4123c363e84f895b2fbff6b7e7c04bb09004444",
+        "consumed_credits": 5
+      },
+      {
+        "stage": "animations",
+        "endpoint": "https://api.meshy.ai/openapi/v1/animations",
+        "task_id": "01a1342c-ff35-7524-ab8f-49f56de45618",
+        "status": "SUCCEEDED",
+        "output": "artifacts/pipeline/character_n08/character_n08_animated.glb",
+        "bytes": 9067740,
+        "sha256": "2546d7e6942ae78febd6596829f3b67269a311307fa1a9ecd4bcb7f0a9dd5897",
+        "consumed_credits": 9
+      }
+    ],
+    "total_consumed_credits": 49
+  },
+  "semantic": {
+    "final_glb": "public/models/semantic/character_n08_face_ready.glb",
+    "package_alias": "assets/characters/character_n08/face_ready.glb",
+    "final_sha256": "12b150f3cabe1436f950feb17bb0f39b9afc03536a047024042d1b3cf3a7b67c",
+    "face_polygon_count": 717,
+    "triangle_count": 51128,
+    "bone_count": 24,
+    "clips": [
+      "All_Night_Dance",
+      "Casual_Walk_inplace",
+      "Idle"
+    ],
+    "preservation_passed": true,
+    "face_contract_passed": true,
+    "gltf_errors": 0,
+    "gltf_warnings": 1,
+    "diagnostic_images": [
+      "public/debug/semantic/character_n08/diagnostic-front.png",
+      "public/debug/semantic/character_n08/diagnostic-left.png",
+      "public/debug/semantic/character_n08/diagnostic-right.png"
+    ],
+    "mapping": "public/debug/semantic/character_n08/character_n08_face_mapping.json",
+    "preservation_validation": "public/debug/semantic/character_n08/preservation-validation.json",
+    "contract_validation": "public/debug/semantic/character_n08/contract-validation.json",
+    "gltf_validation": "public/debug/semantic/character_n08/gltf-validation.json"
+  },
+  "review": {
+    "status": "QA_READY",
+    "note": "Gray hair has an irregular edge near the upper forehead; review the blend at the hairline.",
+    "visitor_composite_test": "PENDING"
+  }
+}
