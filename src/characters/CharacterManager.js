@@ -109,6 +109,9 @@ export class CharacterManager {
       this.entities.push(entity);
       this.byId.set(id, entity);
       this.scene.add(entity.root);
+      if (this.navigation.world?.root?.name === 'HaminaWorld' && index % 2 === 1) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
     }
     let minimumSpacing = Infinity;
     for (let a = 0; a < this.entities.length; a += 1) {

@@ -11,12 +11,15 @@ const decodePhoto = (blob) => new Promise((resolve, reject) => {
   image.src = url;
 });
 
-const drawCover = (context, image, width, height) => {
+const drawCover = (context, image, width, height, index = 0) => {
   const targetRatio = width / height;
   const ratio = image.width / image.height;
-  const sourceWidth = ratio > targetRatio ? image.height * targetRatio : image.width;
-  const sourceHeight = ratio > targetRatio ? image.height : image.width / targetRatio;
-  context.drawImage(image, (image.width - sourceWidth) / 2, (image.height - sourceHeight) / 2,
+  const zoom = index === 0 ? 1 : 1 + (index % 5) * 0.012;
+  const sourceWidth = (ratio > targetRatio ? image.height * targetRatio : image.width) / zoom;
+  const sourceHeight = (ratio > targetRatio ? image.height : image.width / targetRatio) / zoom;
+  const x = (image.width - sourceWidth) * (index === 0 ? 0.5 : 0.42 + (index % 4) * 0.045);
+  const y = (image.height - sourceHeight) * (index === 0 ? 0.5 : 0.42 + (index % 3) * 0.07);
+  context.drawImage(image, x, y,
     sourceWidth, sourceHeight, 0, 0, width, height);
 };
 
@@ -30,30 +33,24 @@ const createPortrait = (image, index) => {
     drawCover(context, image, canvas.width, canvas.height);
     return canvas;
   }
-  const erosion = Math.min(index / 46, 1);
   const source = document.createElement('canvas');
-  source.width = Math.max(18, Math.round(160 - erosion * 135));
-  source.height = Math.max(26, Math.round(source.width * 260 / 180));
+  source.width = 180 - Math.min(24, Math.floor(index / 5) * 3);
+  source.height = Math.round(source.width * 260 / 180);
   const sourceContext = source.getContext('2d');
-  sourceContext.filter = `contrast(${Math.round(105 + erosion * 65)}%) saturate(${Math.round(96 - erosion * 58)}%) hue-rotate(${(index * 19) % 60 - 30}deg)`;
-  drawCover(sourceContext, image, source.width, source.height);
-  context.imageSmoothingEnabled = erosion < 0.32;
+  drawCover(sourceContext, image, source.width, source.height, index);
+  context.imageSmoothingEnabled = true;
   context.drawImage(source, 0, 0, canvas.width, canvas.height);
 
-  // Displace horizontal strips progressively, as though the file is wearing away.
-  const strips = 3 + Math.round(erosion * 15);
+  // Keep each copy recognizable; only a few pixels drift at the edges.
+  const strips = 1 + index % 3;
   for (let strip = 0; strip < strips; strip += 1) {
     const y = (strip * 67 + index * 31) % canvas.height;
-    const stripHeight = 2 + ((index + strip * 7) % 18);
-    const shift = Math.round(Math.sin(index * 2.3 + strip * 5.1) * (2 + erosion * 23));
+    const stripHeight = 2 + ((index + strip * 7) % 5);
+    const shift = Math.round(Math.sin(index * 2.3 + strip * 5.1) * 4);
     context.drawImage(source, 0, y * source.height / canvas.height, source.width,
       Math.max(1, stripHeight * source.height / canvas.height),
       shift, y, canvas.width, stripHeight);
   }
-  context.globalCompositeOperation = 'screen';
-  context.fillStyle = `hsla(${185 + index * 13 % 135} 85% 55% / ${(erosion * 0.15).toFixed(3)})`;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.globalCompositeOperation = 'source-over';
   return canvas;
 };
 
@@ -71,6 +68,7 @@ export class DataCenterArchive {
     this.visible = false;
     this.generation = 0;
     this.timers = new Set();
+    this.audioContext = null;
     this.element = document.createElement('section');
     this.element.className = 'data-archive';
     this.element.setAttribute('aria-hidden', 'true');
@@ -101,6 +99,30 @@ export class DataCenterArchive {
       }, ms);
       this.timers.add(timer);
     });
+  }
+
+  primeAudio() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    this.audioContext ??= new AudioContextClass();
+    if (this.audioContext.state === 'suspended') this.audioContext.resume().catch(() => {});
+  }
+
+  playCopyTone(index) {
+    const audio = this.audioContext;
+    if (!audio || audio.state !== 'running') return;
+    const now = audio.currentTime;
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880 + index % 4 * 70, now);
+    oscillator.frequency.exponentialRampToValueAtTime(660 + index % 4 * 45, now + 0.065);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.035, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
+    oscillator.connect(gain).connect(audio.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.08);
   }
 
   async loadSource() {
@@ -135,7 +157,8 @@ export class DataCenterArchive {
       this.track.append(rowElement);
       for (let column = 0; column < COLUMNS; column += 1) {
         if (!this.visible || token !== this.generation) return false;
-        rowElement.append(this.createCell(image, this.nextIndex++));
+        rowElement.append(this.createCell(image, this.nextIndex));
+        this.playCopyTone(this.nextIndex++);
         await this.wait(68);
       }
     }
@@ -147,7 +170,10 @@ export class DataCenterArchive {
     const row = document.createElement('div');
     row.className = 'data-archive-row';
     for (let column = 0; column < COLUMNS; column += 1) {
-      row.append(this.createCell(image, this.nextIndex++));
+      row.append(this.createCell(image, this.nextIndex));
+      this.playCopyTone(this.nextIndex++);
+      await this.wait(68);
+      if (!this.visible || token !== this.generation) return;
     }
     this.track.append(row);
     this.track.classList.add('shifting');
@@ -216,6 +242,7 @@ export class DataCenterArchive {
 
   dispose() {
     this.close();
+    this.audioContext?.close().catch(() => {});
     this.closeButton.removeEventListener('click', this.requestClose);
     this.closeButton.removeEventListener('pointerenter', this.onHover);
     this.backdrop.removeEventListener('click', this.requestClose);

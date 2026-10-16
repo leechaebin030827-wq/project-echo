@@ -257,6 +257,9 @@ export class ExperienceController {
     );
     this.echoRaycaster = new THREE.Raycaster();
     this.echoPointer = new THREE.Vector2();
+    this.echoPickBounds = new THREE.Box3();
+    this.echoPickPadding = new THREE.Vector3();
+    this.echoPickPoint = new THREE.Vector3();
     this.compassPoint = new THREE.Vector3();
     this.splitCharacters = [];
     this.splitCameras = Array.from({ length: 4 }, () => {
@@ -401,6 +404,10 @@ export class ExperienceController {
       window.setTimeout(() => this.runLongPressQa(), 120);
     }
     this.assetsReady = true;
+    this.haminaPreloadTimer = window.setTimeout(() => {
+      this.haminaPreloadTimer = null;
+      this.preloadHamina().catch((error) => console.warn('[Hamina] early preload failed', error));
+    }, 1800);
     return world;
   }
 
@@ -697,7 +704,16 @@ export class ExperienceController {
     this.camera.updateMatrixWorld();
     this.world.echo.updateWorldMatrix(true, true);
     this.echoRaycaster.setFromCamera(this.echoPointer, this.camera);
-    return this.echoRaycaster.intersectObject(this.world.echo, true)[0]?.distance ?? Infinity;
+    const meshHit = this.echoRaycaster.intersectObject(this.world.echo, true)[0]?.distance;
+    if (Number.isFinite(meshHit)) return meshHit;
+    this.echoPickPadding.set(
+      Math.max(0.35, this.world.echoSize.x * 0.22),
+      Math.max(0.35, this.world.echoSize.y * 0.16),
+      Math.max(0.35, this.world.echoSize.z * 0.22),
+    );
+    this.echoPickBounds.copy(this.world.echoBox).expandByVector(this.echoPickPadding);
+    const point = this.echoRaycaster.ray.intersectBox(this.echoPickBounds, this.echoPickPoint);
+    return point ? this.echoRaycaster.ray.origin.distanceTo(point) : Infinity;
   }
 
   pointCompassAtNearestInteraction(clientX, clientY) {
@@ -875,7 +891,9 @@ export class ExperienceController {
 
   updateEchoActionMenuPosition() {
     if (!this.echoActionMenu.classList.contains('visible')) return;
-    this.echoMenuPoint.copy(this.world.echoCenter).project(this.camera);
+    this.echoMenuPoint.copy(this.world.echoCenter);
+    this.echoMenuPoint.y = this.world.echoBox.min.y;
+    this.echoMenuPoint.project(this.camera);
     this.echoActionMenu.style.left = `${(this.echoMenuPoint.x * 0.5 + 0.5) * this.stage.clientWidth}px`;
     this.echoActionMenu.style.top = `${(-this.echoMenuPoint.y * 0.5 + 0.5) * this.stage.clientHeight}px`;
   }
@@ -930,8 +948,9 @@ export class ExperienceController {
     this.worldTransitioning = true;
     this.characterManager.stopDances();
     this.characterManager.setFocused(null);
+    if (this.haminaPreloadTimer) window.clearTimeout(this.haminaPreloadTimer);
+    this.haminaPreloadTimer = null;
     const haminaLoading = this.preloadHamina();
-    haminaLoading.catch(() => {});
     this.caption.showOverride(
       '다른 좌표에서 당신의 흔적을 찾습니다.',
       'Searching for your trace at another coordinate.',
@@ -939,6 +958,8 @@ export class ExperienceController {
     );
 
     try {
+      // Finish model decoding before ECHO moves so no parse spike interrupts its spin.
+      const hamina = await haminaLoading;
       await this.echoTravel.preload();
       this.echoTravel.attach(this.world);
       this.cameraController.startWorldJumpFocus(WORLD_JUMP_CONFIG.focusDuration);
@@ -959,7 +980,6 @@ export class ExperienceController {
 
       this.cameraController.holdWorldLoading();
       this.echoTravel.start('loading-spin', WORLD_JUMP_CONFIG.spinDuration, lift);
-      const hamina = await haminaLoading;
       this.worldBlend = new WorldBackdropBlend(
         this.world,
         hamina,
@@ -1243,6 +1263,7 @@ export class ExperienceController {
   }
 
   handleInteractiveObjectPick(region) {
+    if (region.name === 'Data Center') this.dataCenterArchive.primeAudio();
     this.onWorldClick();
     this.setWorldHoverTarget(null);
     if (region.name !== 'Data Center') this.pendingDataCenterArchiveRegion = null;
@@ -1582,6 +1603,7 @@ export class ExperienceController {
     if (this.disposed) return;
     this.disposed = true;
     if (this.faceQaFocusTimer) window.clearTimeout(this.faceQaFocusTimer);
+    if (this.haminaPreloadTimer) window.clearTimeout(this.haminaPreloadTimer);
     this.cancelDanceNarration();
     if (this.characterDialogueTimer !== null) window.clearTimeout(this.characterDialogueTimer);
     this.cancelEchoMenuHide();

@@ -162,7 +162,7 @@ export class EchoReturnSequence {
       for (const character of value) {
         if (this.cancelled) return;
         element.textContent += character;
-        await this.delay(TIMING.QUOTE_TYPING_SPEED);
+        await this.delay(24);
       }
     };
     await type('.quote-english', INTRO_TEXT.quote.english);

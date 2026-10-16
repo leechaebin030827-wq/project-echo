@@ -11,8 +11,8 @@ export function getEchoLaunchPose(progress, height) {
   return {
     lift: height * smooth((progress - 0.08) / 0.92),
     crouch: 1 - smooth(progress / 0.25),
-    tuck: smooth((progress - 0.28) / 0.62),
-    groundContact: 1 - smooth((progress - 0.1) / 0.18),
+    tuck: smooth((progress - 0.06) / 0.72),
+    groundContact: 1 - smooth((progress - 0.08) / 0.27),
   };
 }
 
@@ -341,7 +341,7 @@ export class EchoTravelAnimator {
     } else if (this.phase === 'launch') {
       const pose = getEchoLaunchPose(boundedProgress, this.height);
       this.setPose(pose.lift, pose.crouch, pose.tuck, 0, pose.groundContact,
-        smooth((boundedProgress - 0.88) / 0.12));
+        smooth((boundedProgress - 0.78) / 0.22));
     } else if (this.phase === 'spin' || this.phase === 'loading-spin') {
       this.setPose(this.height, 0, 1,
         this.spinStart + Math.PI * 2 * progress, 0, 1);
