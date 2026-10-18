@@ -27,7 +27,7 @@
 
 For each ID, the individual PNGs are `assets/characters/character_nXX/turnaround/front.png`, `side.png`, and `back.png`; the generating prompt is `prompt.txt` beside them. Every character has `assets/characters/character_nXX/pipeline-manifest.json` with exact endpoints, task IDs, hashes, output paths, and QA status. Meshy outputs are `artifacts/pipeline/character_nXX/character_nXX_generated.glb`, `_optimized.glb`, `_rigged.glb`, and `_animated.glb`. Candidate FACE output is `public/models/semantic/character_nXX_face_ready.glb`. N03–N10 also have a packaged copy at `assets/characters/character_nXX/face_ready.glb`.
 
-The per-character diagnostic directory is `public/debug/semantic/character_nXX/`. It contains `front.png`, `front-landmarks.overlay.png`, `diagnostic-front.png`, `diagnostic-left.png`, `diagnostic-right.png`, `character_nXX_face_mapping.json`, `preservation-validation.json`, `contract-validation.json`, `gltf-validation.json`, and `visual-review.json`. The combined diagnostic contact sheet is `public/debug/semantic/nevada_winter_n02_n11_diagnostic_contact.png`.
+The per-character diagnostic directory is `artifacts/debug/semantic/character_nXX/`. It contains `front.png`, `front-landmarks.overlay.png`, `diagnostic-front.png`, `diagnostic-left.png`, `diagnostic-right.png`, `character_nXX_face_mapping.json`, `preservation-validation.json`, `contract-validation.json`, `gltf-validation.json`, and `visual-review.json`. The combined diagnostic contact sheet is `artifacts/debug/semantic/nevada_winter_n02_n11_diagnostic_contact.png`.
 
 ## Meshy task record
 

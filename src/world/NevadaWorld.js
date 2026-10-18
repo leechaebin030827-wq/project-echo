@@ -1,25 +1,60 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { WORLD_CONFIG } from '../config.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { TERRAIN_TEXTURE_CONFIG, WORLD_CONFIG } from '../config.js';
+import { replaceEchoModel } from './EchoModel.js';
 import { TerrainTextureSystem } from './TerrainTextureSystem.js';
+import { NevadaGrass } from './NevadaGrass.js';
+import { BillboardFaceTexture } from './BillboardFaceTexture.js';
 
 const INTERACTIVE_OBJECT_NAMES = new Set([
   'Data Center',
   'Cooler',
   'Billboard',
-  'Cable',
+  'Flag',
   'Money',
 ]);
 
-// These are the visible GLB meshes. The five named cubes are export-time
-// markers only; they are removed after discovery and never used as hit areas.
+// Legacy Nevada exports use visible meshes for picking. Nevada1017 uses the
+// separate *_Click cubes listed below as its exact interaction hit areas.
 const INTERACTIVE_VISIBLE_MESHES = Object.freeze({
   'Data Center': ['Citadel_Main_Entrance'],
   Cooler: ['TSC_Cooling_Module.002'],
   Billboard: ['Mesh_0'],
-  Cable: ['Mesh_0.002', 'Mesh_0.001'],
+  Flag: ['Mesh_0.002', 'Mesh_0.001'],
   Money: ['money'],
 });
+
+// Nevada1017 exports visible objects and separate *_Click volumes. Blender
+// collection names do not survive this GLB export, so use exported node names.
+const NEVADA_1017_INTERACTIONS = [
+  { name: 'Data Center', visible: ['Data_Center'], marker: 'Data Center_Click' },
+  {
+    name: 'Cooler', visible: ['TSC_Cooling_Module.001', 'TSC_Cooling_Module.002'],
+    highlight: [
+      'Citadel_Wall_Service_Bay', 'Citadel_Wall_Service_Bay.001',
+      'Citadel_Wall_Service_Bay.002', 'Citadel_Wall_Service_Bay.003',
+      'Citadel_Wall_Service_Bay.004', 'Citadel_Wall_Service_Bay.005',
+      'Citadel_Wall_Straight', 'TSC_Service_Platform',
+    ],
+    marker: 'Cooler1_Click',
+  },
+  {
+    name: 'Cooler', visible: ['TSC_Cooling_Module.003'],
+    highlight: [
+      'Citadel_Wall_Straight.001', 'Citadel_Wall_Straight.002',
+      'Citadel_Wall_Straight.003', 'TSC_Service_Platform.001',
+    ],
+    marker: 'Cooler2_Click',
+  },
+  { name: 'Billboard', visible: ['output_unwrapped'], marker: 'Billboard_Click' },
+  { name: 'Flag', visible: ['USA'], marker: 'USA_Click' },
+  { name: 'Money', visible: ['Money', 'Money_Cover'], marker: 'Money_Click' },
+];
+
+const findNode = (root, name) => root.getObjectByName(name)
+  ?? root.getObjectByName(name.replaceAll(' ', '_'))
+  ?? root.getObjectByName(name.replaceAll('.', ''));
 
 export class NevadaWorld {
   constructor(scene) {
@@ -36,28 +71,49 @@ export class NevadaWorld {
     this.walkableRoots = [];
     this.lightFixtures = [];
     this.interactiveRegions = [];
-    this.terrainTextures = new TerrainTextureSystem();
+    this.terrainTextures = new TerrainTextureSystem(TERRAIN_TEXTURE_CONFIG, {
+      materialAliases: { 'material.003': 'mountain' },
+    });
+    this.grass = null;
+    this.clickMarkers = [];
+    this.instancedFixtures = [];
+    this.billboardFaceTexture = null;
   }
 
   async load() {
-    const gltf = await new GLTFLoader().loadAsync(WORLD_CONFIG.modelUrl);
+    const [gltf, billboardImage] = await Promise.all([
+      new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(WORLD_CONFIG.modelUrl),
+      new THREE.ImageLoader().loadAsync('/textures/nevada/billboard/acquired.jpg'),
+    ]);
+    this.billboardFaceTexture = new BillboardFaceTexture(billboardImage);
+    const billboardTexture = this.billboardFaceTexture.texture;
     this.root = gltf.scene;
     this.root.name = 'NevadaWorld';
+    const oldBase = findNode(this.root, "Base_Save_Don'tShow");
+    oldBase?.removeFromParent();
+    if (oldBase) this.clickMarkers.push(oldBase);
+    const isNevada1017 = !!findNode(this.root, 'Data Center_Click');
     this.root.traverse((object) => {
       if (!object.isMesh) return;
       object.castShadow = false;
       object.receiveShadow = true;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       for (const material of materials) {
-        for (const texture of [material.map, material.normalMap, material.roughnessMap]) {
-          if (texture) texture.anisotropy = 16;
-        }
-        if (/^Light/i.test(material.name) && material.emissive?.isColor) {
-          material.emissive.set('#ffe7b0');
-          material.emissiveIntensity = 3.2;
+        if (material.name === 'Billboard') {
+          material.map = billboardTexture;
+          material.emissiveMap = billboardTexture;
+          material.color.set('#ffffff');
+          material.emissive.set('#ffffff');
+          material.emissiveIntensity = 0.35;
+          material.roughness = 0.65;
+          material.metalness = 0;
+        } else if (/^Light/i.test(material.name) && material.emissive?.isColor) {
+          material.color.set('#fff3cb');
+          material.emissive.set('#ffd88c');
+          material.emissiveIntensity = 5.2;
           material.toneMapped = false;
-          if (material.color?.isColor) material.color.set('#fff3cf');
-          material.roughness = 0.24;
+          material.roughness = 0.32;
+          material.metalness = 0;
           this.lightFixtures.push(object);
         } else if (material.emissive?.isColor) {
           const peak = Math.max(material.emissive.r, material.emissive.g, material.emissive.b);
@@ -66,14 +122,49 @@ export class NevadaWorld {
             material.emissiveIntensity = 0.32;
           }
         }
+        for (const texture of [material.map, material.normalMap, material.roughnessMap]) {
+          if (texture) texture.anisotropy = Math.min(8, texture.anisotropy || 8);
+        }
         material.needsUpdate = true;
       }
     });
     await this.terrainTextures.apply(this.root);
     this.scene.add(this.root);
     this.root.updateMatrixWorld(true);
+    if (isNevada1017) this.instanceLightPoles();
 
-    for (const name of INTERACTIVE_OBJECT_NAMES) {
+    if (isNevada1017) {
+      for (const definition of NEVADA_1017_INTERACTIONS) {
+        const marker = findNode(this.root, definition.marker);
+        const meshes = [];
+        const anchorMeshes = [];
+        for (const name of [...definition.visible, ...(definition.highlight ?? [])]) {
+          findNode(this.root, name)?.traverse((object) => {
+            if (!object.isMesh || meshes.includes(object)) return;
+            meshes.push(object);
+            if (definition.visible.includes(name)) anchorMeshes.push(object);
+          });
+        }
+        if (!marker || !anchorMeshes.length) {
+          console.warn(`[Nevada] ${definition.name}: missing ${definition.marker} or visible mesh`);
+          continue;
+        }
+        const bounds = new THREE.Box3().makeEmpty();
+        for (const mesh of anchorMeshes) bounds.union(new THREE.Box3().setFromObject(mesh));
+        const center = bounds.getCenter(new THREE.Vector3());
+        const size = bounds.getSize(new THREE.Vector3());
+        const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+        const pickBounds = new THREE.Box3().setFromObject(marker);
+        this.interactiveRegions.push({
+          name: definition.name, bounds, center, size, radius: sphere.radius, meshes, pickBounds,
+          pickMarker: marker,
+          cover: definition.name === 'Money' ? findNode(this.root, 'Money_Cover') : null,
+          money: definition.name === 'Money' ? findNode(this.root, 'Money') : null,
+        });
+        marker.removeFromParent();
+        this.clickMarkers.push(marker);
+      }
+    } else for (const name of INTERACTIVE_OBJECT_NAMES) {
       const object = this.root.getObjectByName(name)
         ?? this.root.getObjectByName(name.replaceAll(' ', '_'));
       if (!object) {
@@ -95,39 +186,15 @@ export class NevadaWorld {
         this.interactiveRegions.push({ name, bounds, center, size, radius: sphere.radius, meshes });
       }
       object.removeFromParent();
-      object.traverse((child) => {
-        if (!child.isMesh) return;
-        child.geometry?.dispose();
-        for (const material of (Array.isArray(child.material) ? child.material : [child.material])) {
-          material?.dispose();
-        }
-      });
+      this.clickMarkers.push(object);
     }
     console.info(`[Nevada] ${this.interactiveRegions.length} interactive regions ready`);
 
-    this.echo = this.root.getObjectByName('echo');
-    if (!this.echo) throw new Error('Nevada.glb에서 echo 노드를 찾지 못했습니다.');
+    this.echo = await replaceEchoModel(this.root.getObjectByName('echo') ?? this.root.getObjectByName('Echo'));
     this.echoBox.setFromObject(this.echo);
     this.echoBox.getCenter(this.echoCenter);
     this.echoBox.getSize(this.echoSize);
     this.echoBox.getBoundingSphere(this.echoSphere);
-    this.echo.traverse((object) => {
-      if (!object.isMesh) return;
-      const materials = Array.isArray(object.material) ? object.material : [object.material];
-      for (const material of materials) {
-        if (material.color?.isColor) material.color.multiply(new THREE.Color('#d8dcff'));
-        if ('roughness' in material) material.roughness = Math.min(material.roughness, 0.42);
-        if ('metalness' in material) material.metalness = Math.max(material.metalness, 0.08);
-        if (material.emissive?.isColor) {
-          material.emissive.set('#241955');
-          material.emissiveIntensity = 0.28;
-        }
-        material.transparent = false;
-        material.opacity = 1;
-        material.depthWrite = true;
-        material.needsUpdate = true;
-      }
-    });
     this.bounds.setFromObject(this.root);
     this.bounds.getSize(this.size);
     this.bounds.getCenter(this.center);
@@ -142,10 +209,59 @@ export class NevadaWorld {
       }
     }
 
+    if (isNevada1017) {
+      this.grass = new NevadaGrass(this.root);
+      this.grass.populate();
+    }
+
     console.info('[Nevada] loaded');
     console.info('[Nevada] echo found');
     console.info('[Nevada] echo center:', this.echoCenter.toArray());
     return this;
+  }
+
+  instanceLightPoles() {
+    const poles = this.root.children.filter((object) => /^Industrial_Light_Pole_A/.test(object.name));
+    if (poles.length < 2) return;
+    const batches = new Map();
+    let sourceMeshCount = 0;
+    for (const pole of poles) {
+      pole.traverse((mesh) => {
+        if (!mesh.isMesh || mesh.isSkinnedMesh || Array.isArray(mesh.material)) return;
+        sourceMeshCount++;
+        const key = `${mesh.geometry.uuid}:${mesh.material.uuid}`;
+        if (!batches.has(key)) batches.set(key, []);
+        batches.get(key).push(mesh);
+      });
+    }
+    const inverseRoot = this.root.matrixWorld.clone().invert();
+    const localMatrix = new THREE.Matrix4();
+    for (const meshes of batches.values()) {
+      if (meshes.length < 2) continue;
+      const instance = new THREE.InstancedMesh(meshes[0].geometry, meshes[0].material, meshes.length);
+      instance.name = `Instanced_${meshes[0].material.name}_LightPoles`;
+      instance.userData.ignoreNavigation = true;
+      instance.castShadow = false;
+      instance.receiveShadow = true;
+      meshes.forEach((mesh, index) => {
+        localMatrix.multiplyMatrices(inverseRoot, mesh.matrixWorld);
+        instance.setMatrixAt(index, localMatrix);
+      });
+      instance.instanceMatrix.needsUpdate = true;
+      instance.computeBoundingSphere();
+      this.root.add(instance);
+      this.instancedFixtures.push(instance);
+    }
+    if (this.instancedFixtures.reduce((count, instance) => count + instance.count, 0) === sourceMeshCount) {
+      for (const pole of poles) pole.visible = false;
+      console.info(`[Nevada] ${poles.length} light poles batched into ${this.instancedFixtures.length} GPU draws`);
+    } else {
+      for (const instance of this.instancedFixtures) {
+        instance.removeFromParent();
+        instance.dispose();
+      }
+      this.instancedFixtures = [];
+    }
   }
 
   getMaterialBounds(root, materialName) {
@@ -175,26 +291,26 @@ export class NevadaWorld {
   }
 
   addLighting() {
-    const hemisphere = new THREE.HemisphereLight('#9cb8e8', '#455033', 1.12);
+    const hemisphere = new THREE.HemisphereLight('#a9bedb', '#85887e', 1.22);
     this.scene.add(hemisphere);
 
-    const sun = new THREE.DirectionalLight('#fff0d2', 2.45);
+    const sun = new THREE.DirectionalLight('#fff0d2', 2.1);
     sun.position.copy(this.center).add(new THREE.Vector3(-34, 54, 22));
     sun.target.position.copy(this.echoCenter);
     this.scene.add(sun, sun.target);
 
-    const ambientFill = new THREE.AmbientLight('#687ba5', 0.17);
+    const ambientFill = new THREE.AmbientLight('#9da7b3', 0.22);
     this.scene.add(ambientFill);
 
-    const echoGlow = new THREE.PointLight('#a99aff', 2.2, Math.max(14, this.echoSphere.radius * 9), 2);
+    const echoGlow = new THREE.PointLight('#fff0ec', 1.05, Math.max(14, this.echoSphere.radius * 9), 2);
     echoGlow.position.copy(this.echoCenter).add(new THREE.Vector3(-2.8, this.echoSize.y * 1.1, 3.2));
-    const echoRim = new THREE.PointLight('#59c7ff', 1.25, Math.max(12, this.echoSphere.radius * 8), 2);
+    const echoRim = new THREE.PointLight('#dedbff', 0.48, Math.max(12, this.echoSphere.radius * 8), 2);
     echoRim.position.copy(this.echoCenter).add(new THREE.Vector3(3.6, this.echoSize.y * 0.45, -2.6));
     this.scene.add(echoGlow, echoRim);
 
     const fixtureBox = new THREE.Box3();
     const fixtureCenter = new THREE.Vector3();
-    const maxPracticalLights = 6;
+    const maxPracticalLights = 2;
     const poleFixtures = [...new Set(this.lightFixtures)]
       .filter((object) => /^Industrial_Light_Pole_A/.test(object.name));
     const fixtureStep = Math.max(1, Math.ceil(poleFixtures.length / maxPracticalLights));
@@ -213,6 +329,11 @@ export class NevadaWorld {
   }
 
   dispose() {
+    this.grass?.dispose();
+    for (const instance of this.instancedFixtures) instance.dispose();
+    this.instancedFixtures = [];
+    for (const marker of this.clickMarkers) marker.traverse((object) => object.geometry?.dispose());
+    this.clickMarkers = [];
     this.root?.traverse((object) => {
       if (!object.isMesh) return;
       object.geometry?.dispose();
@@ -224,7 +345,12 @@ export class NevadaWorld {
       }
     });
     this.root?.removeFromParent();
+    this.billboardFaceTexture = null;
     this.lights?.forEach((light) => light.removeFromParent());
+  }
+
+  applyVisitorFaceToBillboard(session) {
+    return this.billboardFaceTexture?.applyVisitorFace(session) ?? false;
   }
 
   detach() {

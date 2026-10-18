@@ -21,7 +21,7 @@ The UV diagnostic checks all FACE UV1 vertices for finite coordinates in `[0, 1]
 
 ## 2026-10-13 verification
 
-- Model load: 51,574 total triangles; one FACE primitive with 831 triangles and 697 UV1 vertices; 24 bones; Idle, Casual Walk, and All Night Dance clips. Structural and preservation reports are in `public/debug/semantic/character_n01/`.
+- Model load: 51,574 total triangles; one FACE primitive with 831 triangles and 697 UV1 vertices; 24 bones; Idle, Casual Walk, and All Night Dance clips. Structural and preservation reports are in `artifacts/debug/semantic/character_n01/`.
 - Browser: N01 loaded in the isolated 9:16 QA screen. No world view appeared. FACE UV1 was 100% in range, and the largest checked landmark offset was 0.019 UV units.
 - Local N01 front render: face detection passed at 100% landmark quality. The same session drove V2 and V3 without another upload. V2 morphed 1,150 vertices; V3 reported 100% atlas triangle coverage. Both 45° views, full-body view, all three animation selections, both light settings, and Reset responded.
 - Webcam: the local browser camera started, Capture produced a valid face session at 73% landmark quality, and both V2 and V3 applied. The capture was cleared with Reset. No webcam image was saved to the project.

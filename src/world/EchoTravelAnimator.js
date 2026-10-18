@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { ECHO_RIG_URL } from '../config.js';
+import { tuneEchoMaterial } from './EchoMaterial.js';
 
 const clamp = THREE.MathUtils.clamp;
 const smooth = (value) => {
@@ -47,7 +50,8 @@ export class EchoTravelAnimator {
   preload() {
     if (this.loadPromise) return this.loadPromise;
     this.loadPromise = new GLTFLoader()
-      .loadAsync('/intro/assets/opening/echo-opening-rig.glb')
+      .setMeshoptDecoder(MeshoptDecoder)
+      .loadAsync(ECHO_RIG_URL)
       .then(({ scene }) => {
         this.actor = scene;
         this.actor.name = 'ECHO_TravelRig';
@@ -58,6 +62,9 @@ export class EchoTravelAnimator {
           throw new Error('ECHO travel rig is missing its skinned mesh or Body bone.');
         }
         this.rigMaterial = this.mesh.material;
+        for (const material of (Array.isArray(this.rigMaterial) ? this.rigMaterial : [this.rigMaterial])) {
+          tuneEchoMaterial(material);
+        }
         this.mesh.frustumCulled = false;
         this.bodyRest = this.body.position.clone();
         this.legs = Array.from({ length: 4 }, (_, index) => {
@@ -129,6 +136,8 @@ export class EchoTravelAnimator {
       }
     }
     this.travelTextures = [...copiedTextures.values()];
+    for (const material of (Array.isArray(this.travelMaterial)
+      ? this.travelMaterial : [this.travelMaterial])) tuneEchoMaterial(material);
     this.mesh.material = this.travelMaterial;
     this.source = source;
     this.sourceWasVisible = source.visible;

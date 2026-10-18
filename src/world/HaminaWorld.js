@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { HAMINA_CONFIG, HAMINA_TERRAIN_TEXTURE_CONFIG } from '../config.js';
 import { TerrainTextureSystem } from './TerrainTextureSystem.js';
+import { replaceEchoModel } from './EchoModel.js';
 
 export class HaminaWorld {
   constructor(scene) {
@@ -42,7 +43,7 @@ export class HaminaWorld {
       let hasLightMaterial = false;
       for (const material of materials) {
         for (const texture of [material.map, material.normalMap, material.roughnessMap]) {
-          if (texture) texture.anisotropy = 16;
+          if (texture) texture.anisotropy = 4;
         }
         if (/^light/i.test(material.name) && material.emissive?.isColor) {
           hasLightMaterial = true;
@@ -67,29 +68,11 @@ export class HaminaWorld {
     this.scene.add(this.root);
     this.root.updateMatrixWorld(true);
 
-    this.echo = this.root.getObjectByName('echo');
-    if (!this.echo) throw new Error('Hamina.glb에서 echo 노드를 찾지 못했습니다.');
+    this.echo = await replaceEchoModel(this.root.getObjectByName('echo'));
     this.echoBox.setFromObject(this.echo);
     this.echoBox.getCenter(this.echoCenter);
     this.echoBox.getSize(this.echoSize);
     this.echoBox.getBoundingSphere(this.echoSphere);
-    this.echo.traverse((object) => {
-      if (!object.isMesh) return;
-      const materials = Array.isArray(object.material) ? object.material : [object.material];
-      for (const material of materials) {
-        if (material.color?.isColor) material.color.multiply(new THREE.Color('#d9e3ff'));
-        if ('roughness' in material) material.roughness = Math.min(material.roughness, 0.4);
-        if ('metalness' in material) material.metalness = Math.max(material.metalness, 0.08);
-        if (material.emissive?.isColor) {
-          material.emissive.set('#182f68');
-          material.emissiveIntensity = 0.32;
-        }
-        material.transparent = false;
-        material.opacity = 1;
-        material.depthWrite = true;
-        material.needsUpdate = true;
-      }
-    });
     this.bounds.setFromObject(this.root);
     this.bounds.getSize(this.size);
     this.bounds.getCenter(this.center);

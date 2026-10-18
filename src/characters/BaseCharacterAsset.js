@@ -27,7 +27,7 @@ export class BaseCharacterAsset {
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       for (const material of materials) {
         for (const texture of [material.map, material.normalMap, material.roughnessMap]) {
-          if (texture) texture.anisotropy = 16;
+          if (texture) texture.anisotropy = 4;
         }
         if (!material.emissive?.isColor) continue;
         const isFace = material.name === 'FACE';

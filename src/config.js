@@ -53,11 +53,13 @@ export const WORLD_CONFIG = Object.freeze({
   modelUrl: '/models/Nevada.glb',
   walkableNodeNames: ['land', 'road', 'building_floor', 'garage'],
   characterCount: 15,
-  maxPixelRatio: 2,
-  maxRenderPixels: 4800000,
+  maxPixelRatio: 1,
+  maxRenderPixels: 1500000,
   background: '#83b8ee',
   fogColor: '#d4e4ef',
 });
+
+export const ECHO_RIG_URL = '/models/EchoMeshyRig.glb';
 
 export const HAMINA_CONFIG = Object.freeze({
   modelUrl: '/models/Hamina.glb',

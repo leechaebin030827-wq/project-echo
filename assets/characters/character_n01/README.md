@@ -18,7 +18,7 @@ The scripts in `/tools` are copies of the existing Project ECHO Composition Kit 
 
 The stage records live under `/artifacts/pipeline/character_n01/`. Each `*-request.json` omits embedded images and credentials; each task and status JSON stores the returned task ID and status. The generation payload uses `multi-image-to-3d`, `meshy-7.1`, triangle topology, `target_polycount: 50000`, and `should_remesh: true`. Rigging and animation are submitted only after the preceding asset is inspected.
 
-The semantic output location is `/public/models/semantic/character_n01_face_ready.glb`, with diagnostics under `/public/debug/semantic/character_n01/`. The new asset is held outside `AVAILABLE_BASES` until the final FACE coverage, UV, rig, and motion validation pass and a human reviews the diagnostic renders.
+The semantic output location is `/public/models/semantic/character_n01_face_ready.glb`, with diagnostics under `/artifacts/debug/semantic/character_n01/`. The new asset is held outside `AVAILABLE_BASES` until the final FACE coverage, UV, rig, and motion validation pass and a human reviews the diagnostic renders.
 
 ## Completed Meshy stages
 
@@ -35,7 +35,7 @@ The animation action IDs came from the current library: `0` Idle, `613` Casual W
 
 The main output is `public/models/semantic/character_n01_face_ready.glb`. An identical package copy is `assets/characters/character_n01/face_ready.glb`. The Blender projector assigned 831 triangles to `FACE`, wrote `FACE_UV`, and exported it as glTF `TEXCOORD_1`; the FACE texture references UV channel 1. Both body and FACE primitives include position, normal, UV0, UV1, joint, and weight attributes. The GLB has 24 bones and exactly the three expected animation clips.
 
-`public/debug/semantic/character_n01/preservation-validation.json` passes topology, body UV0, weights, and sampled animation deformation comparison against the Meshy animated GLB. `contract-validation.json` passes the runtime material and UV checks. `gltf-validation.json` reports zero errors and one `NODE_SKINNED_MESH_NON_ROOT` warning, the same warning present in existing A/B/C assets. Diagnostic front, left, and right renders show the selected face region; ears, hair, and neck are excluded while eyes, nose, mouth, cheeks, and chin are included.
+`artifacts/debug/semantic/character_n01/preservation-validation.json` passes topology, body UV0, weights, and sampled animation deformation comparison against the Meshy animated GLB. `contract-validation.json` passes the runtime material and UV checks. `gltf-validation.json` reports zero errors and one `NODE_SKINNED_MESH_NON_ROOT` warning, the same warning present in existing A/B/C assets. Diagnostic front, left, and right renders show the selected face region; ears, hair, and neck are excluded while eyes, nose, mouth, cheeks, and chin are included.
 
 The source face keeps a subtle closed-mouth smile. The selected FACE area stops below the hairline, so the upper forehead retains the source texture. Those are visual review risks for a strong visitor likeness. Test a representative visitor photo on the final GLB in exhibition lighting before adding N01 to the application's `AVAILABLE_BASES`. No existing A/B/C character or ECHO face runtime was edited.
 

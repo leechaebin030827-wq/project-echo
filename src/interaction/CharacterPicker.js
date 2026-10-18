@@ -20,7 +20,9 @@ export class CharacterPicker {
       -((clientY - rect.top) / rect.height) * 2 + 1,
     );
     this.camera.updateMatrixWorld();
-    for (const entity of this.manager.entities) entity.root.updateMatrixWorld(true);
+    // Rendered world matrices are already current for hover. Refresh them only
+    // for the click that commits a selection.
+    if (logHit) for (const entity of this.manager.entities) entity.root.updateMatrixWorld(true);
     this.raycaster.setFromCamera(this.pointer, this.camera);
     const hit = this.raycaster.intersectObjects(this.manager.pickTargets, false)[0];
     let distance = hit?.distance ?? Infinity;

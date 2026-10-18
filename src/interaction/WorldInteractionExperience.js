@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { NEVADA_INTERACTIONS } from './NevadaInteractionContent.js';
+import { NEVADA_INTERACTIONS, captionDurationSeconds } from './NevadaInteractionContent.js';
 
 const smooth = (value) => {
   const x = THREE.MathUtils.clamp(value, 0, 1);
@@ -8,11 +8,10 @@ const smooth = (value) => {
 
 export class WorldInteractionExperience {
   constructor({ stage, camera, caption, postProcessing, getOriginalPhoto,
-    isFocusSettled = () => true, onClose, voice }) {
+    isFocusSettled = () => true, onClose }) {
     this.stage = stage;
     this.camera = camera;
     this.caption = caption;
-    this.voice = voice;
     this.postProcessing = postProcessing;
     this.getOriginalPhoto = getOriginalPhoto;
     this.isFocusSettled = isFocusSettled;
@@ -61,16 +60,15 @@ export class WorldInteractionExperience {
   start(region) {
     const content = NEVADA_INTERACTIONS[region?.name];
     if (!content || this.active) return false;
-    const clipPrefix = region.name === 'Data Center' ? 'datacenter' : region.name.toLowerCase();
-    const phraseTimes = content.phrases.map((_, index) =>
-      this.voice.duration(`${clipPrefix}_click_${String(index + 1).padStart(2, '0')}`) + 0.12);
+    const phraseTimes = content.phrases.map(([korean]) => captionDurationSeconds(korean) + 0.12);
     const narrationDuration = phraseTimes.reduce((sum, value) => sum + value, 0);
     this.active = {
       region, content, elapsed: 0, phraseIndex: -1, phraseTimes,
       narrationDuration, effectDuration: Math.max(content.effectDuration, narrationDuration + 0.45),
       visualStarted: false, visualEnded: false,
-      materialRestore: [], photoUrl: null, idleAfterNarration: 0,
+      photoUrl: null, idleAfterNarration: 0,
       copyElapsed: 0, copyCount: 0,
+      moneyClosingAt: null,
     };
     this.root.dataset.interaction = region.name;
     if (import.meta.env.DEV) this.stage.dataset.interactionQa = region.name;
@@ -85,20 +83,7 @@ export class WorldInteractionExperience {
   }
 
   buildVisual(active) {
-    const { name, meshes } = active.region;
-    for (const mesh of meshes) {
-      const original = mesh.material;
-      const bright = (material) => {
-        const copy = material.clone();
-        if (copy.emissive?.isColor) {
-          copy.emissive.set('#f7d7a1');
-          copy.emissiveIntensity = 0.18;
-        }
-        return copy;
-      };
-      mesh.material = Array.isArray(original) ? original.map(bright) : bright(original);
-      active.materialRestore.push({ mesh, original });
-    }
+    const { name } = active.region;
     if (name === 'Data Center') {
       const frame = this.getOriginalPhoto();
       if (!frame?.width || !frame?.height) {
@@ -113,6 +98,14 @@ export class WorldInteractionExperience {
     } else if (name === 'Billboard') {
       this.visual.innerHTML = '<div class="world-interaction__fact-flip"><strong>SOLD!</strong><span>$11,000,000,000</span></div>';
     } else if (name === 'Money') {
+      if (active.region.cover) {
+        active.cover = active.region.cover;
+        active.coverStartPosition = active.cover.position.clone();
+        active.coverLift = Math.max(
+          2.4,
+          new THREE.Box3().setFromObject(active.cover).getSize(new THREE.Vector3()).y * 1.08,
+        );
+      }
       const burst = document.createElement('div');
       burst.className = 'world-interaction__money-burst';
       for (let index = 0; index < 12; index += 1) {
@@ -125,8 +118,8 @@ export class WorldInteractionExperience {
       amount.className = 'world-interaction__amount';
       amount.textContent = '$27,000,000';
       this.visual.append(burst, amount);
-    } else if (name === 'Cable') {
-      this.visual.innerHTML = '<div class="world-interaction__network"><span>LAS VEGAS<br>THE CORE</span><div class="world-interaction__network-line"></div><span>TAHOE RENO<br>THE CITADEL</span><small>500+ MILES / CONCEPTUAL CONNECTION</small></div>';
+    } else if (name === 'Flag') {
+      this.visual.innerHTML = '<div class="world-interaction__location">NEVADA<small>UNITED STATES</small></div>';
     } else if (name === 'Cooler') {
       this.coolerBasePosition.copy(this.camera.position);
       active.coolerBaseZoom = this.camera.zoom;
@@ -148,6 +141,7 @@ export class WorldInteractionExperience {
       this.visual.classList.add('is-running');
     }
     const { content, elapsed } = active;
+    if (active.region.name === 'Money') this.updateMoneyObject(active);
     if (active.region.name === 'Data Center' && active.copyGrid && !active.visualEnded) {
       active.copyElapsed += delta;
       while (active.copyElapsed >= 0.22) {
@@ -209,15 +203,22 @@ export class WorldInteractionExperience {
       active.phraseIndex = nextIndex;
       if (nextIndex < content.phrases.length) {
         const [korean, local] = content.phrases[nextIndex];
-        const clipPrefix = active.region.name === 'Data Center' ? 'datacenter' : active.region.name.toLowerCase();
-        this.caption.showOverride(korean, local, `${clipPrefix}_click_${String(nextIndex + 1).padStart(2, '0')}`);
+        this.caption.showOverride(korean, local);
       } else {
         this.caption.hideOverride();
-        this.researchButton.hidden = active.region.name === 'Cooler';
+        this.researchButton.hidden = active.region.name === 'Cooler'
+          || active.region.name === 'Money';
+        if (active.region.name === 'Money') active.moneyClosingAt = elapsed;
       }
     }
     if (nextIndex === content.phrases.length && this.card.hidden) {
       active.idleAfterNarration += delta;
+      if (active.region.name === 'Money'
+        && active.moneyClosingAt !== null
+        && elapsed - active.moneyClosingAt >= 0.95) {
+        this.close();
+        return;
+      }
       if (active.region.name === 'Cooler' && active.visualEnded
         && active.idleAfterNarration > 0.5) {
         this.close();
@@ -225,6 +226,18 @@ export class WorldInteractionExperience {
       }
       if (active.idleAfterNarration > 12) this.close();
     }
+  }
+
+  updateMoneyObject(active) {
+    const reveal = smooth(Math.min(1, active.elapsed / 1.35));
+    const closing = active.moneyClosingAt === null ? 1
+      : 1 - smooth(Math.min(1, (active.elapsed - active.moneyClosingAt) / 0.95));
+    const amount = reveal * closing;
+    if (active.cover) {
+      active.cover.position.copy(active.coverStartPosition);
+      active.cover.position.y += active.coverLift * amount;
+    }
+    if (import.meta.env.DEV) this.stage.dataset.moneyReveal = amount.toFixed(3);
   }
 
   applyCoolerCameraMotion(target) {
@@ -284,11 +297,7 @@ export class WorldInteractionExperience {
   cancel() {
     const active = this.active;
     if (!active) return;
-    for (const { mesh, original } of active.materialRestore) {
-      const copies = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      mesh.material = original;
-      for (const material of copies) material.dispose();
-    }
+    if (active.cover) active.cover.position.copy(active.coverStartPosition);
     this.audio.pause();
     this.audio.currentTime = 0;
     this.audio.volume = 0;
@@ -310,6 +319,7 @@ export class WorldInteractionExperience {
     if (import.meta.env.DEV) {
       delete this.stage.dataset.interactionQa;
       delete this.stage.dataset.interactionEffect;
+      delete this.stage.dataset.moneyReveal;
     }
   }
 

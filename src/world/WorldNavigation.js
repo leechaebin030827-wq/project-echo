@@ -32,7 +32,8 @@ export class WorldNavigation {
 
     const obstacleNamesToIgnore = new Set(['mountain']);
     for (const child of world.root.children) {
-      if (walkableSet.has(child) || obstacleNamesToIgnore.has(child.name.toLowerCase())) continue;
+      if (walkableSet.has(child) || child.userData.ignoreNavigation
+        || obstacleNamesToIgnore.has(child.name.toLowerCase())) continue;
       const box = new THREE.Box3().setFromObject(child);
       if (box.isEmpty()) continue;
       const size = box.getSize(new THREE.Vector3());

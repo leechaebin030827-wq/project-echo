@@ -36,7 +36,7 @@ test('ECHO lowers into a planted pose, extends on takeoff, then folds during asc
 });
 
 test('the shipped ECHO rig crouches with planted feet and outward, downward knees', () => {
-  const binary = readFileSync(new URL('../public/intro/assets/opening/echo-opening-rig.glb', import.meta.url));
+  const binary = readFileSync(new URL('../public/models/EchoMeshyRig.glb', import.meta.url));
   const jsonLength = binary.readUInt32LE(12);
   const { nodes: definitions } = JSON.parse(binary.subarray(20, 20 + jsonLength).toString());
   const nodes = definitions.map((definition) => {
@@ -99,4 +99,49 @@ test('the sky spin moves the camera in while holding ECHO at the same center', (
   controller.update(0.5);
   assert.ok(camera.position.distanceTo(afterFocus) > 0.1);
   assert.ok(controller.target.distanceTo(new THREE.Vector3(0, 80, 0)) < 0.001);
+});
+
+test('the launch camera gradually shifts from looking down to looking up at ECHO', () => {
+  const camera = new THREE.PerspectiveCamera(52, 9 / 16, 0.1, 500);
+  camera.position.set(5.5, 1.5, 0);
+  const controller = new CinematicCameraController(camera, {});
+  controller.echoCenter.set(0, 0, 0);
+  controller.echoSize.set(4, 4, 4);
+  controller.echoSphere = { radius: 4 };
+  controller.target.set(0, 0, 0);
+  controller.startWorldJumpAscent(4.2, 80);
+  const pitch = () => Math.atan2(
+    controller.target.y - camera.position.y,
+    Math.hypot(controller.target.x - camera.position.x, controller.target.z - camera.position.z),
+  );
+  const startPitch = pitch();
+  controller.transition.startedAt = performance.now() - 2100;
+  controller.update(0);
+  const halfwayPitch = pitch();
+  controller.transition.startedAt = performance.now() - 4200;
+  controller.update(0);
+  const finalPitch = pitch();
+  assert.ok(startPitch < 0);
+  assert.ok(halfwayPitch > startPitch);
+  assert.ok(finalPitch > halfwayPitch);
+  assert.ok(finalPitch > THREE.MathUtils.degToRad(25));
+  assert.ok(camera.position.y < controller.target.y);
+});
+
+test('after the ascent the camera returns to a near-frontal ECHO view', () => {
+  const camera = new THREE.PerspectiveCamera(52, 9 / 16, 0.1, 500);
+  camera.position.set(18, 69, 0);
+  const controller = new CinematicCameraController(camera, {});
+  controller.echoSphere = { radius: 4 };
+  controller.echoSize.set(4, 4, 4);
+  controller.target.set(0, 80, 0);
+  controller.holdWorldLoading();
+  controller.startWorldSpinFocus(2.2);
+  controller.transition.startedAt = performance.now() - 2200;
+  controller.update(0);
+  const pitch = Math.atan2(
+    controller.target.y - camera.position.y,
+    Math.hypot(controller.target.x - camera.position.x, controller.target.z - camera.position.z),
+  );
+  assert.ok(Math.abs(pitch) < THREE.MathUtils.degToRad(6));
 });

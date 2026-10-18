@@ -8,7 +8,7 @@ from validate_character import import_character,inspect,write_report
 from inspect_head import setup_render
 p=argparse.ArgumentParser();p.add_argument('--base',default='character_a');a=p.parse_args(sys.argv[sys.argv.index('--')+1:])
 root=Path(__file__).resolve().parents[2];source=root/'artifacts/pipeline'/a.base/(a.base+'_animated.glb')
-out=root/'public/debug/semantic'/a.base;out.mkdir(parents=True,exist_ok=True)
+out=root/'artifacts/debug/semantic'/a.base;out.mkdir(parents=True,exist_ok=True)
 import_character(source)
 rig=next(o for o in bpy.context.scene.objects if o.type=='ARMATURE');rig.data.pose_position='REST'
 bpy.context.view_layer.update()

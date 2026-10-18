@@ -19,7 +19,8 @@ if (import.meta.env.DEV && params.get('npcFaceQa') === 'N01') {
 } else {
 const experience = new ExperienceController(document.querySelector('#stage'));
 const worldQa = import.meta.env.DEV && (params.has('worldQa') || params.has('orbitQa')
-  || params.get('nevadaNpcWalkQa') === '1' || params.get('nevadaInteractionQa') === '1');
+  || params.get('nevadaNpcWalkQa') === '1' || params.get('nevadaInteractionQa') === '1'
+  || params.get('moneyQa') === '1');
 const introHandoffQa = import.meta.env.DEV && params.has('introHandoffQa');
 const narration2Qa = import.meta.env.DEV && params.has('narration2Qa');
 const introRoot = document.querySelector('#intro-root');
@@ -51,10 +52,11 @@ if (worldQa) {
   experience.onWorldClick = () => worldAudio?.playUi('uiClick');
   experience.onHaminaEnter = () => worldAudio?.playHaminaEntry();
   if (introHandoffQa) {
-    window.setTimeout(() => intro.controller.transition(IntroState.LOADING), 120);
+    window.setTimeout(() => intro?.controller.transition(IntroState.LOADING), 120);
   }
   if (narration2Qa) {
     window.setTimeout(() => {
+      if (!intro) return;
       introRoot.querySelector('.audio-start-prompt')?.remove();
       intro.controller.view.opening.classList.add('is-hidden');
       intro.controller.transition(IntroState.NARRATION_2);
@@ -72,40 +74,27 @@ const handleDeveloperWorldShortcut = async (event) => {
     || event.ctrlKey
     || event.altKey
     || event.shiftKey
+    || worldQa
     || experience.worldRenderingEnabled
     || developerShortcutRunning
+    || experience.developerCaptureActive
     || event.target instanceof HTMLInputElement
     || event.target instanceof HTMLTextAreaElement
     || event.target?.isContentEditable) return;
 
   event.preventDefault();
   developerShortcutRunning = true;
-  let applyFace = false;
   try {
     if (intro) {
-      const { camera } = intro.controller.view;
-      const cameraReady = camera.isReady() || await camera.start();
-      if (cameraReady) {
-        const frame = camera.capture();
-        try {
-          await experience.processIntroCapture(frame);
-          applyFace = true;
-          console.info('[Dev Shortcut] photo captured and applied');
-        } catch (error) {
-          console.warn('[Dev Shortcut] entering with default face', error);
-        }
-      }
-      camera.stop();
+      intro.controller.audio.handoffToWorld();
+      intro.destroy({ preserveMusic: true });
+      intro = null;
     }
-
-    await experience.enterWorldFromIntro({ applyFace });
-    intro?.controller.audio.playNevadaEntry();
-    intro?.destroy({ preserveMusic: true });
-    intro = null;
-    document.querySelector('#stage').dataset.devShortcut = applyFace ? 'photo' : 'default-face';
+    await experience.startDeveloperPhotoRoute(() => worldAudio?.playNevadaEntry());
   } catch (error) {
+    console.error('[Dev Shortcut] photo route initialization failed', error);
+  } finally {
     developerShortcutRunning = false;
-    console.error('[Dev Shortcut] world entry failed', error);
   }
 };
 

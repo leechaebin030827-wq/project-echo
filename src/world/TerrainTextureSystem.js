@@ -69,6 +69,11 @@ export class TerrainTextureSystem {
     return name.replaceAll('_', ' ').trim().toLowerCase();
   }
 
+  terrainNameForMaterial(name = '') {
+    const normalized = this.normalizeTerrainName(name);
+    return this.options.materialAliases?.[normalized] ?? normalized;
+  }
+
   async applyMergedBase(base) {
     const terrainEntries = Object.entries(this.config);
     const terrainIndex = new Map(terrainEntries.map(([name], index) => [
@@ -92,7 +97,7 @@ export class TerrainTextureSystem {
       geometries.add(mesh.geometry);
       const sourceMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       const materials = sourceMaterials.map((source) => {
-        const index = terrainIndex.get(this.normalizeTerrainName(source.name));
+        const index = terrainIndex.get(this.terrainNameForMaterial(source.name));
         if (index === undefined) return source;
         const { map, normalMap, roughnessMap, config } = textureSets[index];
         const material = source.clone();
@@ -122,7 +127,7 @@ export class TerrainTextureSystem {
         : [{ start: 0, count: mesh.geometry.index?.count ?? mesh.geometry.attributes.position.count, materialIndex: 0 }];
       for (const group of groups) {
         const material = materials[group.materialIndex ?? 0];
-        const index = terrainIndex.get(this.normalizeTerrainName(material?.name));
+        const index = terrainIndex.get(this.terrainNameForMaterial(material?.name));
         if (index === undefined) continue;
         primitiveEntries.push({ mesh, geometry: mesh.geometry, group, terrainIndex: index });
       }
@@ -362,11 +367,15 @@ export class TerrainTextureSystem {
           '#include <map_fragment>',
           `#ifdef USE_MAP
             vec4 primaryTerrain = sampleTerrainTriplanar(map, vTerrainWorldPosition, vTerrainWorldNormal);
-            vec4 neighbourTerrain = sampleTerrainLayer(vTerrainBlendIndex, vTerrainWorldPosition, vTerrainWorldNormal);
-            float edgeNoise = (terrainBlendNoise(vTerrainWorldPosition * 1.7) - 0.5) * 0.12;
-            float blendAmount = clamp(vTerrainBlendFactor + edgeNoise * smoothstep(0.02, 0.5, vTerrainBlendFactor), 0.0, 0.5);
-            vec4 blendedTerrain = mix(primaryTerrain, neighbourTerrain, blendAmount);
-            vec3 blendedTint = mix(terrainPrimaryTint, sampleTerrainTint(vTerrainBlendIndex), blendAmount);
+            vec4 blendedTerrain = primaryTerrain;
+            vec3 blendedTint = terrainPrimaryTint;
+            if (vTerrainBlendFactor > 0.001) {
+              vec4 neighbourTerrain = sampleTerrainLayer(vTerrainBlendIndex, vTerrainWorldPosition, vTerrainWorldNormal);
+              float edgeNoise = (terrainBlendNoise(vTerrainWorldPosition * 1.7) - 0.5) * 0.12;
+              float blendAmount = clamp(vTerrainBlendFactor + edgeNoise * smoothstep(0.02, 0.5, vTerrainBlendFactor), 0.0, 0.5);
+              blendedTerrain = mix(primaryTerrain, neighbourTerrain, blendAmount);
+              blendedTint = mix(terrainPrimaryTint, sampleTerrainTint(vTerrainBlendIndex), blendAmount);
+            }
             diffuseColor.rgb *= blendedTerrain.rgb * blendedTint;
             diffuseColor.a *= blendedTerrain.a;
           #endif`,
@@ -386,14 +395,18 @@ export class TerrainTextureSystem {
           vec3 terrainSurfaceNormal = normalize(vTerrainWorldNormal) * faceDirection;
           vec3 primaryDetailNormal = sampleTerrainNormalLayer(
             terrainPrimaryIndex, vTerrainWorldPosition, terrainSurfaceNormal);
-          vec3 neighbourDetailNormal = sampleTerrainNormalLayer(
-            vTerrainBlendIndex, vTerrainWorldPosition, terrainSurfaceNormal);
-          float terrainBumpStrength = mix(
-            sampleTerrainNormalStrength(terrainPrimaryIndex),
-            sampleTerrainNormalStrength(vTerrainBlendIndex),
-            terrainNormalBlend
-          ) * 2.4;
-          vec3 detailNormal = normalize(mix(primaryDetailNormal, neighbourDetailNormal, terrainNormalBlend));
+          vec3 detailNormal = primaryDetailNormal;
+          float terrainBumpStrength = sampleTerrainNormalStrength(terrainPrimaryIndex) * 2.4;
+          if (vTerrainBlendFactor > 0.001) {
+            vec3 neighbourDetailNormal = sampleTerrainNormalLayer(
+              vTerrainBlendIndex, vTerrainWorldPosition, terrainSurfaceNormal);
+            detailNormal = normalize(mix(primaryDetailNormal, neighbourDetailNormal, terrainNormalBlend));
+            terrainBumpStrength = mix(
+              sampleTerrainNormalStrength(terrainPrimaryIndex),
+              sampleTerrainNormalStrength(vTerrainBlendIndex),
+              terrainNormalBlend
+            ) * 2.4;
+          }
           vec3 worldDetailNormal = normalize(mix(terrainSurfaceNormal, detailNormal,
             clamp(terrainBumpStrength, 0.0, 1.0)));
           normal = normalize(mat3(viewMatrix) * worldDetailNormal);`,

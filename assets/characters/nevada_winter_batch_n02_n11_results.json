@@ -111,14 +111,14 @@
         "gltf_errors": 0,
         "gltf_warnings": 1,
         "diagnostic_images": [
-          "public/debug/semantic/character_n02/diagnostic-front.png",
-          "public/debug/semantic/character_n02/diagnostic-left.png",
-          "public/debug/semantic/character_n02/diagnostic-right.png"
+          "artifacts/debug/semantic/character_n02/diagnostic-front.png",
+          "artifacts/debug/semantic/character_n02/diagnostic-left.png",
+          "artifacts/debug/semantic/character_n02/diagnostic-right.png"
         ],
-        "mapping": "public/debug/semantic/character_n02/character_n02_face_mapping.json",
-        "preservation_validation": "public/debug/semantic/character_n02/preservation-validation.json",
-        "contract_validation": "public/debug/semantic/character_n02/contract-validation.json",
-        "gltf_validation": "public/debug/semantic/character_n02/gltf-validation.json"
+        "mapping": "artifacts/debug/semantic/character_n02/character_n02_face_mapping.json",
+        "preservation_validation": "artifacts/debug/semantic/character_n02/preservation-validation.json",
+        "contract_validation": "artifacts/debug/semantic/character_n02/contract-validation.json",
+        "gltf_validation": "artifacts/debug/semantic/character_n02/gltf-validation.json"
       },
       "review": {
         "status": "HOLD",
@@ -220,14 +220,14 @@
         "gltf_errors": 0,
         "gltf_warnings": 1,
         "diagnostic_images": [
-          "public/debug/semantic/character_n03/diagnostic-front.png",
-          "public/debug/semantic/character_n03/diagnostic-left.png",
-          "public/debug/semantic/character_n03/diagnostic-right.png"
+          "artifacts/debug/semantic/character_n03/diagnostic-front.png",
+          "artifacts/debug/semantic/character_n03/diagnostic-left.png",
+          "artifacts/debug/semantic/character_n03/diagnostic-right.png"
         ],
-        "mapping": "public/debug/semantic/character_n03/character_n03_face_mapping.json",
-        "preservation_validation": "public/debug/semantic/character_n03/preservation-validation.json",
-        "contract_validation": "public/debug/semantic/character_n03/contract-validation.json",
-        "gltf_validation": "public/debug/semantic/character_n03/gltf-validation.json"
+        "mapping": "artifacts/debug/semantic/character_n03/character_n03_face_mapping.json",
+        "preservation_validation": "artifacts/debug/semantic/character_n03/preservation-validation.json",
+        "contract_validation": "artifacts/debug/semantic/character_n03/contract-validation.json",
+        "gltf_validation": "artifacts/debug/semantic/character_n03/gltf-validation.json"
       },
       "review": {
         "status": "QA_READY",
@@ -329,14 +329,14 @@
         "gltf_errors": 0,
         "gltf_warnings": 1,
         "diagnostic_images": [
-          "public/debug/semantic/character_n04/diagnostic-front.png",
-          "public/debug/semantic/character_n04/diagnostic-left.png",
-          "public/debug/semantic/character_n04/diagnostic-right.png"
+          "artifacts/debug/semantic/character_n04/diagnostic-front.png",
+          "artifacts/debug/semantic/character_n04/diagnostic-left.png",
+          "artifacts/debug/semantic/character_n04/diagnostic-right.png"
         ],
-        "mapping": "public/debug/semantic/character_n04/character_n04_face_mapping.json",
-        "preservation_validation": "public/debug/semantic/character_n04/preservation-validation.json",
-        "contract_validation": "public/debug/semantic/character_n04/contract-validation.json",
-        "gltf_validation": "public/debug/semantic/character_n04/gltf-validation.json"
+        "mapping": "artifacts/debug/semantic/character_n04/character_n04_face_mapping.json",
+        "preservation_validation": "artifacts/debug/semantic/character_n04/preservation-validation.json",
+        "contract_validation": "artifacts/debug/semantic/character_n04/contract-validation.json",
+        "gltf_validation": "artifacts/debug/semantic/character_n04/gltf-validation.json"
       },
       "review": {
         "status": "QA_READY",
@@ -438,14 +438,14 @@
         "gltf_errors": 0,
         "gltf_warnings": 1,
         "diagnostic_images": [
-          "public/debug/semantic/character_n05/diagnostic-front.png",
-          "public/debug/semantic/character_n05/diagnostic-left.png",
-          "public/debug/semantic/character_n05/diagnostic-right.png"
+          "artifacts/debug/semantic/character_n05/diagnostic-front.png",
+          "artifacts/debug/semantic/character_n05/diagnostic-left.png",
+          "artifacts/debug/semantic/character_n05/diagnostic-right.png"
         ],
-        "mapping": "public/debug/semantic/character_n05/character_n05_face_mapping.json",
-        "preservation_validation": "public/debug/semantic/character_n05/preservation-validation.json",
-        "contract_validation": "public/debug/semantic/character_n05/contract-validation.json",
-        "gltf_validation": "public/debug/semantic/character_n05/gltf-validation.json"
+        "mapping": "artifacts/debug/semantic/character_n05/character_n05_face_mapping.json",
+        "preservation_validation": "artifacts/debug/semantic/character_n05/preservation-validation.json",
+        "contract_validation": "artifacts/debug/semantic/character_n05/contract-validation.json",
+        "gltf_validation": "artifacts/debug/semantic/character_n05/gltf-validation.json"
       },
       "review": {
         "status": "QA_READY",
@@ -547,14 +547,14 @@
         "gltf_errors": 0,
         "gltf_warnings": 1,
         "diagnostic_images": [
-          "public/debug/semantic/character_n06/diagnostic-front.png",
-          "public/debug/semantic/character_n06/diagnostic-left.png",
-          "public/debug/semantic/character_n06/diagnostic-right.png"
+          "artifacts/debug/semantic/character_n06/diagnostic-front.png",
+          "artifacts/debug/semantic/character_n06/diagnostic-left.png",
+          "artifacts/debug/semantic/character_n06/diagnostic-right.png"
         ],
-        "mapping": "public/debug/semantic/character_n06/character_n06_face_mapping.json",
-        "preservation_validation": "public/debug/semantic/character_n06/preservation-validation.json",
-        "contract_validation": "public/debug/semantic/character_n06/contract-validation.json",
-        "gltf_validation": "public/debug/semantic/character_n06/gltf-validation.json"
+        "mapping": "artifacts/debug/semantic/character_n06/character_n06_face_mapping.json",
+        "preservation_validation": "artifacts/debug/semantic/character_n06/preservation-validation.json",
+        "contract_validation": "artifacts/debug/semantic/character_n06/contract-validation.json",
+        "gltf_validation": "artifacts/debug/semantic/character_n06/gltf-validation.json"
       },
       "review": {
         "status": "QA_READY",
@@ -656,14 +656,14 @@
         "gltf_errors": 0,
         "gltf_warnings": 1,
         "diagnostic_images": [
-          "public/debug/semantic/character_n07/diagnostic-front.png",
-          "public/debug/semantic/character_n07/diagnostic-left.png",
-          "public/debug/semantic/character_n07/diagnostic-right.png"
+          "artifacts/debug/semantic/character_n07/diagnostic-front.png",
+          "artifacts/debug/semantic/character_n07/diagnostic-left.png",
+          "artifacts/debug/semantic/character_n07/diagnostic-right.png"
         ],
-        "mapping": "public/debug/semantic/character_n07/character_n07_face_mapping.json",
-        "preservation_validation": "public/debug/semantic/character_n07/preservation-validation.json",
-        "contract_validation": "public/debug/semantic/character_n07/contract-validation.json",
-        "gltf_validation": "public/debug/semantic/character_n07/gltf-validation.json"
+        "mapping": "artifacts/debug/semantic/character_n07/character_n07_face_mapping.json",
+        "preservation_validation": "artifacts/debug/semantic/character_n07/preservation-validation.json",
+        "contract_validation": "artifacts/debug/semantic/character_n07/contract-validation.json",
+        "gltf_validation": "artifacts/debug/semantic/character_n07/gltf-validation.json"
       },
       "review": {
         "status": "QA_READY",
@@ -765,14 +765,14 @@
         "gltf_errors": 0,
         "gltf_warnings": 1,
         "diagnostic_images": [
-          "public/debug/semantic/character_n08/diagnostic-front.png",
-          "public/debug/semantic/character_n08/diagnostic-left.png",
-          "public/debug/semantic/character_n08/diagnostic-right.png"
+          "artifacts/debug/semantic/character_n08/diagnostic-front.png",
+          "artifacts/debug/semantic/character_n08/diagnostic-left.png",
+          "artifacts/debug/semantic/character_n08/diagnostic-right.png"
         ],
-        "mapping": "public/debug/semantic/character_n08/character_n08_face_mapping.json",
-        "preservation_validation": "public/debug/semantic/character_n08/preservation-validation.json",
-        "contract_validation": "public/debug/semantic/character_n08/contract-validation.json",
-        "gltf_validation": "public/debug/semantic/character_n08/gltf-validation.json"
+        "mapping": "artifacts/debug/semantic/character_n08/character_n08_face_mapping.json",
+        "preservation_validation": "artifacts/debug/semantic/character_n08/preservation-validation.json",
+        "contract_validation": "artifacts/debug/semantic/character_n08/contract-validation.json",
+        "gltf_validation": "artifacts/debug/semantic/character_n08/gltf-validation.json"
       },
       "review": {
         "status": "QA_READY",
@@ -874,14 +874,14 @@
         "gltf_errors": 0,
         "gltf_warnings": 1,
         "diagnostic_images": [
-          "public/debug/semantic/character_n09/diagnostic-front.png",
-          "public/debug/semantic/character_n09/diagnostic-left.png",
-          "public/debug/semantic/character_n09/diagnostic-right.png"
+          "artifacts/debug/semantic/character_n09/diagnostic-front.png",
+          "artifacts/debug/semantic/character_n09/diagnostic-left.png",
+          "artifacts/debug/semantic/character_n09/diagnostic-right.png"
         ],
-        "mapping": "public/debug/semantic/character_n09/character_n09_face_mapping.json",
-        "preservation_validation": "public/debug/semantic/character_n09/preservation-validation.json",
-        "contract_validation": "public/debug/semantic/character_n09/contract-validation.json",
-        "gltf_validation": "public/debug/semantic/character_n09/gltf-validation.json"
+        "mapping": "artifacts/debug/semantic/character_n09/character_n09_face_mapping.json",
+        "preservation_validation": "artifacts/debug/semantic/character_n09/preservation-validation.json",
+        "contract_validation": "artifacts/debug/semantic/character_n09/contract-validation.json",
+        "gltf_validation": "artifacts/debug/semantic/character_n09/gltf-validation.json"
       },
       "review": {
         "status": "QA_READY",
@@ -983,14 +983,14 @@
         "gltf_errors": 0,
         "gltf_warnings": 1,
         "diagnostic_images": [
-          "public/debug/semantic/character_n10/diagnostic-front.png",
-          "public/debug/semantic/character_n10/diagnostic-left.png",
-          "public/debug/semantic/character_n10/diagnostic-right.png"
+          "artifacts/debug/semantic/character_n10/diagnostic-front.png",
+          "artifacts/debug/semantic/character_n10/diagnostic-left.png",
+          "artifacts/debug/semantic/character_n10/diagnostic-right.png"
         ],
-        "mapping": "public/debug/semantic/character_n10/character_n10_face_mapping.json",
-        "preservation_validation": "public/debug/semantic/character_n10/preservation-validation.json",
-        "contract_validation": "public/debug/semantic/character_n10/contract-validation.json",
-        "gltf_validation": "public/debug/semantic/character_n10/gltf-validation.json"
+        "mapping": "artifacts/debug/semantic/character_n10/character_n10_face_mapping.json",
+        "preservation_validation": "artifacts/debug/semantic/character_n10/preservation-validation.json",
+        "contract_validation": "artifacts/debug/semantic/character_n10/contract-validation.json",
+        "gltf_validation": "artifacts/debug/semantic/character_n10/gltf-validation.json"
       },
       "review": {
         "status": "QA_READY",
@@ -1092,14 +1092,14 @@
         "gltf_errors": 0,
         "gltf_warnings": 1,
         "diagnostic_images": [
-          "public/debug/semantic/character_n11/diagnostic-front.png",
-          "public/debug/semantic/character_n11/diagnostic-left.png",
-          "public/debug/semantic/character_n11/diagnostic-right.png"
+          "artifacts/debug/semantic/character_n11/diagnostic-front.png",
+          "artifacts/debug/semantic/character_n11/diagnostic-left.png",
+          "artifacts/debug/semantic/character_n11/diagnostic-right.png"
         ],
-        "mapping": "public/debug/semantic/character_n11/character_n11_face_mapping.json",
-        "preservation_validation": "public/debug/semantic/character_n11/preservation-validation.json",
-        "contract_validation": "public/debug/semantic/character_n11/contract-validation.json",
-        "gltf_validation": "public/debug/semantic/character_n11/gltf-validation.json"
+        "mapping": "artifacts/debug/semantic/character_n11/character_n11_face_mapping.json",
+        "preservation_validation": "artifacts/debug/semantic/character_n11/preservation-validation.json",
+        "contract_validation": "artifacts/debug/semantic/character_n11/contract-validation.json",
+        "gltf_validation": "artifacts/debug/semantic/character_n11/gltf-validation.json"
       },
       "review": {
         "status": "HOLD",

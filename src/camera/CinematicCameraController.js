@@ -75,16 +75,19 @@ export class CinematicCameraController {
     this.worldSize.copy(world.size);
     const horizontal = Math.max(world.size.x, world.size.z);
     this.farRadius = Math.max(
-      world.root?.name === 'HaminaWorld' ? 18 : 26,
-      horizontal * this.config.farOrbitRadiusScale * (world.farOrbitScale ?? 1),
+      world.root?.name === 'HaminaWorld' ? 18 : 16,
+      horizontal * this.config.farOrbitRadiusScale * (world.farOrbitScale ?? 1)
+        * (world.root?.name === 'HaminaWorld' ? 1 : 0.56),
     );
     this.farHeight = Math.max(
-      world.bounds.max.y + this.config.farOrbitBoundsClearance,
-      this.echoCenter.y + Math.max(12, world.size.y * this.config.farOrbitHeightScale),
+      world.bounds.max.y + (world.root?.name === 'HaminaWorld'
+        ? this.config.farOrbitBoundsClearance : 1),
+      this.echoCenter.y + Math.max(14, this.farRadius * 0.82),
     );
     this.nearRadius = Math.max(
-      world.echoSphere.radius * this.config.nearOrbitRadiusFromEcho * (world.nearOrbitScale ?? 1),
-      world.root?.name === 'HaminaWorld' ? 7.4 : 8.5,
+      world.echoSphere.radius * this.config.nearOrbitRadiusFromEcho * (world.nearOrbitScale ?? 1)
+        * (world.root?.name === 'HaminaWorld' ? 1 : 0.8),
+      world.root?.name === 'HaminaWorld' ? 7.4 : 6.8,
     );
     if (world.root?.name === 'HaminaWorld') {
       this.farRadius = Math.max(
@@ -101,7 +104,7 @@ export class CinematicCameraController {
     this.nearHeight = this.echoCenter.y + Math.max(
       world.echoSphere.radius * this.config.nearOrbitHeightFromEcho,
       4.2,
-    );
+    ) + (world.root?.name === 'HaminaWorld' ? 0 : -0.3);
     this.proximityThreshold = world.echoSphere.radius * 5.4;
     return this;
   }
@@ -478,11 +481,14 @@ export class CinematicCameraController {
       ? region.radius * 1.55
       : region.name === 'Cooler'
         ? Math.max(20.5, region.radius * 5.25)
+        : region.name === 'Money'
+          ? Math.max(9.5, Math.min(region.radius * 2.8, 38))
         : Math.max(7.5, Math.min(region.radius * 2.2, 34));
     const destination = region.center.clone().addScaledVector(viewDirection, distance);
     destination.y = Math.max(destination.y, region.bounds.min.y + region.size.y * 0.72);
+    if (region.name === 'Flag') destination.y += Math.max(2.5, region.size.y * 0.4);
     const destinationTarget = region.center.clone();
-    destinationTarget.y += region.size.y * 0.06;
+    if (region.name !== 'Flag') destinationTarget.y += region.size.y * 0.06;
     const travelDistance = this.camera.position.distanceTo(destination);
     const duration = THREE.MathUtils.clamp(0.82 + travelDistance * 0.045, 1.2, 2.55);
     this.transition = {
@@ -607,13 +613,14 @@ export class CinematicCameraController {
     direction.y = 0;
     if (direction.lengthSq() < 0.001) direction.set(1, 0, 0);
     direction.normalize();
+    const upwardViewOffset = Math.max(11, this.echoSize.y * 1.25);
     this.elapsed = 0;
     this.transition = {
       fromPosition: this.camera.position.clone(),
       fromTarget: this.target.clone(),
       destination: this.echoCenter.clone()
         .addScaledVector(direction, Math.max(this.echoSphere.radius * 4.4, 18))
-        .add(new THREE.Vector3(0, height + this.echoSize.y * 0.08, 0)),
+        .add(new THREE.Vector3(0, height - upwardViewOffset, 0)),
       destinationTarget: this.echoCenter.clone().add(new THREE.Vector3(0, height, 0)),
       duration,
       launchHeight: height,
@@ -667,7 +674,7 @@ export class CinematicCameraController {
     direction.normalize();
     const destination = this.target.clone()
       .addScaledVector(direction, Math.max(this.echoSphere.radius * 2.6, 11.2));
-    destination.y = this.camera.position.y;
+    destination.y = this.target.y + Math.max(0.5, this.echoSize.y * 0.08);
     this.elapsed = 0;
     this.transition = {
       fromPosition: this.camera.position.clone(),

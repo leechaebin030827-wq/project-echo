@@ -70,18 +70,20 @@ export class CharacterManager {
   }
 
   async preload() {
-    this.bases = await Promise.all(AVAILABLE_BASES.map((base) => BaseCharacterAsset.load(base)));
+    if (this.nevadaBases) return this.nevadaBases;
     this.nevadaBases = await Promise.all(
       NEVADA_NPC_IDS.slice(0, 10).map((id) => BaseCharacterAsset.load(id)),
     );
-    return this.bases;
+    return this.nevadaBases;
   }
 
   async spawn(count) {
     if (count > AVAILABLE_BASES.length * 5) {
       throw new Error('검증된 캐릭터 베이스는 최대 15명입니다.');
     }
-    if (!this.bases) await this.preload();
+    if (!this.bases) {
+      this.bases = await Promise.all(AVAILABLE_BASES.map((base) => BaseCharacterAsset.load(base)));
+    }
     for (let index = 0; index < count; index += 1) {
       const baseIndex = Math.floor(index / 5);
       const base = this.bases[baseIndex];

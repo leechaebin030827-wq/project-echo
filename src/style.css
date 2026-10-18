@@ -14,6 +14,28 @@ html, body, #app { width: 100%; height: 100%; margin: 0; }
 
 body { overflow: hidden; background: #000; }
 
+/* Lightweight display correction shared by the intro, capture, and both worlds. */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  z-index: 2147483646;
+  background: rgba(255, 255, 255, 0.12);
+  mix-blend-mode: soft-light;
+}
+
+body::after {
+  z-index: 2147483647;
+  background: rgba(224, 161, 255, 0.10);
+  background-blend-mode: multiply;
+  mix-blend-mode: multiply;
+}
+
 button, video, canvas { font: inherit; }
 
 button { -webkit-tap-highlight-color: transparent; }

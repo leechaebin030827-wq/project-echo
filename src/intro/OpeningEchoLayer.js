@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { ECHO_RIG_URL } from '../config.js';
+import { tuneEchoMaterial } from '../world/EchoMaterial.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -487,12 +490,17 @@ export function createOpeningEchoLayer(host) {
   };
   frame = window.requestAnimationFrame(animate);
 
-  new GLTFLoader().load(
-    '/intro/assets/opening/echo-opening-rig.glb',
+  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(
+    ECHO_RIG_URL,
     (gltf) => {
       if (disposed) return;
       gltf.scene.traverse((object) => {
-        if (object.isSkinnedMesh) object.frustumCulled = false;
+        if (object.isSkinnedMesh) {
+          object.frustumCulled = false;
+          for (const material of (Array.isArray(object.material) ? object.material : [object.material])) {
+            tuneEchoMaterial(material);
+          }
+        }
       });
       gait = new EchoSpiderGait(gltf.scene);
       scene.add(gait.root);

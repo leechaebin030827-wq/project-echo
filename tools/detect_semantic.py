@@ -89,6 +89,6 @@ def detect(path,out,segment=False):
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--base',default='character_a');p.add_argument('--source',type=Path);a=p.parse_args()
     if not (ROOT/'public/face/canonical.json').exists():canonical()
-    out=ROOT/'public/debug/semantic'/a.base;out.mkdir(parents=True,exist_ok=True)
+    out=ROOT/'artifacts/debug/semantic'/a.base;out.mkdir(parents=True,exist_ok=True)
     detect(out/'front.png',out/'front-landmarks.json',True)
     if a.source:detect(a.source,out/'astra-landmarks.json')

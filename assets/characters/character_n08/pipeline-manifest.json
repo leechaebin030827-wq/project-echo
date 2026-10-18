@@ -92,14 +92,14 @@
     "gltf_errors": 0,
     "gltf_warnings": 1,
     "diagnostic_images": [
-      "public/debug/semantic/character_n08/diagnostic-front.png",
-      "public/debug/semantic/character_n08/diagnostic-left.png",
-      "public/debug/semantic/character_n08/diagnostic-right.png"
+      "artifacts/debug/semantic/character_n08/diagnostic-front.png",
+      "artifacts/debug/semantic/character_n08/diagnostic-left.png",
+      "artifacts/debug/semantic/character_n08/diagnostic-right.png"
     ],
-    "mapping": "public/debug/semantic/character_n08/character_n08_face_mapping.json",
-    "preservation_validation": "public/debug/semantic/character_n08/preservation-validation.json",
-    "contract_validation": "public/debug/semantic/character_n08/contract-validation.json",
-    "gltf_validation": "public/debug/semantic/character_n08/gltf-validation.json"
+    "mapping": "artifacts/debug/semantic/character_n08/character_n08_face_mapping.json",
+    "preservation_validation": "artifacts/debug/semantic/character_n08/preservation-validation.json",
+    "contract_validation": "artifacts/debug/semantic/character_n08/contract-validation.json",
+    "gltf_validation": "artifacts/debug/semantic/character_n08/gltf-validation.json"
   },
   "review": {
     "status": "QA_READY",

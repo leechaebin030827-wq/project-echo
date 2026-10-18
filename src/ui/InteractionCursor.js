@@ -11,11 +11,21 @@ export class InteractionCursor {
     this.glyph.textContent = '×';
     this.element.append(this.glyph);
     stage.append(this.element);
+    this.finePointer = window.matchMedia('(pointer: fine)');
+    this.pendingPointer = null;
+    this.pointerFrame = 0;
+    this.lastCanvasPickAt = -Infinity;
+    this.lastTargetWasCanvas = false;
+    this.currentMode = 'blocked';
 
     this.onPointerMove = this.handlePointerMove.bind(this);
+    this.flushPointerMove = this.flushPointerMove.bind(this);
     this.onPointerDown = () => this.element.classList.add('is-pressed');
     this.onPointerUp = () => this.element.classList.remove('is-pressed');
-    this.onPointerLeave = () => this.element.classList.remove('is-visible');
+    this.onPointerLeave = () => {
+      this.lastTargetWasCanvas = false;
+      this.element.classList.remove('is-visible');
+    };
     window.addEventListener('pointermove', this.onPointerMove, { passive: true });
     window.addEventListener('pointerdown', this.onPointerDown, { passive: true });
     window.addEventListener('pointerup', this.onPointerUp, { passive: true });
@@ -23,7 +33,18 @@ export class InteractionCursor {
   }
 
   handlePointerMove(event) {
-    if (event.pointerType === 'touch' || !window.matchMedia('(pointer: fine)').matches) {
+    this.pendingPointer = {
+      clientX: event.clientX, clientY: event.clientY,
+      pointerType: event.pointerType, target: event.target,
+    };
+    if (!this.pointerFrame) this.pointerFrame = window.requestAnimationFrame(this.flushPointerMove);
+  }
+
+  flushPointerMove() {
+    this.pointerFrame = 0;
+    const event = this.pendingPointer;
+    if (!event) return;
+    if (event.pointerType === 'touch' || !this.finePointer.matches) {
       this.onPointerLeave();
       return;
     }
@@ -37,7 +58,12 @@ export class InteractionCursor {
     this.element.style.setProperty('--cursor-x', `${event.clientX - rect.left}px`);
     this.element.style.setProperty('--cursor-y', `${event.clientY - rect.top}px`);
     this.element.classList.add('is-visible');
-    const mode = this.getMode(event);
+    const onCanvas = event.target instanceof Element && Boolean(event.target.closest('#world-canvas'));
+    const now = performance.now();
+    const reuseCanvasMode = onCanvas && this.lastTargetWasCanvas && now - this.lastCanvasPickAt < 32;
+    const mode = reuseCanvasMode ? this.currentMode : this.getMode(event);
+    if (onCanvas && !reuseCanvasMode) this.lastCanvasPickAt = now;
+    this.lastTargetWasCanvas = onCanvas;
     this.setMode(mode);
     if (mode === 'camera-guide') this.pointAtCameraShutter(event);
   }
@@ -64,13 +90,17 @@ export class InteractionCursor {
   }
 
   setMode(mode) {
+    const label = mode === 'interactive-object' ? this.stage.dataset.worldHoverLabel || 'OBJECT' : '';
+    if (mode === this.currentMode && label === this.currentLabel) return;
+    this.currentMode = mode;
+    this.currentLabel = label;
     this.element.dataset.mode = mode;
     this.glyph.textContent = mode === 'button' ? '↗'
       : mode === 'echo' ? 'PROJECT ECHO'
         : mode === 'character' ? '누구세요?'
           : mode === 'dance-group' ? '춤 보기'
           : mode === 'character-back' ? '이전으로'
-            : mode === 'interactive-object' ? (this.stage.dataset.worldHoverLabel || 'OBJECT')
+            : mode === 'interactive-object' ? label
             : mode === 'compass' ? '↑'
             : mode === 'camera-guide' ? '↗'
         : mode === 'blocked' ? '×' : '';
@@ -87,6 +117,7 @@ export class InteractionCursor {
   }
 
   dispose() {
+    if (this.pointerFrame) window.cancelAnimationFrame(this.pointerFrame);
     window.removeEventListener('pointermove', this.onPointerMove);
     window.removeEventListener('pointerdown', this.onPointerDown);
     window.removeEventListener('pointerup', this.onPointerUp);

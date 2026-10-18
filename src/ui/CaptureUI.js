@@ -13,12 +13,17 @@ export class CaptureUI {
   }
 
   bind({ onCapture, onRetake, onUse }) {
-    this.onCapture = onCapture;
     this.onRetake = onRetake;
     this.onUse = onUse;
-    this.captureButton.addEventListener('click', onCapture);
+    this.setCaptureHandler(onCapture);
     this.retakeButton.addEventListener('click', onRetake);
     this.useButton.addEventListener('click', onUse);
+  }
+
+  setCaptureHandler(onCapture) {
+    if (this.onCapture) this.captureButton.removeEventListener('click', this.onCapture);
+    this.onCapture = onCapture;
+    this.captureButton.addEventListener('click', onCapture);
   }
 
   setReady(ready) {

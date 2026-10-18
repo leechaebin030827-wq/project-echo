@@ -62,7 +62,7 @@
 }
 @keyframes echo-copy-flow { to { transform: translateY(-550%); } }
 .world-interaction__fact-flip {
-  position: absolute; top: 39%; left: 8%; width: 84%;
+  position: absolute; bottom: 11%; left: 8%; width: 84%;
   display: grid; gap: .18em; text-align: center;
   transform-origin: center; animation: echo-sale-flip 1s cubic-bezier(.2,.7,.2,1) both;
 }
@@ -92,16 +92,23 @@
   animation: echo-amount-in 420ms ease-out 600ms both;
 }
 @keyframes echo-amount-in { from { opacity: 0; transform: translate(-50%, -40%); } to { opacity: 1; transform: translate(-50%, -50%); } }
-.world-interaction__network {
-  position: absolute; top: 46%; left: 8%; width: 84%;
-  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
-  font: 600 clamp(11px, 2cqw, 17px)/1.4 monospace;
-  letter-spacing: .04em;
+.world-interaction__location {
+  position: absolute; bottom: 12%; left: 8%; width: 84%;
+  text-align: center;
+  font: 700 clamp(32px, 8cqw, 72px)/1.1 monospace;
+  letter-spacing: .08em;
+  text-shadow: 0 0 18px rgba(255,255,255,.5);
+  animation: echo-location-in 600ms ease-out both;
 }
-.world-interaction__network > span:last-of-type { text-align: right; }
-.world-interaction__network-line { flex: 1; height: 2px; background: #fff; transform: scaleX(0); transform-origin: left; animation: echo-connect 1.7s ease-out 400ms forwards; box-shadow: 0 0 12px #fff; }
-.world-interaction__network small { position: absolute; top: calc(100% + 12px); left: 0; width: 100%; text-align: center; font-size: .7em; }
-@keyframes echo-connect { to { transform: scaleX(1); } }
+.world-interaction__location small {
+  display: block; margin-top: .7em;
+  font: 600 clamp(12px, 2cqw, 18px)/1.3 monospace;
+  letter-spacing: .2em;
+}
+@keyframes echo-location-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .world-interaction__card {
   position: absolute; left: 7%; right: 7%; bottom: 13%;
   max-height: 57%; overflow: auto;

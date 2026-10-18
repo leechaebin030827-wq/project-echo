@@ -14,7 +14,7 @@ from inspect_head import setup_render
 
 ROOT=Path(__file__).resolve().parents[2]
 p=argparse.ArgumentParser();p.add_argument('--base',default='character_a');p.add_argument('--landmarks',type=Path);a=p.parse_args(sys.argv[sys.argv.index('--')+1:])
-out=ROOT/'public/debug/semantic'/a.base;source=ROOT/'artifacts/pipeline'/a.base/(a.base+'_animated.glb')
+out=ROOT/'artifacts/debug/semantic'/a.base;source=ROOT/'artifacts/pipeline'/a.base/(a.base+'_animated.glb')
 det=json.loads((a.landmarks or out/'front-landmarks.json').read_text());camera=json.loads((out/'front-camera.json').read_text());canonical=json.loads((ROOT/'public/face/canonical.json').read_text())
 assert det['state']=='FACE_DETECTION_VALID','Landmarks need correction before projection'
 assert hashlib.sha256(source.read_bytes()).hexdigest()==camera['source_sha256'],'Camera belongs to a different asset'

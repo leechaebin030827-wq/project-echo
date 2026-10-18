@@ -74,14 +74,14 @@
     "final_glb": "public/models/semantic/character_n01_face_ready.glb",
     "package_alias": "assets/characters/character_n01/face_ready.glb",
     "final_sha256": "0526cacf36417f2d8194d948650862524642ba7828ab6761691331e0aecdb11d",
-    "mapping": "public/debug/semantic/character_n01/character_n01_face_mapping.json",
-    "preservation_validation": "public/debug/semantic/character_n01/preservation-validation.json",
-    "contract_validation": "public/debug/semantic/character_n01/contract-validation.json",
-    "gltf_validation": "public/debug/semantic/character_n01/gltf-validation.json",
+    "mapping": "artifacts/debug/semantic/character_n01/character_n01_face_mapping.json",
+    "preservation_validation": "artifacts/debug/semantic/character_n01/preservation-validation.json",
+    "contract_validation": "artifacts/debug/semantic/character_n01/contract-validation.json",
+    "gltf_validation": "artifacts/debug/semantic/character_n01/gltf-validation.json",
     "diagnostic_images": [
-      "public/debug/semantic/character_n01/diagnostic-front.png",
-      "public/debug/semantic/character_n01/diagnostic-left.png",
-      "public/debug/semantic/character_n01/diagnostic-right.png"
+      "artifacts/debug/semantic/character_n01/diagnostic-front.png",
+      "artifacts/debug/semantic/character_n01/diagnostic-left.png",
+      "artifacts/debug/semantic/character_n01/diagnostic-right.png"
     ]
   },
   "review": {

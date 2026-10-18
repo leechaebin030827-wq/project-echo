@@ -129,7 +129,7 @@ export class PostProcessing {
     this.bloomPass.strength = hamina ? 0.22 : 0.34;
     this.bloomPass.radius = hamina ? 0.32 : 0.32;
     this.bloomPass.threshold = hamina ? 0.9 : 0.84;
-    this.renderer.toneMappingExposure = hamina ? 0.85 : 0.98;
+    this.renderer.toneMappingExposure = hamina ? 0.93 : 1.06;
   }
 
   setCoolerInversion(amount) {

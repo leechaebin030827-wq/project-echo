@@ -6,7 +6,7 @@ import numpy as np
 from mathutils import Vector, Matrix
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / 'public/debug/face-rig'
+OUT = ROOT / 'artifacts/debug/face-rig'
 OUT.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(Path(__file__).parent))
 from validate_character import import_character
