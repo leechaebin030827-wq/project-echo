@@ -45,7 +45,8 @@ export function visitorFaceCrop(frame, points) {
   };
 }
 
-function makeFaceCutout(frame, points, crop) {
+export function visitorFaceCutout(frame, points, crop = visitorFaceCrop(frame, points)) {
+  if (!crop) return null;
   const width = Math.max(1, Math.ceil(crop.width));
   const height = Math.max(1, Math.ceil(crop.height));
   const face = document.createElement('canvas');
@@ -148,7 +149,7 @@ export class BillboardFaceTexture {
   applyVisitorFace(session) {
     const crop = visitorFaceCrop(session?.frame, session?.points);
     if (!crop) return false;
-    const face = makeFaceCutout(session.frame, session.points, crop);
+    const face = visitorFaceCutout(session.frame, session.points, crop);
     const { context } = this;
     context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     context.drawImage(this.image, 0, 0);

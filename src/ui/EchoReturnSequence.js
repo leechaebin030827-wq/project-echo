@@ -29,42 +29,54 @@ export class EchoReturnSequence {
     this.cancelled = false;
   }
 
-  recordFrame(camera, cameraController, now = performance.now()) {
+  recordFrame(camera, cameraController, entities, now = performance.now()) {
     if (this.cancelled || now - this.lastCaptureAt < 700 || cameraController.transition) return;
+    const source = this.renderer.domElement;
     const height = this.stage.clientHeight;
-    if (!height || !this.renderer.domElement.width) return;
-    const entity = cameraController.focused
-      ?? cameraController.danceGroup?.members?.[cameraController.danceHeroIndex];
-    if (!entity) return;
-    let best = null;
-    for (const candidate of [entity]) {
+    if (!height || !source.width || !entities?.length) return;
+    const visibleFaces = [];
+    for (const candidate of entities) {
       if (!candidate.root.visible || !candidate.getHeadWorldPosition) continue;
       candidate.getHeadWorldPosition(this.head);
       candidate.getHeadDirection(this.forward);
       this.toCamera.subVectors(camera.position, this.head);
       const distance = this.toCamera.length();
       const facing = this.forward.dot(this.toCamera.normalize());
-      if (facing < 0.58 || distance > 12) continue;
+      if (facing < 0.2 || distance > 28) continue;
       this.projected.copy(this.head).project(camera);
       if (this.projected.z <= -1 || this.projected.z >= 1
-        || Math.abs(this.projected.x) > 0.48 || Math.abs(this.projected.y) > 0.54) continue;
+        || Math.abs(this.projected.x) > 0.84 || Math.abs(this.projected.y) > 0.78) continue;
       const focalPixels = height * camera.zoom
         / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
       const facePixels = candidate.height * 0.24 * focalPixels / distance;
-      if (facePixels < 58) continue;
+      if (facePixels < 34) continue;
       const center = 1 - Math.hypot(this.projected.x, this.projected.y) * 0.28;
-      const score = facePixels * facing * center;
-      if (!best || score > best.score) {
-        best = { id: candidate.id, score, x: this.projected.x, y: this.projected.y };
-      }
+      const score = facePixels * Math.max(0.2, facing) * center;
+      const existing = this.candidates.filter((frame) => frame.id === candidate.id).length;
+      if (existing >= 3) continue;
+      visibleFaces.push({
+        id: candidate.id, score, x: this.projected.x, y: this.projected.y,
+        facePixels: facePixels * source.height / height,
+        priority: score / (1 + existing * 2.5),
+      });
     }
-    if (!best) return;
-    const previous = this.candidates.at(-1);
-    if (previous?.id === best.id && now - previous.time < 1250
-      && Math.hypot(previous.x - best.x, previous.y - best.y) < 0.13) return;
-    // Read the completed world frame while WebGL's drawing buffer is available.
-    this.context.drawImage(this.renderer.domElement, 0, 0, WIDTH, HEIGHT);
-    this.candidates.push({ ...best, time: now, source: this.canvas.toDataURL('image/jpeg', 0.84) });
+    if (!visibleFaces.length) return;
+    visibleFaces.sort((a, b) => b.priority - a.priority);
+    // Crop each visible face from the completed WebGL frame. The return scene
+    // can then show different visitors instead of repeating whole-screen shots.
+    for (const face of visibleFaces.slice(0, 2)) {
+      const cropHeight = Math.min(source.height, Math.max(face.facePixels * 5.6, source.height * 0.22));
+      const cropWidth = Math.min(source.width, cropHeight * WIDTH / HEIGHT);
+      const headX = (face.x * 0.5 + 0.5) * source.width;
+      const headY = (-face.y * 0.5 + 0.5) * source.height;
+      const sx = THREE.MathUtils.clamp(headX - cropWidth * 0.5, 0, source.width - cropWidth);
+      const sy = THREE.MathUtils.clamp(headY - cropHeight * 0.31, 0, source.height - cropHeight);
+      this.context.drawImage(source, sx, sy, cropWidth, cropHeight, 0, 0, WIDTH, HEIGHT);
+      this.candidates.push({
+        id: face.id, score: face.score, x: face.x, y: face.y, time: now,
+        source: this.canvas.toDataURL('image/jpeg', 0.84),
+      });
+    }
     this.lastCaptureAt = now;
     if (this.candidates.length > MAX_CANDIDATES) {
       const weakest = this.candidates.reduce((index, item, next) => (
@@ -84,7 +96,7 @@ export class EchoReturnSequence {
         const samePerson = selected.filter((frame) => frame.id === candidate.id).length;
         const nearestTime = selected.length
           ? Math.min(...selected.map((frame) => Math.abs(frame.time - candidate.time))) : Infinity;
-        const value = candidate.score / (1 + samePerson * 0.9)
+        const value = candidate.score / (1 + samePerson * 4)
           + Math.min(nearestTime / 1000, 5) * 7;
         if (value > bestValue) { bestValue = value; bestIndex = index; }
       });
@@ -104,7 +116,7 @@ export class EchoReturnSequence {
     });
   }
 
-  async play() {
+  async play({ onTypingStart = () => {}, onTypingEnd = () => {} } = {}) {
     const frames = this.selectFrames();
     const track = this.overlay.querySelector('.echo-return-track');
     track.replaceChildren();
@@ -157,6 +169,8 @@ export class EchoReturnSequence {
     quote.querySelector('.quote-korean').textContent = INTRO_TEXT.quote.korean;
     this.overlay.classList.add('show-quote');
     await this.delay(700);
+    this.stopTyping = onTypingEnd;
+    onTypingStart();
     const type = async (selector, value) => {
       const element = quote.querySelector(selector);
       for (const character of value) {
@@ -169,6 +183,8 @@ export class EchoReturnSequence {
     if (this.cancelled) return;
     await this.delay(TIMING.QUOTE_SECTION_DELAY);
     await type('.quote-source', INTRO_TEXT.quote.source);
+    this.stopTyping?.();
+    this.stopTyping = null;
     if (this.cancelled) return;
     quote.classList.add('is-korean-visible');
     await this.delay(3000);
@@ -176,6 +192,8 @@ export class EchoReturnSequence {
 
   dispose() {
     this.cancelled = true;
+    this.stopTyping?.();
+    this.stopTyping = null;
     for (const timer of this.timers) window.clearTimeout(timer);
     this.timers = [];
     this.candidates = [];

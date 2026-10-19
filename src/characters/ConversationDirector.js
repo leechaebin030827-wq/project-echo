@@ -108,7 +108,7 @@ export class ConversationDirector {
     for (const [index, member] of conversation.members.entries()) {
       member.conversation = conversation;
       member.conversationIndex = index;
-      member.play('idle');
+      member.play('walk');
     }
     this.conversations.push(conversation);
     this.nextConversationIn = GLOBAL_PAUSE_SECONDS;

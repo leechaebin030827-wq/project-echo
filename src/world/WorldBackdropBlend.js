@@ -20,16 +20,23 @@ export class WorldBackdropBlend {
     this.prepared = false;
   }
 
-  prepare(duration) {
+  prepare(duration, { hideWorlds = false } = {}) {
     this.duration = Math.max(0.001, duration);
     this.startedAt = performance.now();
     this.toPosition = this.toWorld.root.position.clone();
     this.toEchoVisible = this.toWorld.echo.visible;
+    this.hideWorlds = hideWorlds;
     if (!this.toWorld.lights) this.toWorld.addLighting();
     else this.toWorld.lights.forEach((light) => this.toWorld.scene.add(light));
     this.toWorld.root.position.add(this.offset);
     this.toWorld.root.updateMatrixWorld(true);
-    this.toWorld.root.visible = true;
+    this.fromVisible = this.fromWorld.root.visible;
+    this.toWorld.root.visible = !hideWorlds;
+    this.characterVisibility = this.characterRoots.map((root) => root.visible);
+    if (hideWorlds) {
+      this.fromWorld.root.visible = false;
+      this.characterRoots.forEach((root) => { root.visible = false; });
+    }
     this.toWorld.echo.visible = false;
     for (const light of this.toWorld.lights) light.position.add(this.offset);
     for (const light of this.fromWorld.lights ?? []) {
@@ -59,6 +66,11 @@ export class WorldBackdropBlend {
     if (!this.prepared) return;
     this.toWorld.root.position.copy(this.toPosition);
     this.toWorld.root.updateMatrixWorld(true);
+    this.fromWorld.root.visible = this.fromVisible;
+    this.toWorld.root.visible = true;
+    this.characterRoots.forEach((root, index) => {
+      root.visible = this.characterVisibility[index];
+    });
     this.toWorld.echo.visible = this.toEchoVisible;
     for (const light of this.toWorld.lights) light.position.sub(this.offset);
     for (const entry of this.lightEntries) entry.light.intensity = entry.intensity;
@@ -75,7 +87,11 @@ export class WorldBackdropBlend {
     if (!this.prepared) return;
     this.toWorld.root.position.copy(this.toPosition);
     this.toWorld.root.updateMatrixWorld(true);
+    this.fromWorld.root.visible = this.fromVisible;
     this.toWorld.root.visible = false;
+    this.characterRoots.forEach((root, index) => {
+      root.visible = this.characterVisibility[index];
+    });
     this.toWorld.echo.visible = this.toEchoVisible;
     for (const light of this.toWorld.lights) {
       light.position.sub(this.offset);

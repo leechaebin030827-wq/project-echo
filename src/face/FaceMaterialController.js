@@ -5,6 +5,7 @@ export class FaceMaterialController {
     this.materials = [];
     this.texture = null;
     this.focusAmount = 0;
+    this.speechOpen = 0;
     root.traverse((object) => {
       if (!object.isMesh) return;
       const replace = (material) => {
@@ -18,22 +19,43 @@ export class FaceMaterialController {
         copy.polygonOffsetFactor = -1.5;
         copy.polygonOffsetUnits = -1.5;
         const visibilityFill = { value: 0 };
+        const speechOpen = { value: 0 };
         copy.onBeforeCompile = (shader) => {
           shader.uniforms.uFaceVisibilityFill = visibilityFill;
-          shader.fragmentShader = `uniform float uFaceVisibilityFill;\n${shader.fragmentShader}`;
+          shader.uniforms.uSpeechOpen = speechOpen;
+          shader.vertexShader = `uniform float uSpeechOpen;\n${shader.vertexShader}`;
+          shader.vertexShader = shader.vertexShader.replace(
+            '#include <begin_vertex>',
+            `#include <begin_vertex>
+            float speechMouthWidth = exp(-pow((uv1.x - 0.5) / 0.095, 2.0) * 1.5);
+            float speechLipBand = exp(-pow((uv1.y - 0.7) / 0.045, 2.0) * 1.4);
+            float speechLowerLip = smoothstep(0.69, 0.735, uv1.y);
+            transformed.y += uSpeechOpen * speechMouthWidth * speechLipBand
+              * (0.0018 * (1.0 - speechLowerLip) - 0.008 * speechLowerLip);`,
+          );
+          shader.fragmentShader = `uniform float uFaceVisibilityFill;
+            uniform float uSpeechOpen;\n${shader.fragmentShader}`;
+          shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <map_fragment>',
+            `#include <map_fragment>
+            float speechInnerMouth = exp(-pow((vMapUv.x - 0.5) / 0.058, 2.0) * 1.8
+              - pow((vMapUv.y - 0.702) / 0.018, 2.0) * 1.8);
+            diffuseColor.rgb *= 1.0 - uSpeechOpen * speechInnerMouth * 0.36;`,
+          );
           shader.fragmentShader = shader.fragmentShader.replace(
             '#include <opaque_fragment>',
             `outgoingLight += diffuseColor.rgb * uFaceVisibilityFill * 0.5;
             #include <opaque_fragment>`,
           );
         };
-        copy.customProgramCacheKey = () => 'echo-face-visibility-fill-v1';
+        copy.customProgramCacheKey = () => 'echo-face-visibility-fill-speech-v1';
         this.materials.push({
           material: copy,
           original: copy.map,
           baseColor: copy.color.clone(),
           distantColor: copy.color.clone().multiplyScalar(1.06),
           visibilityFill,
+          speechOpen,
           emissiveIntensity: copy.emissiveIntensity ?? 0,
           roughness: copy.roughness ?? 0.78,
         });
@@ -46,6 +68,11 @@ export class FaceMaterialController {
   }
 
   get baseImage() { return this.materials[0]?.original?.image; }
+
+  setSpeechOpen(amount) {
+    this.speechOpen = THREE.MathUtils.clamp(amount, 0, 1);
+    for (const entry of this.materials) entry.speechOpen.value = this.speechOpen;
+  }
 
   set(texture) {
     this.texture?.dispose();

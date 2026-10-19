@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { FACE_IDENTITY_CONFIG } from '../config.js';
+import { smoothFaceNormals } from './FaceSurfaceSmoothing.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const smoothstep = (edge0, edge1, value) => {
@@ -24,7 +25,15 @@ function cloneDeformableGeometry(source) {
   geometry.name = `${source.name || 'geometry'}-face-morph`;
   if (source.index) geometry.setIndex(source.index);
   for (const [name, attribute] of Object.entries(source.attributes)) {
-    geometry.setAttribute(name, name === 'position' || name === 'normal' ? attribute.clone() : attribute);
+    if (name === 'position' || name === 'normal') {
+      const values = new Float32Array(attribute.count * attribute.itemSize);
+      for (let vertex = 0; vertex < attribute.count; vertex += 1) {
+        for (let component = 0; component < attribute.itemSize; component += 1) {
+          values[vertex * attribute.itemSize + component] = attribute.getComponent(vertex, component);
+        }
+      }
+      geometry.setAttribute(name, new THREE.BufferAttribute(values, attribute.itemSize));
+    } else geometry.setAttribute(name, attribute);
   }
   geometry.morphAttributes = source.morphAttributes;
   geometry.morphTargetsRelative = source.morphTargetsRelative;
@@ -79,8 +88,8 @@ export class FaceMorphController {
       mesh,
       sourceGeometry,
       geometry,
-      original: sourceGeometry.getAttribute('position').array,
-      originalNormals: sourceGeometry.getAttribute('normal')?.array ?? null,
+      original: geometry.getAttribute('position').array.slice(),
+      originalNormals: geometry.getAttribute('normal')?.array.slice() ?? null,
       displacement: new Float32Array(position.count * 3),
       magnitudes: new Float32Array(position.count),
       regions: type === 'face' ? new Array(position.count).fill('face') : null,
@@ -347,7 +356,7 @@ export class FaceMorphController {
         entry.affectedVertices.add(vertex);
       }
       position.needsUpdate = true;
-      entry.geometry.computeVertexNormals();
+      smoothFaceNormals(entry.geometry);
       entry.geometry.computeBoundingBox();
       entry.geometry.computeBoundingSphere();
     }

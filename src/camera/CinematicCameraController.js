@@ -31,6 +31,12 @@ export class CinematicCameraController {
     this.danceMove = null;
     this.danceViewPosition = new THREE.Vector3();
     this.danceViewTarget = new THREE.Vector3();
+    this.danceAnimatedHead = new THREE.Vector3();
+    this.danceTrackedHead = new THREE.Vector3();
+    this.danceTrackReady = false;
+    this.dancePoseForward = new THREE.Vector3();
+    this.dancePoseSide = new THREE.Vector3();
+    this.danceSafePosition = new THREE.Vector3();
     this.angle = 0;
     this.elapsed = 0;
     this.transition = null;
@@ -45,6 +51,7 @@ export class CinematicCameraController {
     this.onStateChange = () => {};
     this.interactiveFocus = null;
     this.interactiveOrigin = null;
+    this.archivePhotoOrigin = null;
     this.hoverTarget = null;
     this.hoverZoom = 0;
     this.hoverOffset = new THREE.Vector3();
@@ -84,11 +91,16 @@ export class CinematicCameraController {
         ? this.config.farOrbitBoundsClearance : 1),
       this.echoCenter.y + Math.max(14, this.farRadius * 0.82),
     );
-    this.nearRadius = Math.max(
-      world.echoSphere.radius * this.config.nearOrbitRadiusFromEcho * (world.nearOrbitScale ?? 1)
-        * (world.root?.name === 'HaminaWorld' ? 1 : 0.8),
-      world.root?.name === 'HaminaWorld' ? 7.4 : 6.8,
+    // Nevada and Hamina now finish their entry on the same ECHO-relative
+    // distance and elevation. World-specific azimuths remain intact so each
+    // world's authored landmarks retain their requested left/right framing.
+    this.nearRadius = (world.root?.name === 'NevadaWorld'
+      ? this.config.nevadaNearOrbitRadius : this.config.nearOrbitRadius) ?? Math.max(
+      world.echoSphere.radius * this.config.nearOrbitRadiusFromEcho,
+      this.config.nearOrbitMinimumRadius,
     );
+    this.orbitTargetHeightRatio = world.root?.name === 'NevadaWorld'
+      ? this.config.nevadaOrbitTargetHeightRatio : 0.08;
     if (world.root?.name === 'HaminaWorld') {
       this.farRadius = Math.max(
         this.nearRadius * 1.85,
@@ -103,15 +115,118 @@ export class CinematicCameraController {
     }
     this.nearHeight = this.echoCenter.y + Math.max(
       world.echoSphere.radius * this.config.nearOrbitHeightFromEcho,
-      4.2,
-    ) + (world.root?.name === 'HaminaWorld' ? 0 : -0.3);
+      4,
+    ) + (world.root?.name === 'NevadaWorld'
+      ? this.config.nevadaNearOrbitHeightOffset : this.config.nearOrbitHeightOffset);
+    if (world.root?.name === 'NevadaWorld') {
+      // The world bounds include distant scenery and tall structures. Keep
+      // the opening orbit near ECHO so people remain readable from the start.
+      this.farRadius = this.config.nevadaIntroRadius;
+      this.farHeight = this.echoCenter.y
+        + (this.nearHeight - this.echoCenter.y) * this.config.nevadaIntroHeightFromNear;
+    }
+    this.nevadaIntroAngle = null;
+    this.nevadaIntroTarget = null;
+    if (world.root?.name === 'NevadaWorld' && world.interactiveRegions?.length) {
+      const dataCenter = world.interactiveRegions.find((region) => region.name === 'Data Center');
+      const coolers = world.interactiveRegions.filter((region) => region.name === 'Cooler');
+      if (dataCenter && coolers.length) {
+        const coolerCenter = coolers.reduce(
+          (center, region) => center.add(region.center), new THREE.Vector3(),
+        ).divideScalar(coolers.length);
+        this.nevadaIntroTarget = dataCenter.center.clone().add(coolerCenter).multiplyScalar(0.5);
+        this.nevadaIntroTarget.y = this.echoCenter.y + this.echoSize.y * 0.08;
+        const probe = this.camera.clone();
+        probe.zoom = 1;
+        probe.updateProjectionMatrix();
+        const introTarget = this.nevadaIntroTarget;
+        let best = null;
+        for (let step = 0; step < 720; step += 1) {
+          const angle = (step / 720) * Math.PI * 2;
+          probe.position.set(
+            this.echoCenter.x + Math.cos(angle) * this.farRadius,
+            this.farHeight,
+            this.echoCenter.z + Math.sin(angle) * this.farRadius,
+          );
+          probe.lookAt(this.echoCenter);
+          probe.updateMatrixWorld(true);
+          const dataScreen = dataCenter.center.clone().project(probe);
+          const coolerScreen = coolerCenter.clone().project(probe);
+          const separation = coolerScreen.x - dataScreen.x;
+          if (dataScreen.z < -1 || dataScreen.z > 1
+            || coolerScreen.z < -1 || coolerScreen.z > 1
+            || separation < 0.12) continue;
+          const edgePenalty = Math.max(0, Math.abs(dataScreen.x) - 0.94)
+            + Math.max(0, Math.abs(coolerScreen.x) - 0.94);
+          const screenCenter = (dataScreen.x + coolerScreen.x) * 0.5;
+          const score = Math.abs(screenCenter) * 1.4
+            + Math.abs(separation - 0.84)
+            + Math.abs(dataScreen.y - coolerScreen.y) * 0.08
+            + edgePenalty * 6;
+          if (!best || score < best.score) {
+            best = { angle, score, dataX: dataScreen.x, coolerX: coolerScreen.x };
+          }
+        }
+        if (best) {
+          this.nevadaIntroAngle = best.angle;
+          console.info(`[Camera] Nevada intro angle ${(best.angle * 180 / Math.PI).toFixed(1)}°, data ${best.dataX.toFixed(2)}, cooler ${best.coolerX.toFixed(2)}`);
+        }
+      }
+    }
+    this.haminaArrivalAngle = null;
+    if (world.root?.name === 'HaminaWorld' && world.timerBounds) {
+      const probe = this.camera.clone();
+      probe.zoom = 1;
+      probe.updateProjectionMatrix();
+      const timerCorners = [];
+      for (const x of [world.timerBounds.min.x, world.timerBounds.max.x]) {
+        for (const y of [world.timerBounds.min.y, world.timerBounds.max.y]) {
+          for (const z of [world.timerBounds.min.z, world.timerBounds.max.z]) {
+            timerCorners.push(new THREE.Vector3(x, y, z));
+          }
+        }
+      }
+      const arrivalTarget = this.echoCenter.clone().add(new THREE.Vector3(0, this.echoSize.y * 0.08, 0));
+      const projectLeftEdge = (angle) => {
+        probe.position.set(
+          this.echoCenter.x + Math.cos(angle) * this.nearRadius,
+          this.nearHeight,
+          this.echoCenter.z + Math.sin(angle) * this.nearRadius,
+        );
+        probe.lookAt(arrivalTarget);
+        probe.updateMatrixWorld(true);
+        let left = Infinity;
+        let visibleDepth = false;
+        for (const corner of timerCorners) {
+          const projected = corner.clone().project(probe);
+          if (projected.z >= -1 && projected.z <= 1) visibleDepth = true;
+          left = Math.min(left, projected.x);
+        }
+        return visibleDepth ? left : Infinity;
+      };
+      let best = null;
+      for (let step = 0; step < 720; step += 1) {
+        const angle = (step / 720) * Math.PI * 2;
+        const leftEdge = projectLeftEdge(angle);
+        const nextLeftEdge = projectLeftEdge(angle + 0.01);
+        if (!Number.isFinite(leftEdge) || nextLeftEdge >= leftEdge) continue;
+        const score = Math.abs(leftEdge - 1.03);
+        if (!best || score < best.score) best = { angle, score, leftEdge };
+      }
+      if (best) {
+        this.haminaArrivalAngle = best.angle;
+        console.info(`[Camera] Hamina landing angle ${(best.angle * 180 / Math.PI).toFixed(1)}°, timer edge ${best.leftEdge.toFixed(2)}`);
+      }
+    }
     this.proximityThreshold = world.echoSphere.radius * 5.4;
     return this;
   }
 
   startIntro() {
     this.elapsed = 0;
-    this.angle = -Math.PI * 0.15;
+    const stopAngle = Number.isFinite(this.nevadaIntroAngle)
+      ? this.nevadaIntroAngle : -Math.PI * 0.15;
+    this.angle = stopAngle - Math.PI * 2;
     this.focused = null;
     this.focusFraming = 'character';
     this.target.copy(this.echoCenter);
@@ -138,6 +253,32 @@ export class CinematicCameraController {
     this.setState(EXPERIENCE_STATES.ECHO_ORBIT);
   }
 
+  startEchoRitualSpin(entities) {
+    if (this.state !== EXPERIENCE_STATES.ECHO_ORBIT || !entities.length) return false;
+    const nearestIndex = entities.reduce((best, entity, index) => {
+      const angle = Math.atan2(
+        entity.root.position.z - this.echoCenter.z,
+        entity.root.position.x - this.echoCenter.x,
+      );
+      const difference = Math.abs(Math.atan2(
+        Math.sin(angle - this.angle), Math.cos(angle - this.angle),
+      ));
+      return difference < best.difference ? { index, difference } : best;
+    }, { index: 0, difference: Infinity }).index;
+    const shots = Array.from({ length: 5 }, (_, index) =>
+      entities[(nearestIndex + index * 3) % entities.length]);
+    this.ritualSpin = {
+      fromPosition: this.camera.position.clone(),
+      fromTarget: this.target.clone(),
+      shots,
+      shotDuration: 3.4,
+    };
+    this.elapsed = 0;
+    this.transition = null;
+    this.setState(EXPERIENCE_STATES.ECHO_RITUAL_SPIN);
+    return true;
+  }
+
   getOrbitPosition(angle = this.angle, target = new THREE.Vector3()) {
     return target.set(
       this.echoCenter.x + Math.cos(angle) * this.nearRadius,
@@ -146,28 +287,28 @@ export class CinematicCameraController {
     );
   }
 
-  applyOrbitPose(radius, height, angle) {
+  applyOrbitPose(radius, height, angle, targetOverride = null) {
     this.camera.position.set(
       this.echoCenter.x + Math.cos(angle) * radius,
       height,
       this.echoCenter.z + Math.sin(angle) * radius,
     );
-    this.target.copy(this.echoCenter).add(this.tempA.set(0, this.echoSize.y * 0.08, 0));
+    if (targetOverride) this.target.copy(targetOverride);
+    else this.target.copy(this.echoCenter).add(this.tempA.set(
+      0, this.echoSize.y * this.orbitTargetHeightRatio, 0,
+    ));
     this.camera.lookAt(this.target);
   }
 
   getFocusPose(entity, positionTarget = new THREE.Vector3(), lookTarget = new THREE.Vector3()) {
     entity.getHeadWorldPosition(lookTarget);
     const faceFraming = this.focusFraming === 'face';
-    lookTarget.y -= entity.height * (faceFraming
-      ? 0.035
-      : CHARACTER_CAMERA_CONFIG.lookTargetOffset);
-    lookTarget.y += entity.height * CHARACTER_CAMERA_CONFIG.headroomRatio * 0.15;
+    lookTarget.y -= entity.height * (faceFraming ? 0.035 : 0.1);
     entity.getHeadDirection(this.focusForward);
     this.focusForward.y = 0;
     if (this.focusForward.lengthSq() < 1e-6) this.focusForward.set(0, 0, 1);
     this.focusForward.normalize().multiplyScalar(
-      entity.height * this.config.portraitDistanceFromHeight * (faceFraming ? 1.8 : 1.65),
+      entity.height * this.config.portraitDistanceFromHeight * (faceFraming ? 1.8 : 1.08),
     );
     positionTarget.copy(lookTarget).add(this.focusForward);
     positionTarget.y += entity.height * (faceFraming
@@ -179,7 +320,7 @@ export class CinematicCameraController {
   keepCharacterCameraOutsideFace() {
     if (!this.focused) return;
     this.focused.getHeadWorldPosition(this.tempC);
-    const minimum = this.focused.height * 1.6;
+    const minimum = this.focused.height * (this.focusFraming === 'face' ? 1.6 : 1.02);
     this.tempB.subVectors(this.camera.position, this.tempC);
     const distance = this.tempB.length();
     if (distance >= minimum) return;
@@ -245,19 +386,20 @@ export class CinematicCameraController {
     const member = group.members?.[this.danceHeroIndex];
     if (member) {
       const point = member.root.position;
-      if (member.getHeadWorldPosition) member.getHeadWorldPosition(target);
-      else target.copy(point).add(new THREE.Vector3(0, member.height * 0.78, 0));
-      // The head bone gives the same reliable frontal direction used for a
-      // single portrait; averaged face mesh normals can point through a cheek.
-      const forward = member.getHeadDirection
-        ? member.getHeadDirection(this.tempC)
-        : member.getFaceSurfaceDirection
-          ? member.getFaceSurfaceDirection(this.tempC)
-        : this.tempC.copy(group.center).sub(point);
-      forward.y = 0;
+      // Follow the filtered animated head anchor. The filter is updated once
+      // per frame below, so the portrait breathes with the dancer without
+      // inheriting the raw head-bone jitter that previously shook the camera.
+      if (this.danceTrackReady) target.copy(this.danceTrackedHead);
+      else {
+        target.copy(point);
+        target.y += member.height * 0.83;
+      }
+      const forward = this.dancePoseForward.set(
+        Math.sin(member.root.rotation.y), 0, Math.cos(member.root.rotation.y),
+      );
       if (forward.lengthSq() < 0.04) forward.copy(this.danceViewDirection).negate();
       forward.normalize();
-      const side = this.tempB.set(-forward.z, 0, forward.x);
+      const side = this.dancePoseSide.set(-forward.z, 0, forward.x);
       // Use a longer lens instead of pushing the camera into the face mesh.
       position.copy(target).addScaledVector(forward, member.height * 3.0)
         .addScaledVector(side, member.height * 0.07 * (this.danceHeroIndex % 2 ? -1 : 1));
@@ -276,37 +418,45 @@ export class CinematicCameraController {
     return { position, target };
   }
 
-  keepDanceCameraOutsidePeople() {
+  keepDanceCameraOutsidePeople(delta) {
+    this.danceSafePosition.copy(this.camera.position);
     for (const member of this.danceGroup?.members ?? []) {
       const body = member.root.position;
-      if (this.camera.position.y < body.y + member.height * 0.35
-        || this.camera.position.y > body.y + member.height * 1.45) continue;
-      const dx = this.camera.position.x - body.x;
-      const dz = this.camera.position.z - body.z;
+      if (this.danceSafePosition.y < body.y + member.height * 0.35
+        || this.danceSafePosition.y > body.y + member.height * 1.45) continue;
+      const dx = this.danceSafePosition.x - body.x;
+      const dz = this.danceSafePosition.z - body.z;
       const distance = Math.hypot(dx, dz);
       const minimum = Math.max(2.2, member.height * 1.25);
       if (distance >= minimum) continue;
       if (distance > 0.001) {
-        this.camera.position.x = body.x + dx / distance * minimum;
-        this.camera.position.z = body.z + dz / distance * minimum;
+        this.danceSafePosition.x = body.x + dx / distance * minimum;
+        this.danceSafePosition.z = body.z + dz / distance * minimum;
       } else {
-        this.camera.position.x = body.x + this.danceViewDirection.x * minimum;
-        this.camera.position.z = body.z + this.danceViewDirection.z * minimum;
+        this.danceSafePosition.x = body.x + this.danceViewDirection.x * minimum;
+        this.danceSafePosition.z = body.z + this.danceViewDirection.z * minimum;
       }
     }
     // During a move between dancers, another face may cross the lens even
     // while the selected dancer is safely framed.
     for (const member of this.danceGroup?.members ?? []) {
-      if (member.getHeadWorldPosition) member.getHeadWorldPosition(this.tempA);
-      else this.tempA.copy(member.root.position).add(this.tempC.set(0, member.height * 0.78, 0));
-      this.tempB.subVectors(this.camera.position, this.tempA);
+      this.tempA.copy(member.root.position);
+      this.tempA.y += member.height * 0.83;
+      this.tempB.subVectors(this.danceSafePosition, this.tempA);
       const distance = this.tempB.length();
       const minimum = member.height * 1.8;
       if (distance >= minimum) continue;
       if (distance < 0.001) this.tempB.copy(this.danceViewDirection);
       else this.tempB.divideScalar(distance);
-      this.camera.position.copy(this.tempA).addScaledVector(this.tempB, minimum);
+      this.danceSafePosition.copy(this.tempA).addScaledVector(this.tempB, minimum);
     }
+    // Resolve an obstruction over several frames. The old hard assignment
+    // produced a one-frame camera jump whenever a dancer crossed the safety
+    // radius during a shot change.
+    this.camera.position.lerp(
+      this.danceSafePosition,
+      1 - Math.exp(-Math.min(delta, 0.05) * 11),
+    );
   }
 
   focusDanceGroup(group, selectedMember = null) {
@@ -318,6 +468,7 @@ export class CinematicCameraController {
     this.danceShotStep = 0;
     this.danceSequenceComplete = false;
     this.danceMove = null;
+    this.danceTrackReady = false;
     this.danceViewDirection.subVectors(this.camera.position, group.center).setY(0);
     if (this.danceViewDirection.lengthSq() < 1e-6) this.danceViewDirection.set(0, 0, 1);
     this.danceViewDirection.normalize();
@@ -413,7 +564,7 @@ export class CinematicCameraController {
 
     const settledFocus = (this.state === EXPERIENCE_STATES.CHARACTER_FOCUS
       || this.state === EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS)
-      && !this.transition;
+      && !this.transition && !this.archivePhotoOrigin;
     this.focusBreath = THREE.MathUtils.damp(
       this.focusBreath,
       settledFocus ? 1 : 0,
@@ -465,10 +616,23 @@ export class CinematicCameraController {
       };
     }
     this.interactiveFocus = region;
-    const viewDirection = this.tempA.subVectors(this.camera.position, region.center);
+    const flagFocus = region.cameraMode === 'flag';
+    const haminaCoolerFocus = region.cameraMode === 'hamina-cooler';
+    const focusCenter = region.focusTarget ?? region.center;
+    const focusBounds = region.focusBounds ?? region.bounds;
+    const focusSize = region.focusSize ?? region.size;
+    const viewDirection = this.tempA.subVectors(this.camera.position, focusCenter);
     if (viewDirection.lengthSq() < 1e-6) viewDirection.set(0, 0.35, 1);
+    if (flagFocus) viewDirection.y = 0;
     viewDirection.normalize();
-    if (region.radius > 10) {
+    if (haminaCoolerFocus) {
+      // Always show the machinery from its open ECHO-facing side. Depending
+      // on the orbit angle, using the current camera direction could otherwise
+      // place the lens behind the facility or out over the sea.
+      viewDirection.subVectors(this.echoCenter, focusCenter);
+      viewDirection.y = 0.13;
+      viewDirection.normalize();
+    } else if (!flagFocus && region.radius > 10) {
       // Approach the facade from ECHO's side, with enough lateral offset to
       // keep the ECHO out of the building's center frame.
       viewDirection.subVectors(this.echoCenter, region.center);
@@ -477,18 +641,22 @@ export class CinematicCameraController {
       this.tempB.set(viewDirection.z, 0, -viewDirection.x).normalize();
       viewDirection.addScaledVector(this.tempB, 0.45).normalize();
     }
-    const distance = region.name === 'Data Center'
-      ? region.radius * 1.55
+    const distance = flagFocus
+      ? Math.max(7, Math.min((region.focusRadius ?? region.radius) * 3.2, 14))
+      : haminaCoolerFocus
+        ? Math.max(18, Math.min((region.focusRadius ?? region.radius) * 1.7, 30))
+      : region.name === 'Data Center'
+      ? (region.focusDistance ?? region.radius * 1.55)
       : region.name === 'Cooler'
         ? Math.max(20.5, region.radius * 5.25)
         : region.name === 'Money'
           ? Math.max(9.5, Math.min(region.radius * 2.8, 38))
         : Math.max(7.5, Math.min(region.radius * 2.2, 34));
-    const destination = region.center.clone().addScaledVector(viewDirection, distance);
-    destination.y = Math.max(destination.y, region.bounds.min.y + region.size.y * 0.72);
-    if (region.name === 'Flag') destination.y += Math.max(2.5, region.size.y * 0.4);
-    const destinationTarget = region.center.clone();
-    if (region.name !== 'Flag') destinationTarget.y += region.size.y * 0.06;
+    const destination = focusCenter.clone().addScaledVector(viewDirection, distance);
+    if (flagFocus) destination.y = focusCenter.y;
+    else destination.y = Math.max(destination.y, focusBounds.min.y + focusSize.y * 0.72);
+    const destinationTarget = focusCenter.clone();
+    if (!flagFocus) destinationTarget.y += focusSize.y * 0.06;
     const travelDistance = this.camera.position.distanceTo(destination);
     const duration = THREE.MathUtils.clamp(0.82 + travelDistance * 0.045, 1.2, 2.55);
     this.transition = {
@@ -497,7 +665,7 @@ export class CinematicCameraController {
       destination,
       destinationTarget,
       duration,
-      arcHeight: Math.min(3.4, travelDistance * 0.1),
+      arcHeight: flagFocus ? 0 : Math.min(3.4, travelDistance * 0.1),
     };
     this.elapsed = 0;
     this.setState(EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS, region.name);
@@ -506,22 +674,106 @@ export class CinematicCameraController {
 
   deepenInteractiveObjectFocus(region) {
     if (!region || this.interactiveFocus !== region) return;
-    const viewDirection = this.tempA.subVectors(this.camera.position, region.center);
+    const flagFocus = region.cameraMode === 'flag';
+    const haminaCoolerFocus = region.cameraMode === 'hamina-cooler';
+    const focusCenter = region.focusTarget ?? region.center;
+    const focusBounds = region.focusBounds ?? region.bounds;
+    const focusSize = region.focusSize ?? region.size;
+    const viewDirection = this.tempA.subVectors(this.camera.position, focusCenter);
     if (viewDirection.lengthSq() < 1e-6) viewDirection.set(0, 0.3, 1);
+    if (flagFocus) viewDirection.y = 0;
     viewDirection.normalize();
-    const distance = region.name === 'Data Center'
+    const distance = flagFocus
+      ? Math.max(5.8, Math.min((region.focusRadius ?? region.radius) * 2.65, 11.5))
+      : haminaCoolerFocus
+        ? Math.max(13.5, Math.min((region.focusRadius ?? region.radius) * 1.28, 22))
+      : region.name === 'Data Center'
       ? region.radius * 1.22
       : Math.max(4.8, region.radius * 2.15);
-    const destination = region.center.clone().addScaledVector(viewDirection, distance);
-    destination.y = Math.max(destination.y, region.bounds.min.y + region.size.y * 0.66);
-    const destinationTarget = region.center.clone();
-    destinationTarget.y += region.size.y * 0.045;
+    const destination = focusCenter.clone().addScaledVector(viewDirection, distance);
+    if (flagFocus) destination.y = focusCenter.y;
+    else destination.y = Math.max(destination.y, focusBounds.min.y + focusSize.y * 0.66);
+    const destinationTarget = focusCenter.clone();
+    if (!flagFocus) destinationTarget.y += focusSize.y * 0.045;
     this.transition = {
       fromPosition: this.camera.position.clone(),
       fromTarget: this.target.clone(),
       destination,
       destinationTarget,
       duration: 1.1,
+    };
+    this.elapsed = 0;
+  }
+
+  focusArchiveDrop(center) {
+    if (!center || this.state !== EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS) return;
+    const outward = this.tempA.subVectors(this.camera.position, center).setY(0).normalize();
+    if (outward.lengthSq() < 0.001) outward.set(0, 0, 1);
+    const destination = center.clone().addScaledVector(outward, 9.5);
+    destination.y = center.y + 5.2;
+    const destinationTarget = center.clone().add(new THREE.Vector3(0, 3.3, 0));
+    this.transition = {
+      fromPosition: this.camera.position.clone(),
+      fromTarget: this.target.clone(),
+      destination,
+      destinationTarget,
+      duration: 1.05,
+    };
+    this.elapsed = 0;
+  }
+
+  focusArchivePhoto(mesh) {
+    if (!mesh || this.archivePhotoOrigin) return;
+    this.archivePhotoOrigin = {
+      position: this.camera.position.clone(),
+      target: this.target.clone(),
+      up: this.camera.up.clone(),
+      state: this.state,
+    };
+    const photoUp = new THREE.Vector3(0, 1, 0).applyQuaternion(mesh.quaternion).normalize();
+    const size = new THREE.Vector3();
+    mesh.geometry.computeBoundingBox();
+    mesh.geometry.boundingBox.getSize(size);
+    const halfFov = THREE.MathUtils.degToRad(this.camera.fov) * 0.5;
+    const aspect = this.camera.aspect;
+    const distance = Math.max(
+      size.y / (2 * Math.tan(halfFov)),
+      size.x / (2 * Math.tan(halfFov) * aspect),
+    ) * 1.28 / this.camera.zoom;
+    const destination = mesh.position.clone().add(new THREE.Vector3(0, Math.max(distance, 1.1), 0));
+    this.transition = {
+      fromPosition: this.camera.position.clone(),
+      fromTarget: this.target.clone(),
+      fromUp: this.camera.up.clone(),
+      destination,
+      destinationTarget: mesh.position.clone(),
+      destinationUp: photoUp,
+      duration: 1.2,
+      archivePhoto: true,
+    };
+    this.elapsed = 0;
+    this.setState(EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS, 'Archive Photo');
+  }
+
+  returnFromArchivePhoto({ instant = false } = {}) {
+    const origin = this.archivePhotoOrigin;
+    if (!origin) return;
+    this.archivePhotoOrigin = null;
+    if (instant) {
+      this.camera.up.copy(origin.up);
+      this.transition = null;
+      this.setState(origin.state);
+      return;
+    }
+    this.transition = {
+      fromPosition: this.camera.position.clone(),
+      fromTarget: this.target.clone(),
+      fromUp: this.camera.up.clone(),
+      destination: origin.position,
+      destinationTarget: origin.target,
+      destinationUp: origin.up,
+      duration: 1.05,
+      archiveReturnState: origin.state,
     };
     this.elapsed = 0;
   }
@@ -665,6 +917,7 @@ export class CinematicCameraController {
   holdWorldLoading() {
     this.elapsed = 0;
     this.transition = null;
+    this.loadingOrbitAngle = null;
     this.setState(EXPERIENCE_STATES.WORLD_LOADING);
   }
 
@@ -676,6 +929,7 @@ export class CinematicCameraController {
       .addScaledVector(direction, Math.max(this.echoSphere.radius * 2.6, 11.2));
     destination.y = this.target.y + Math.max(0.5, this.echoSize.y * 0.08);
     this.elapsed = 0;
+    this.loadingOrbitAngle = null;
     this.transition = {
       fromPosition: this.camera.position.clone(),
       fromTarget: this.target.clone(),
@@ -687,11 +941,15 @@ export class CinematicCameraController {
     this.setState(EXPERIENCE_STATES.WORLD_LOADING);
   }
 
-  startWorldArrival(duration = 2.4) {
+  startWorldArrival(duration = 2.4, landingHeight = 80) {
     const direction = this.tempC.subVectors(this.camera.position, this.echoCenter);
     direction.y = 0;
-    if (direction.lengthSq() < 0.001) direction.set(1, 0, 0);
-    direction.normalize();
+    if (Number.isFinite(this.haminaArrivalAngle)) {
+      direction.set(Math.cos(this.haminaArrivalAngle), 0, Math.sin(this.haminaArrivalAngle));
+    } else {
+      if (direction.lengthSq() < 0.001) direction.set(1, 0, 0);
+      direction.normalize();
+    }
     this.angle = Math.atan2(direction.z, direction.x);
     const destination = new THREE.Vector3(
       this.echoCenter.x + Math.cos(this.angle) * this.nearRadius,
@@ -705,6 +963,8 @@ export class CinematicCameraController {
       fromTarget: this.target.clone(),
       destination,
       destinationTarget,
+      direction: direction.clone(),
+      landingHeight,
       duration,
       startedAt: performance.now(),
     };
@@ -715,9 +975,10 @@ export class CinematicCameraController {
     this.camera.position.sub(this.hoverOffset);
     this.hoverOffset.set(0, 0, 0);
     const portraitZoom = this.state === EXPERIENCE_STATES.GROUP_DANCE_FOCUS
-      && this.danceHeroIndex >= 0 ? 1.65
-      : (this.state === EXPERIENCE_STATES.CHARACTER_FOCUS
-        || this.state === EXPERIENCE_STATES.CHARACTER_SWITCH) ? 1.2 : 1;
+      && this.danceHeroIndex >= 0 ? 1.78
+      : this.state === EXPERIENCE_STATES.ECHO_RITUAL_SPIN ? 1.15
+        : (this.state === EXPERIENCE_STATES.CHARACTER_FOCUS
+          || this.state === EXPERIENCE_STATES.CHARACTER_SWITCH) ? 1.2 : 1;
     const nextZoom = THREE.MathUtils.damp(this.camera.zoom, portraitZoom, 3.2, delta);
     if (Math.abs(nextZoom - this.camera.zoom) > 0.0001) {
       this.camera.zoom = nextZoom;
@@ -727,32 +988,28 @@ export class CinematicCameraController {
     if (this.state === EXPERIENCE_STATES.WORLD_JUMP_PREP
       || this.state === EXPERIENCE_STATES.WORLD_JUMP_SKY
       || this.state === EXPERIENCE_STATES.HAMINA_ARRIVAL) {
-      const progress = Math.min(1, this.state === EXPERIENCE_STATES.HAMINA_ARRIVAL
-        ? this.elapsed / this.transition.duration
-        : this.transition.startedAt
+      const progress = Math.min(1, this.transition.startedAt
         ? (performance.now() - this.transition.startedAt) / (this.transition.duration * 1000)
         : this.elapsed / this.transition.duration);
       if (this.state === EXPERIENCE_STATES.HAMINA_ARRIVAL) {
-        const descent = smoothStep(THREE.MathUtils.clamp(progress / 0.86, 0, 1));
-        const approach = smoothStep(progress);
-        this.camera.position.x = THREE.MathUtils.lerp(
-          this.transition.fromPosition.x, this.transition.destination.x, approach,
+        const descent = smoothStep(THREE.MathUtils.clamp(progress / 0.92, 0, 1));
+        const entry = THREE.MathUtils.smootherstep(progress, 0, 0.22);
+        const settle = THREE.MathUtils.smootherstep(progress, 0.58, 1);
+        const lift = this.transition.landingHeight * (1 - descent);
+        const trackedRadius = THREE.MathUtils.lerp(
+          Math.max(this.nearRadius * 1.45, 13), this.nearRadius, smoothStep(progress),
         );
-        this.camera.position.z = THREE.MathUtils.lerp(
-          this.transition.fromPosition.z, this.transition.destination.z, approach,
+        this.tempA.copy(this.echoCenter).addScaledVector(this.transition.direction, trackedRadius);
+        this.tempA.y = this.echoCenter.y + Math.max(
+          lift * 0.55,
+          this.nearHeight - this.echoCenter.y,
         );
-        this.camera.position.y = THREE.MathUtils.lerp(
-          this.transition.fromPosition.y, this.transition.destination.y, descent,
-        );
-        this.target.x = THREE.MathUtils.lerp(
-          this.transition.fromTarget.x, this.transition.destinationTarget.x, approach,
-        );
-        this.target.z = THREE.MathUtils.lerp(
-          this.transition.fromTarget.z, this.transition.destinationTarget.z, approach,
-        );
-        this.target.y = THREE.MathUtils.lerp(
-          this.transition.fromTarget.y, this.transition.destinationTarget.y, descent,
-        );
+        this.tempB.copy(this.echoCenter);
+        this.tempB.y = this.echoCenter.y + Math.max(lift * 0.9, this.echoSize.y * 0.08);
+        this.tempC.lerpVectors(this.transition.fromPosition, this.tempA, entry);
+        this.camera.position.lerpVectors(this.tempC, this.transition.destination, settle);
+        this.tempC.lerpVectors(this.transition.fromTarget, this.tempB, entry);
+        this.target.lerpVectors(this.tempC, this.transition.destinationTarget, settle);
         this.camera.lookAt(this.target);
         if (progress >= 1) this.startEchoOrbit();
         return;
@@ -774,7 +1031,21 @@ export class CinematicCameraController {
         const eased = smoothStep(progress);
         this.camera.position.lerpVectors(this.transition.fromPosition, this.transition.destination, eased);
         this.target.lerpVectors(this.transition.fromTarget, this.transition.destinationTarget, eased);
-        if (progress >= 1) this.transition = null;
+        if (progress >= 1) {
+          this.transition = null;
+          this.loadingOrbitAngle = Math.atan2(
+            this.camera.position.z - this.target.z,
+            this.camera.position.x - this.target.x,
+          );
+        }
+      } else if (this.loadingOrbitAngle !== null) {
+        const radius = Math.hypot(
+          this.camera.position.x - this.target.x,
+          this.camera.position.z - this.target.z,
+        );
+        this.loadingOrbitAngle += delta * 0.28;
+        this.camera.position.x = this.target.x + Math.cos(this.loadingOrbitAngle) * radius;
+        this.camera.position.z = this.target.z + Math.sin(this.loadingOrbitAngle) * radius;
       }
       this.camera.lookAt(this.target);
       return;
@@ -796,8 +1067,21 @@ export class CinematicCameraController {
       const eased = smoothStep(progress);
       const radius = THREE.MathUtils.lerp(this.farRadius, this.nearRadius, eased);
       const height = THREE.MathUtils.lerp(this.farHeight, this.nearHeight, eased);
-      this.angle = this.transition.fromAngle + eased * 0.42;
-      this.applyOrbitPose(radius, height, this.angle);
+      const farSpeed = Math.PI * 2 / this.config.introOrbitDuration;
+      const nearSpeed = this.config.echoOrbitSpeed;
+      const taperingTurn = progress - progress * progress + progress ** 3 / 3;
+      this.angle = this.transition.fromAngle + this.transition.duration
+        * (nearSpeed * progress + (farSpeed - nearSpeed) * taperingTurn);
+      this.camera.position.set(
+        this.echoCenter.x + Math.cos(this.angle) * radius,
+        height,
+        this.echoCenter.z + Math.sin(this.angle) * radius,
+      );
+      this.tempA.copy(this.echoCenter).add(this.tempB.set(
+        0, this.echoSize.y * this.orbitTargetHeightRatio, 0,
+      ));
+      this.target.lerpVectors(this.transition.fromTarget, this.tempA, eased);
+      this.camera.lookAt(this.target);
       if (progress >= 1) this.startEchoOrbit();
       return;
     }
@@ -805,6 +1089,42 @@ export class CinematicCameraController {
     if (this.state === EXPERIENCE_STATES.ECHO_ORBIT) {
       this.angle += delta * this.config.echoOrbitSpeed;
       this.applyOrbitPose(this.nearRadius, this.nearHeight, this.angle);
+      return;
+    }
+
+    if (this.state === EXPERIENCE_STATES.ECHO_RITUAL_SPIN) {
+      const spin = this.ritualSpin;
+      const shotIndex = Math.min(spin.shots.length - 1,
+        Math.floor(this.elapsed / spin.shotDuration));
+      const shotTime = this.elapsed - shotIndex * spin.shotDuration;
+      const shotProgress = THREE.MathUtils.smootherstep(
+        THREE.MathUtils.clamp(shotTime / (spin.shotDuration - 0.45), 0, 1), 0, 1,
+      );
+      const subject = spin.shots[shotIndex];
+      const head = subject.getHeadWorldPosition(this.tempA);
+      const outward = this.tempB.subVectors(head, this.echoCenter);
+      outward.y = 0;
+      outward.normalize();
+      const side = this.tempC.set(-outward.z, 0, outward.x);
+      const position = head.clone()
+        .addScaledVector(outward, -2.1)
+        .addScaledVector(side, THREE.MathUtils.lerp(-0.36, 0.2, shotProgress));
+      position.y += THREE.MathUtils.lerp(0.55, 0.2, shotProgress);
+      const target = head.clone().add(new THREE.Vector3(0, -0.15, 0));
+      if (shotIndex === 0) {
+        const entry = THREE.MathUtils.smootherstep(Math.min(1, shotTime / 1.55), 0, 1);
+        this.camera.position.lerpVectors(spin.fromPosition, position, entry);
+        this.target.lerpVectors(spin.fromTarget, target, entry);
+      } else {
+        // Each new face begins on a hard cut, followed by a slow descending move.
+        this.camera.position.copy(position);
+        this.target.copy(target);
+      }
+      this.camera.lookAt(this.target);
+      if (this.elapsed >= spin.shots.length * spin.shotDuration) {
+        this.ritualSpin = null;
+        this.returnToEcho();
+      }
       return;
     }
 
@@ -853,6 +1173,7 @@ export class CinematicCameraController {
             this.danceShotStep += 1;
             this.danceHeroIndex = this.danceShotStep === this.danceGroup.members.length
               ? -1 : (this.danceFirstHeroIndex + this.danceShotStep) % this.danceGroup.members.length;
+            this.danceTrackReady = false;
             this.danceMove = {
               fromPosition: this.camera.position.clone(),
               fromTarget: this.target.clone(),
@@ -862,6 +1183,19 @@ export class CinematicCameraController {
           }
         }
       }
+      const trackedMember = this.danceGroup.members?.[this.danceHeroIndex];
+      if (trackedMember) {
+        trackedMember.getHeadWorldPosition(this.danceAnimatedHead);
+        if (!this.danceTrackReady) {
+          this.danceTrackedHead.copy(this.danceAnimatedHead);
+          this.danceTrackReady = true;
+        } else {
+          this.danceTrackedHead.lerp(
+            this.danceAnimatedHead,
+            1 - Math.exp(-Math.min(delta, 0.05) * 5.2),
+          );
+        }
+      } else this.danceTrackReady = false;
       const pose = this.getDanceGroupPose(
         this.danceGroup, this.danceHeroIndex < 0 ? this.danceShotElapsed * 0.06 : 0,
         this.danceViewPosition, this.danceViewTarget,
@@ -891,7 +1225,7 @@ export class CinematicCameraController {
         this.camera.position.lerp(pose.position, smoothing);
         this.target.lerp(pose.target, smoothing);
       }
-      this.keepDanceCameraOutsidePeople();
+      this.keepDanceCameraOutsidePeople(delta);
       this.camera.lookAt(this.target);
       return;
     }
@@ -903,10 +1237,15 @@ export class CinematicCameraController {
       this.camera.position.lerpVectors(this.transition.fromPosition, this.transition.destination, eased);
       this.camera.position.y += Math.sin(Math.PI * eased) * (this.transition.arcHeight ?? 0);
       this.target.lerpVectors(this.transition.fromTarget, this.transition.destinationTarget, eased);
+      if (this.transition.destinationUp) {
+        this.camera.up.lerpVectors(this.transition.fromUp, this.transition.destinationUp, eased).normalize();
+      }
       this.camera.lookAt(this.target);
       if (progress >= 1) {
+        const returnState = this.transition.archiveReturnState;
         this.transition = null;
         this.elapsed = 0;
+        if (returnState) this.setState(returnState);
       }
       return;
     }

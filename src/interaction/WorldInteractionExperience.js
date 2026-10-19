@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 import { NEVADA_INTERACTIONS, captionDurationSeconds } from './NevadaInteractionContent.js';
+import {
+  buildHaminaForestPaperStrips,
+  preloadHaminaForestPoster,
+  renderHaminaForestPaper,
+} from './HaminaForestPaper.js';
 
 const smooth = (value) => {
   const x = THREE.MathUtils.clamp(value, 0, 1);
@@ -7,14 +12,18 @@ const smooth = (value) => {
 };
 
 export class WorldInteractionExperience {
-  constructor({ stage, camera, caption, postProcessing, getOriginalPhoto,
-    isFocusSettled = () => true, onClose }) {
+  constructor({ stage, camera, caption, postProcessing, getOriginalPhoto, getVisitorSession = () => null,
+    isFocusSettled = () => true, onNarrationStart = () => {},
+    onNarrationEnd = () => {}, onClose }) {
     this.stage = stage;
     this.camera = camera;
     this.caption = caption;
     this.postProcessing = postProcessing;
     this.getOriginalPhoto = getOriginalPhoto;
+    this.getVisitorSession = getVisitorSession;
     this.isFocusSettled = isFocusSettled;
+    this.onNarrationStart = onNarrationStart;
+    this.onNarrationEnd = onNarrationEnd;
     this.onClose = onClose;
     this.active = null;
     this.audio = new Audio('/audio/water_cooler.mp3');
@@ -55,15 +64,17 @@ export class WorldInteractionExperience {
       else this.close();
     };
     window.addEventListener('keydown', this.onKeyDown);
+    preloadHaminaForestPoster();
   }
 
   start(region) {
-    const content = NEVADA_INTERACTIONS[region?.name];
+    const content = region?.content ?? NEVADA_INTERACTIONS[region?.name];
     if (!content || this.active) return false;
     const phraseTimes = content.phrases.map(([korean]) => captionDurationSeconds(korean) + 0.12);
     const narrationDuration = phraseTimes.reduce((sum, value) => sum + value, 0);
     this.active = {
       region, content, elapsed: 0, phraseIndex: -1, phraseTimes,
+      isHamina: Boolean(region.content),
       narrationDuration, effectDuration: Math.max(content.effectDuration, narrationDuration + 0.45),
       visualStarted: false, visualEnded: false,
       photoUrl: null, idleAfterNarration: 0,
@@ -84,7 +95,7 @@ export class WorldInteractionExperience {
 
   buildVisual(active) {
     const { name } = active.region;
-    if (name === 'Data Center') {
+    if (!active.isHamina && name === 'Data Center') {
       const frame = this.getOriginalPhoto();
       if (!frame?.width || !frame?.height) {
         if (import.meta.env.DEV) this.visual.textContent = 'ORIGINAL PHOTO UNAVAILABLE';
@@ -95,9 +106,9 @@ export class WorldInteractionExperience {
       grid.className = 'world-interaction__copy-grid';
       active.copyGrid = grid;
       this.visual.append(grid);
-    } else if (name === 'Billboard') {
+    } else if (!active.isHamina && name === 'Billboard') {
       this.visual.innerHTML = '<div class="world-interaction__fact-flip"><strong>SOLD!</strong><span>$11,000,000,000</span></div>';
-    } else if (name === 'Money') {
+    } else if (!active.isHamina && name === 'Money') {
       if (active.region.cover) {
         active.cover = active.region.cover;
         active.coverStartPosition = active.cover.position.clone();
@@ -118,8 +129,30 @@ export class WorldInteractionExperience {
       amount.className = 'world-interaction__amount';
       amount.textContent = '$27,000,000';
       this.visual.append(burst, amount);
-    } else if (name === 'Flag') {
+    } else if (!active.isHamina && name === 'Flag') {
       this.visual.innerHTML = '<div class="world-interaction__location">NEVADA<small>UNITED STATES</small></div>';
+    } else if (active.isHamina && name === 'Forest') {
+      const paper = document.createElement('div');
+      paper.className = 'world-interaction__forest-paper';
+      const canvas = document.createElement('canvas');
+      canvas.className = 'world-interaction__forest-paper-art';
+      canvas.setAttribute('role', 'img');
+      canvas.setAttribute('aria-label', 'Hamina data center land acquisition poster');
+      const strips = document.createElement('div');
+      strips.className = 'world-interaction__forest-paper-strips';
+      strips.setAttribute('aria-hidden', 'true');
+      paper.append(canvas, strips);
+      active.forestPaper = paper;
+      this.visual.append(paper);
+      renderHaminaForestPaper(canvas, this.getVisitorSession())
+        .then((faceApplied) => {
+          if (!paper.isConnected) return;
+          buildHaminaForestPaperStrips(canvas, strips);
+          paper.classList.add('has-strips', 'is-ready');
+          paper.dataset.faceApplied = String(faceApplied);
+          if (import.meta.env.DEV) this.stage.dataset.forestPosterFace = String(faceApplied);
+        })
+        .catch((error) => console.warn('[Hamina Forest paper]', error));
     } else if (name === 'Cooler') {
       this.coolerBasePosition.copy(this.camera.position);
       active.coolerBaseZoom = this.camera.zoom;
@@ -141,8 +174,8 @@ export class WorldInteractionExperience {
       this.visual.classList.add('is-running');
     }
     const { content, elapsed } = active;
-    if (active.region.name === 'Money') this.updateMoneyObject(active);
-    if (active.region.name === 'Data Center' && active.copyGrid && !active.visualEnded) {
+    if (!active.isHamina && active.region.name === 'Money') this.updateMoneyObject(active);
+    if (!active.isHamina && active.region.name === 'Data Center' && active.copyGrid && !active.visualEnded) {
       active.copyElapsed += delta;
       while (active.copyElapsed >= 0.22) {
         active.copyElapsed -= 0.22;
@@ -181,7 +214,7 @@ export class WorldInteractionExperience {
       audioVolume: Number(this.audio.volume.toFixed(3)),
       audioPaused: this.audio.paused,
     });
-    if (active.region.name === 'Money') this.visual.style.setProperty('--money-offset', `${Math.sin(elapsed * 15) * envelope * 4}px`);
+    if (!active.isHamina && active.region.name === 'Money') this.visual.style.setProperty('--money-offset', `${Math.sin(elapsed * 15) * envelope * 4}px`);
     if (elapsed >= active.effectDuration && !active.visualEnded) {
       active.visualEnded = true;
       this.visual.classList.add('is-ending');
@@ -200,20 +233,27 @@ export class WorldInteractionExperience {
       if (narrationTime < boundary) { nextIndex = index; break; }
     }
     if (nextIndex !== active.phraseIndex) {
+      const previousIndex = active.phraseIndex;
       active.phraseIndex = nextIndex;
       if (nextIndex < content.phrases.length) {
+        if (active.isHamina && active.region.name === 'Forest'
+          && nextIndex === content.phrases.length - 2) {
+          active.forestPaper?.classList.add('is-leaving');
+        }
+        if (previousIndex < 0) this.onNarrationStart(active);
         const [korean, local] = content.phrases[nextIndex];
         this.caption.showOverride(korean, local);
       } else {
+        this.onNarrationEnd(active);
         this.caption.hideOverride();
-        this.researchButton.hidden = active.region.name === 'Cooler'
-          || active.region.name === 'Money';
+        this.researchButton.hidden = !content.research || (!active.isHamina
+          && ['Cooler', 'Money'].includes(active.region.name));
         if (active.region.name === 'Money') active.moneyClosingAt = elapsed;
       }
     }
     if (nextIndex === content.phrases.length && this.card.hidden) {
       active.idleAfterNarration += delta;
-      if (active.region.name === 'Money'
+      if (!active.isHamina && active.region.name === 'Money'
         && active.moneyClosingAt !== null
         && elapsed - active.moneyClosingAt >= 0.95) {
         this.close();
@@ -271,7 +311,7 @@ export class WorldInteractionExperience {
 
   openResearch() {
     const active = this.active;
-    if (!active || this.researchButton.hidden) return;
+    if (!active || this.researchButton.hidden || !active.content.research) return;
     const research = active.content.research;
     this.card.querySelector('.world-interaction__card-index').textContent = `RESEARCH ${research.number} / ${research.topic}`;
     this.card.querySelector('.world-interaction__card-title').textContent = research.title;
@@ -297,6 +337,7 @@ export class WorldInteractionExperience {
   cancel() {
     const active = this.active;
     if (!active) return;
+    this.onNarrationEnd(active);
     if (active.cover) active.cover.position.copy(active.coverStartPosition);
     this.audio.pause();
     this.audio.currentTime = 0;
@@ -320,6 +361,7 @@ export class WorldInteractionExperience {
       delete this.stage.dataset.interactionQa;
       delete this.stage.dataset.interactionEffect;
       delete this.stage.dataset.moneyReveal;
+      delete this.stage.dataset.forestPosterFace;
     }
   }
 

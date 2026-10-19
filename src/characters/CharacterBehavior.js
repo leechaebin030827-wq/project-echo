@@ -28,7 +28,7 @@ export function isCharacterOccupied(position, character, neighbors, clearance = 
 }
 
 export class CharacterBehavior {
-  constructor(character, navigation, routeIndex, random) {
+  constructor(character, navigation, routeIndex, random, options = {}) {
     this.character = character;
     this.navigation = navigation;
     this.random = random;
@@ -36,33 +36,53 @@ export class CharacterBehavior {
     this.distance = random() * this.route.length;
     this.directionSign = 1;
     this.speed = 0.42 + random() * 0.22;
-    this.allowIdle = true;
-    this.state = random() < 0.24 ? 'idle' : 'walk';
-    this.wait = this.state === 'idle' ? 1 + random() * 2 : 0;
-    this.walkTime = 4.5 + random() * 5;
+    this.allowIdle = false;
+    this.lookTarget = options.lookTarget?.clone() ?? null;
+    this.observationBias = options.observationBias ?? 0;
+    this.state = 'walk';
+    this.wait = 0;
+    this.walkTime = this.nextWalkDuration();
+    this.observationElapsed = 0;
     this.current = new THREE.Vector3();
     this.next = new THREE.Vector3();
     this.direction = new THREE.Vector3();
     navigation.sampleRoute(this.route, this.distance, this.current);
     character.root.position.copy(this.current);
-    character.play(this.state);
+    character.play('walk');
+  }
+
+  setStartDistance(distance) {
+    this.distance = distance;
+    this.navigation.sampleRoute(this.route, distance, this.current);
+    this.character.root.position.copy(this.current);
+  }
+
+  nextIdleDuration() {
+    if (!this.lookTarget) return 1.2 + this.random() * 2.3;
+    return 2.8 + this.observationBias * 2.2 + this.random() * 3.2;
+  }
+
+  nextWalkDuration() {
+    if (!this.lookTarget) return 4.5 + this.random() * 5;
+    return 2.6 + this.random() * 4.1;
+  }
+
+  faceLookTarget(delta) {
+    if (!this.lookTarget) return;
+    const dx = this.lookTarget.x - this.character.root.position.x;
+    const dz = this.lookTarget.z - this.character.root.position.z;
+    if (dx * dx + dz * dz <= 1e-5) return;
+    const desired = Math.atan2(dx, dz);
+    const current = this.character.root.rotation.y;
+    const difference = Math.atan2(Math.sin(desired - current), Math.cos(desired - current));
+    this.character.root.rotation.y += difference * Math.min(1, delta * 2.35);
   }
 
   update(delta, neighbors = []) {
-    if (this.state === 'idle') {
-      this.wait -= delta;
-      if (this.wait > 0 && this.allowIdle) return;
-      this.state = 'walk';
-      this.character.play('walk');
-      this.walkTime = 4.5 + this.random() * 5;
-    }
     const candidateDistance = this.distance + this.directionSign * delta * this.speed;
     this.navigation.sampleRoute(this.route, candidateDistance, this.next);
     if (isCharacterOccupied(this.next, this.character, neighbors)) {
-      this.state = 'idle';
-      this.wait = 0.5 + this.random() * 0.8;
       this.directionSign *= -1;
-      this.character.play('idle');
       return;
     }
     this.distance = candidateDistance;
@@ -76,14 +96,6 @@ export class CharacterBehavior {
       const current = this.character.root.rotation.y;
       const difference = Math.atan2(Math.sin(desired - current), Math.cos(desired - current));
       this.character.root.rotation.y += difference * Math.min(1, delta * 5);
-    }
-    if (this.allowIdle) {
-      this.walkTime -= delta;
-      if (this.walkTime <= 0) {
-        this.state = 'idle';
-        this.wait = 1.2 + this.random() * 2.3;
-        this.character.play('idle');
-      }
     }
   }
 }
@@ -100,13 +112,13 @@ export class NevadaRoamingBehavior {
     this.next = new THREE.Vector3();
     this.direction = new THREE.Vector3();
     this.distance = random() * this.route.length;
-    this.state = random() < 0.45 ? 'idle' : 'walk';
-    this.wait = this.state === 'idle' ? 0.6 + random() * 3.4 : 0;
+    this.state = 'walk';
+    this.wait = 0;
     this.directionSign = random() < 0.5 ? -1 : 1;
     this.speed = 0.39 + random() * 0.21;
     this.remaining = 1.6 + random() * Math.min(4.8, this.route.length * 0.42);
     this.setStartDistance(this.distance);
-    character.play(this.state);
+    character.play('walk');
   }
 
   setStartDistance(distance) {
@@ -128,23 +140,12 @@ export class NevadaRoamingBehavior {
   }
 
   update(delta, neighbors = []) {
-    if (this.state === 'idle') {
-      this.wait -= delta;
-      if (this.wait > 0) return;
-      this.state = 'walk';
-      this.character.play('walk');
-      this.directionSign = this.random() < 0.5 ? -1 : 1;
-      this.remaining = 1.6 + this.random() * Math.min(4.8, this.route.length * 0.42);
-    }
-
     const step = Math.min(this.remaining, delta * this.speed);
     const candidateDistance = this.distance + this.directionSign * step;
     this.navigation.sampleRoute(this.route, candidateDistance, this.next);
     if (isCharacterOccupied(this.next, this.character, neighbors)) {
-      this.state = 'idle';
-      this.wait = 0.9 + this.random() * 1.4;
       this.directionSign *= -1;
-      this.character.play('idle');
+      this.remaining = 1.6 + this.random() * Math.min(4.8, this.route.length * 0.42);
       return;
     }
     this.distance = candidateDistance;
@@ -153,9 +154,8 @@ export class NevadaRoamingBehavior {
     this.character.root.position.copy(this.current);
     this.faceAlongRoute(delta);
     if (this.remaining <= 0.001) {
-      this.state = 'idle';
-      this.wait = 1.4 + this.random() * 3.8;
-      this.character.play('idle');
+      this.directionSign *= -1;
+      this.remaining = 1.6 + this.random() * Math.min(4.8, this.route.length * 0.42);
     }
   }
 }

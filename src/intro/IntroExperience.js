@@ -228,6 +228,7 @@ class IntroController {
   async beginOpening() {
     if (this.openingTriggered || this.state !== IntroState.OPENING_IMAGE) return;
     this.openingTriggered = true;
+    this.audio.primeFromGesture();
     this.audio.playUi('uiClick');
     this.transition(IntroState.INTRO_START);
     this.audio.startNarration1AndMusic();

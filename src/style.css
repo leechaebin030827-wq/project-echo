@@ -61,6 +61,42 @@ button { -webkit-tap-highlight-color: transparent; }
   container-type: inline-size;
 }
 
+.stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 850;
+  pointer-events: none;
+  opacity: 1;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 1px,
+    rgba(3, 7, 14, .06) 1.5px,
+    transparent 2px
+  );
+}
+
+.vintage-film-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  overflow: hidden;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  contain: strict;
+}
+
+.vintage-film-overlay__grain {
+  position: absolute;
+  inset: -12%;
+  opacity: .035;
+  background-image:
+    repeating-radial-gradient(circle at 21% 34%, rgba(255,255,255,.55) 0 .35px, transparent .55px 2.4px),
+    repeating-radial-gradient(circle at 76% 62%, rgba(255,255,255,.38) 0 .3px, transparent .5px 2.1px);
+  background-size: 5px 5px, 7px 7px;
+}
+
 .world-canvas {
   position: absolute;
   inset: 0;
@@ -817,6 +853,10 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 .echo-caption.visible { opacity: 1; transform: translate(-50%, 0); }
+.stage.ritual-cinematic .echo-caption {
+  mix-blend-mode: normal;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .9), 0 0 18px rgba(0, 0, 0, .65);
+}
 .echo-caption p { margin: 0; }
 .echo-caption-korean {
   font-size: 4.62963cqw;
@@ -834,4 +874,65 @@ button { -webkit-tap-highlight-color: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   .world-canvas, .capture-layer, .echo-caption { transition-duration: .25s; }
+}
+
+/* The Data Center keeps photos on the ground while the camera moves in. */
+.data-archive-photo-viewer {
+  position: absolute;
+  inset: 0;
+  z-index: 26;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 380ms ease, visibility 380ms ease;
+}
+.data-archive-photo-viewer.visible {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+.data-archive-photo-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: transparent;
+}
+.data-archive-photo-close {
+  position: absolute;
+  top: 5%;
+  right: 5%;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255,255,255,.6);
+  border-radius: 50%;
+  background: #17232a;
+  color: white;
+  font: 26px/1 Arial, sans-serif;
+  cursor: pointer;
+}
+.data-archive-photo-hint {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  bottom: 7%;
+  transform: translate(-50%, 12px);
+  width: max-content;
+  max-width: 80%;
+  padding: 9px 15px;
+  border: 1px solid rgba(245, 246, 238, .36);
+  border-radius: 100px;
+  background: rgba(7, 17, 22, .65);
+  color: #f5f5ed;
+  font: 500 12px/1.35 sans-serif;
+  text-align: center;
+  text-shadow: 0 1px 3px #000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 350ms ease, transform 350ms ease, visibility 350ms ease;
+}
+.data-archive-photo-hint.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
 }

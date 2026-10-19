@@ -60,6 +60,32 @@ export class GroupDanceDirector {
 
   getGroupFor(entity) { return entity?.danceGroup ?? null; }
 
+  ensurePersistentGroup(entities) {
+    if (this.groups.length || entities.length < 3) return this.groups[0] ?? null;
+    let members = findNearbyDanceMembers(entities, this.cooldowns);
+    if (!members) {
+      const available = entities.filter((entity) => !entity.danceGroup
+        && !entity.ambientPose && !entity.conversation && !entity.focused && !entity.lookingUp);
+      let best = null;
+      let bestScore = Infinity;
+      for (let a = 0; a < available.length - 2; a += 1) {
+        for (let b = a + 1; b < available.length - 1; b += 1) {
+          for (let c = b + 1; c < available.length; c += 1) {
+            const score = horizontalDistanceSquared(available[a], available[b])
+              + horizontalDistanceSquared(available[a], available[c])
+              + horizontalDistanceSquared(available[b], available[c]);
+            if (score < bestScore) {
+              bestScore = score;
+              best = [available[a], available[b], available[c]];
+            }
+          }
+        }
+      }
+      members = best;
+    }
+    return members ? this.start(members, entities, { persistent: true }) : null;
+  }
+
   update(delta, entities) {
     for (const [id, remaining] of this.cooldowns) {
       if (remaining <= delta) this.cooldowns.delete(id);
@@ -70,11 +96,22 @@ export class GroupDanceDirector {
       const nextAge = group.age + delta;
       const gather = smooth(Math.min(1, nextAge / FORM_SECONDS));
       const returnToRoute = smooth(Math.min(1, Math.max(0, nextRemaining) / RETURN_SECONDS));
-      const outsiders = entities.filter((entity) => !group.members.includes(entity));
-      const nextPositions = group.targets.map((target, index) =>
-        group.anchors[index].clone().lerp(target, gather * returnToRoute));
-      const blocker = outsiders.find((other) => nextPositions.some((position) =>
-        isCharacterOccupied(position, null, [other], 1.42)));
+      const placementAmount = gather * returnToRoute;
+      const moving = placementAmount < 0.999;
+      const nextPositions = moving ? group.workPositions : group.targets;
+      if (moving) {
+        for (let index = 0; index < group.targets.length; index += 1) {
+          nextPositions[index].lerpVectors(
+            group.anchors[index], group.targets[index], placementAmount,
+          );
+        }
+      }
+      // The expensive collision scan is useful while the trio is forming or
+      // returning. Once they occupy their reserved targets it only allocates
+      // and repeats the same result every frame.
+      const blocker = moving ? entities.find((other) => !group.members.includes(other)
+        && nextPositions.some((position) =>
+          isCharacterOccupied(position, null, [other], 1.42))) : null;
       if (blocker) {
         group.blockedBy = blocker.id;
         continue;
@@ -182,7 +219,7 @@ export class GroupDanceDirector {
     return anchors.map((anchor) => anchor.clone());
   }
 
-  start(members, entities = members) {
+  start(members, entities = members, { persistent = false } = {}) {
     const center = new THREE.Vector3();
     for (const member of members) center.add(member.root.position);
     center.divideScalar(members.length);
@@ -196,8 +233,9 @@ export class GroupDanceDirector {
       Math.hypot(targets[index].x - center.x, targets[index].z - center.z) + member.height * 0.28));
     const group = {
       id: this.nextId++, members, center, radius, focusRadius, anchors, targets, age: 0,
+      workPositions: anchors.map((anchor) => anchor.clone()),
       height: Math.max(...members.map((member) => member.height)),
-      remaining: DANCE_SECONDS, viewed: false,
+      remaining: persistent ? Infinity : DANCE_SECONDS, viewed: false, persistent,
     };
     for (const member of members) {
       member.danceGroup = group;
@@ -217,7 +255,7 @@ export class GroupDanceDirector {
   release(group) {
     if (!this.groups.includes(group)) return;
     group.viewed = false;
-    group.remaining = 4;
+    group.remaining = group.persistent ? Infinity : 4;
   }
 
   end(group) {

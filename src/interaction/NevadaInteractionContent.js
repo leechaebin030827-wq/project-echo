@@ -6,14 +6,9 @@ export const NEVADA_INTERACTIONS = Object.freeze({
   'Data Center': {
     label: 'COPY / MULTIPLICATION',
     phrases: [
-      ['유후! 당신이 계속 늘어나네요.', 'Yoo-hoo! There are more and more of you.'],
-      ['하나, 둘, 셋…', 'One, two, three...'],
-      ['벌써 셀 수도 없겠어요.', 'There are already too many to count.'],
-      ['원본은 대체 어느 쪽이죠?', 'Which one is the original, anyway?'],
-      ['아무튼, 지금 요청하신 대로', 'Anyway, just as you requested,'],
-      ['잘 진행되고 있어요.', 'everything is going smoothly.'],
-      ['이곳에서 사람들의 일부는 계속 증식합니다.', 'Parts of people keep multiplying here.'],
-      ['당신의 것들도 무럭무럭 자라고 있겠죠.', 'I bet yours are growing nicely too.'],
+      ['걱정마요. 당신이 클라우드에 전송한 사진은', "Don't worry. The photo you sent to the cloud"],
+      ['잘 보관되고 있어요.', 'is being kept safe.'],
+      ['네~ 복사본 또 만들었어요. 봤죠?', 'Yep~ I made another copy. See?'],
     ],
     effectDuration: 4.4,
     research: {

@@ -42,34 +42,62 @@ const EchoGradeShader = {
     void main() {
       vec2 pixel = 1.0 / resolution;
       float edge = smoothstep(0.24, 0.72, distance(vUv, vec2(0.5)));
-      vec2 separation = pixel * (0.24 + edge * 0.42) * (1.0 - portraitFocus * 0.82);
+      vec2 separation = pixel * (0.12 + edge * 0.58) * (1.0 - portraitFocus * 0.85);
       vec3 source = texture2D(tDiffuse, vUv).rgb;
-      source.r = mix(source.r, texture2D(tDiffuse, vUv + separation).r, 0.065 * (1.0 - portraitFocus));
-      source.b = mix(source.b, texture2D(tDiffuse, vUv - separation).b, 0.065 * (1.0 - portraitFocus));
+      vec3 nearby = (
+        texture2D(tDiffuse, vUv + vec2(pixel.x, 0.0)).rgb
+        + texture2D(tDiffuse, vUv - vec2(pixel.x, 0.0)).rgb
+        + texture2D(tDiffuse, vUv + vec2(0.0, pixel.y)).rgb
+        + texture2D(tDiffuse, vUv - vec2(0.0, pixel.y)).rgb
+      ) * 0.25;
+      // Restore object edges after bloom without exaggerating the film grain.
+      source = max(source + clamp(source - nearby, vec3(-0.12), vec3(0.12))
+        * mix(0.26, 0.12, portraitFocus), vec3(0.0));
+      source.r = mix(source.r, texture2D(tDiffuse, vUv + separation).r, 0.11 * edge * (1.0 - portraitFocus * 0.8));
+      source.b = mix(source.b, texture2D(tDiffuse, vUv - separation).b, 0.11 * edge * (1.0 - portraitFocus * 0.8));
 
       float originalLuma = luma(source);
-      vec3 color = source + vec3(0.006);
-      color = (color - 0.48) * 1.055 + 0.48;
+      vec3 color = source + vec3(0.008, 0.009, 0.015);
+      color = (color - 0.48) * 1.075 + 0.48;
       color = max(color, vec3(0.0));
 
       float gray = luma(color);
-      color = mix(vec3(gray), color, 1.14);
+      color = mix(vec3(gray), color, mix(1.25, 1.055, portraitFocus));
+      float cobalt = smoothstep(0.015, 0.17, color.b - max(color.r, color.g));
+      float coral = smoothstep(0.035, 0.2, color.r - max(color.g, color.b));
+      color = mix(color, color * vec3(0.96, 1.025, 1.075), cobalt * (1.0 - portraitFocus * 0.72));
+      color = mix(color, color * vec3(1.06, 1.005, 0.985), coral * (1.0 - portraitFocus * 0.72));
       float shadowWeight = 1.0 - smoothstep(0.08, 0.52, originalLuma);
       float highlightWeight = smoothstep(0.58, 1.0, originalLuma);
-      color += vec3(-0.004, 0.008, 0.03) * shadowWeight;
-      color += vec3(0.032, 0.014, 0.052) * highlightWeight;
+      color += vec3(0.0, 0.012, 0.048) * shadowWeight * (1.0 - portraitFocus * 0.62);
+      color += mix(vec3(0.043, 0.011, 0.016), vec3(0.014, 0.025, 0.046), haminaMode)
+        * highlightWeight * (1.0 - portraitFocus * 0.55);
 
-      float snowHighlight = smoothstep(0.56, 1.05, luma(color));
-      color *= 1.0 - snowHighlight * 0.18 * haminaMode;
-      color = mix(color, (color - 0.44) * 1.075 + 0.44, haminaMode);
-      color *= mix(vec3(1.0), vec3(0.94, 0.985, 1.035), haminaMode);
+      float snowHighlight = smoothstep(0.6, 1.02, luma(color));
+      color *= 1.0 - snowHighlight * 0.075 * haminaMode;
+      color = mix(color, (color - 0.47) * 1.035 + 0.485, haminaMode);
+      color *= mix(vec3(1.0), vec3(1.0, 1.012, 1.02), haminaMode);
       color = max(color, vec3(0.0));
 
       float vignette = smoothstep(0.45, 0.82, distance(vUv, vec2(0.5)));
-      color *= 1.0 - vignette * 0.065 * (1.0 - portraitFocus * 0.65);
+      color *= 1.0 - vignette * 0.047 * (1.0 - portraitFocus * 0.65);
       color = mix(color, vec3(1.0) - clamp(color, 0.0, 1.0), coolerInvert);
       float grain = noise(floor(vUv * resolution * 0.72) + floor(time * 7.0));
-      color += (grain - 0.5) * 0.0045 * (1.0 - portraitFocus * 0.78);
+      color += (grain - 0.5) * 0.009 * (1.0 - portraitFocus * 0.5);
+      float glow = smoothstep(0.66, 1.18, luma(source));
+      color += glow * vec3(0.016, 0.006, 0.009) * (1.0 - haminaMode * 0.45);
+
+      // A restrained CRT texture in screen pixels: scan lines and a fine RGB
+      // phosphor pattern. Keep it faint in portraits so facial detail survives.
+      float crtStrength = 1.0 - portraitFocus * 0.52;
+      float scanLine = pow(0.5 + 0.5 * cos((gl_FragCoord.y - 0.5) * 3.14159265), 4.0);
+      vec3 phosphor = 0.987 + 0.013 * (0.5 + 0.5 * cos(
+        gl_FragCoord.x * 2.0943951 + vec3(0.0, 2.0943951, 4.1887902)
+      ));
+      color *= 1.0 - scanLine * 0.04 * crtStrength;
+      color *= mix(vec3(1.0), phosphor, crtStrength);
+      float sweep = 1.0 - smoothstep(0.0, 0.045, abs(vUv.y - fract(time * 0.085)));
+      color += vec3(0.010, 0.012, 0.017) * sweep * crtStrength;
       gl_FragColor = vec4(max(color, vec3(0.0)), 1.0);
     }
   `,
@@ -82,7 +110,7 @@ export class PostProcessing {
     this.camera = camera;
     this.composer = new EffectComposer(renderer);
     this.renderPass = new RenderPass(scene, camera);
-    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.34, 0.32, 0.84);
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.32, 0.32, 0.86);
     this.gradePass = new ShaderPass(EchoGradeShader);
     this.portraitFocus = 0;
     this.outputPass = new OutputPass();
@@ -126,10 +154,10 @@ export class PostProcessing {
   setWorldMode(mode) {
     const hamina = mode === 'hamina';
     this.gradePass.uniforms.haminaMode.value = hamina ? 1 : 0;
-    this.bloomPass.strength = hamina ? 0.22 : 0.34;
-    this.bloomPass.radius = hamina ? 0.32 : 0.32;
-    this.bloomPass.threshold = hamina ? 0.9 : 0.84;
-    this.renderer.toneMappingExposure = hamina ? 0.93 : 1.06;
+    this.bloomPass.strength = hamina ? 0.23 : 0.32;
+    this.bloomPass.radius = hamina ? 0.30 : 0.32;
+    this.bloomPass.threshold = hamina ? 0.91 : 0.86;
+    this.renderer.toneMappingExposure = hamina ? 1.035 : 1.1;
   }
 
   setCoolerInversion(amount) {
@@ -153,7 +181,7 @@ export class PostProcessing {
     );
     this.gradePass.uniforms.time.value = elapsed;
     this.gradePass.uniforms.portraitFocus.value = this.portraitFocus;
-    if (worldBlend?.prepared) {
+    if (worldBlend?.prepared && !worldBlend.hideWorlds) {
       this.renderWorldBlend(worldBlend);
       return;
     }
@@ -173,13 +201,14 @@ export class PostProcessing {
     const characterVisibility = blend.characterRoots.map((root) => root.visible);
     const previousTarget = this.renderer.getRenderTarget();
     try {
-      blend.fromWorld.root.visible = true;
+      blend.fromWorld.root.visible = !blend.hideWorlds;
       blend.toWorld.root.visible = false;
+      if (blend.hideWorlds) blend.characterRoots.forEach((root) => { root.visible = false; });
       this.renderer.setRenderTarget(this.blendFrom);
       this.renderer.render(this.scene, this.camera);
 
       blend.fromWorld.root.visible = false;
-      blend.toWorld.root.visible = true;
+      blend.toWorld.root.visible = !blend.hideWorlds;
       blend.characterRoots.forEach((root) => { root.visible = false; });
       this.renderer.setRenderTarget(this.blendTo);
       this.renderer.render(this.scene, this.camera);

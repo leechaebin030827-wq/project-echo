@@ -21,7 +21,14 @@ export class CharacterAnimator {
   }
 
   play(name) {
-    const next = this.actions[name.toLowerCase()];
+    const key = name.toLowerCase();
+    // Idle is intentionally disabled. Any legacy caller asking for it keeps
+    // the character on the same walking loop instead of the arms-out pose.
+    if (key === 'idle') {
+      this.play('walk');
+      return;
+    }
+    const next = this.actions[key];
     if (!next || (next === this.current && !next.paused)) return;
     if (next === this.current && next.paused) {
       next.paused = false;
@@ -30,7 +37,7 @@ export class CharacterAnimator {
     next.enabled = true;
     next.paused = false;
     next.setEffectiveWeight(1);
-    next.setEffectiveTimeScale(name.toLowerCase() === 'dance' ? 0.72 : 1);
+    next.setEffectiveTimeScale(key === 'dance' ? 0.72 : 1);
     next.play();
     if (this.current?.paused) {
       this.current.stop();
@@ -54,6 +61,12 @@ export class CharacterAnimator {
     this.mixer.update(0);
     next.paused = true;
     this.current = next;
+    this.accumulated = 0;
+  }
+
+  stop() {
+    this.mixer.stopAllAction();
+    this.current = null;
     this.accumulated = 0;
   }
 

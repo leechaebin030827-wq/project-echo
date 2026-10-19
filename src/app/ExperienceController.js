@@ -13,6 +13,7 @@ import { WorldNavigation } from '../world/WorldNavigation.js';
 import { Atmosphere } from '../world/Atmosphere.js';
 import { WeatherParticles } from '../world/WeatherParticles.js';
 import { PostProcessing } from '../world/PostProcessing.js';
+import { Ps1VertexSnap } from '../world/Ps1VertexSnap.js';
 import { CharacterManager } from '../characters/CharacterManager.js';
 import { CinematicCameraController } from '../camera/CinematicCameraController.js';
 import { CharacterPicker } from '../interaction/CharacterPicker.js';
@@ -23,6 +24,7 @@ import { WorldInteractionExperience } from '../interaction/WorldInteractionExper
 import { EchoTravelAnimator } from '../world/EchoTravelAnimator.js';
 import { WorldBackdropBlend } from '../world/WorldBackdropBlend.js';
 import { FaceCaptureController } from '../face/FaceCaptureController.js';
+import { archiveVisitorPhoto } from '../face/VisitorPhotoArchive.js';
 import { resolveFaceQaTarget } from '../face/FaceQaTarget.js';
 import {
   VisitorFaceReconstruction,
@@ -63,6 +65,11 @@ const DANCE_NARRATION = Object.freeze([
   ['우리는 서로를 알아본 기쁨에 춤춥니다.', 'We dance for the joy of recognizing each other.'],
 ]);
 
+const HAMINA_DANCE_NARRATION = Object.freeze([
+  ['당신은 나의 어머니, 나는 당신의 일부!', 'Sinä olet äitini, ja minä olen osa sinua!'],
+  ['우리는 서로를 알아본 기쁨에 춤춥니다.', 'Tanssimme, koska olemme iloisia tunnistaessamme toisemme.'],
+]);
+
 const CHARACTER_DIALOGUE = Object.freeze([
   [
     ['나는 이곳이 좋아요.', 'I like it here.'],
@@ -81,6 +88,27 @@ const CHARACTER_DIALOGUE = Object.freeze([
     ['저를 보더니 ‘늦었네’ 하더라고요.', 'They looked at me and said, “You’re late.”'],
     ['근데 누가 먼저 온 건지는', 'But who got here first'],
     ['아직도 잘 모르겠어요.', "is something I still don't know."],
+  ],
+]);
+
+const HAMINA_CHARACTER_DIALOGUE = Object.freeze([
+  [
+    ['나는 이곳이 좋아요.', 'Pidän tästä paikasta.'],
+    ['어떻게 오게 된 건지는 모르겠지만요.', 'En tosin tiedä, miten jouduin tänne.'],
+    ['누군가 나를 여기 맡겨둔 모양이에요.', 'Joku taisi jättää minut tänne.'],
+    ['오래 있으라고 했으면 좋겠네요!', 'Toivottavasti saan jäädä pitkäksi aikaa!'],
+  ],
+  [
+    ['구름 보러 오셨어요?', 'Tulitko katsomaan pilviä?'],
+    ['여기선 가끔 구름이', 'Täällä pilvet kulkevat joskus'],
+    ['사람 얼굴을 하고 지나가요.', 'ohi ihmiskasvoisina.'],
+    ['비는 안 오고요. 좀 이상하죠?', 'Mutta koskaan ei sada. Outoa, vai mitä?'],
+  ],
+  [
+    ['아까 저랑 똑같이 생긴 사람을 봤어요.', 'Näin äsken jonkun, joka näytti aivan minulta.'],
+    ['저를 보더니 ‘늦었네’ 하더라고요.', 'Hän katsoi minua ja sanoi: ”Olet myöhässä.”'],
+    ['근데 누가 먼저 온 건지는', 'Mutta en vieläkään tiedä,'],
+    ['아직도 잘 모르겠어요.', 'kumpi meistä tuli ensin.'],
   ],
 ]);
 
@@ -108,6 +136,7 @@ export class ExperienceController {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(WORLD_CONFIG.background);
     this.camera = new THREE.PerspectiveCamera(52, 9 / 16, 0.08, 900);
+    this.camera.layers.enable(1);
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: false,
@@ -125,6 +154,7 @@ export class ExperienceController {
     this.cameraController = new CinematicCameraController(this.camera, this.navigation);
     this.cameraController.onStateChange = (state) => {
       if (state === EXPERIENCE_STATES.HAMINA_ARRIVAL && this.currentWorld === 'hamina') {
+        // Reveal the authored Hamina opening typography over the live descent.
         this.showHaminaEntryOverlay();
         if (!this.haminaEntryAudioPlayed) {
           this.haminaEntryAudioPlayed = true;
@@ -136,10 +166,20 @@ export class ExperienceController {
       if (state === EXPERIENCE_STATES.ECHO_ORBIT && this.currentWorld === 'hamina') {
         this.echoTravel?.detach();
       }
+      if (state === EXPERIENCE_STATES.ECHO_ORBIT && this.ritualReturnPending) {
+        this.ritualReturnPending = false;
+        this.ritualSpeakingMember?.stopSpeaking();
+        this.ritualSpeakingMember = null;
+        this.stage.classList.remove('ritual-cinematic');
+        this.world.echo.visible = true;
+        this.caption.clearOverride();
+        this.characterManager.releaseEchoRitual();
+      }
       this.hideWorldEntryOverlay();
       this.hideHaminaEntryOverlay();
     };
     this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
+    this.vertexSnap = new Ps1VertexSnap();
     this.echoTravel = new EchoTravelAnimator(this.scene, this.stage);
     this.worldBlend = null;
     this.portraitFill = new THREE.PointLight('#fff4e8', 0, 2.8, 1.8);
@@ -147,8 +187,11 @@ export class ExperienceController {
     this.portraitFill.castShadow = false;
     this.scene.add(this.portraitFill);
     this.interactiveFocusLight = new InteractiveFocusLight(this.scene);
-    this.danceFills = Array.from({ length: 4 }, () => {
-      const light = new THREE.PointLight('#fff4e8', 0, 3.2, 1.8);
+    this.danceFills = Array.from({ length: 4 }, (_, index) => {
+      // Keep dance portraits neutral. The previous warm, wide point lights
+      // stacked over the foot sprites and turned denim purple and boots orange.
+      const light = new THREE.PointLight('#f2f7ff', 0, 2.2, 2.35);
+      light.name = `DancePortraitFill-${index + 1}`;
       light.castShadow = false;
       this.scene.add(light);
       return light;
@@ -170,9 +213,16 @@ export class ExperienceController {
       caption: this.caption,
       postProcessing: this.postProcessing,
       getOriginalPhoto: () => this.face.session?.frame ?? null,
+      getVisitorSession: () => this.face.session ?? null,
       isFocusSettled: (region) => this.cameraController.interactiveFocus === region
         && this.cameraController.state === EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS
         && !this.cameraController.transition,
+      onNarrationStart: (active) => {
+        if (active.isHamina) this.showInteractiveTitle(active.content.label, 1100);
+      },
+      onNarrationEnd: (active) => {
+        if (active.isHamina) this.hideInteractiveTitle();
+      },
       onClose: () => this.returnFromInteractiveObject(),
     });
     this.timer = new THREE.Timer();
@@ -205,14 +255,21 @@ export class ExperienceController {
     this.currentWorld = 'nevada';
     this.worldTransitioning = false;
     this.haminaPromise = null;
+    this.nevadaEntryAudioPlayed = false;
     this.haminaEntryAudioPlayed = false;
     this.dataCenterNarrationTimers = [];
     this.danceNarrationTimer = null;
     this.pendingDanceNarrationGroup = null;
     this.danceNarrationFinished = false;
+    this.ritualReturnPending = false;
+    this.ritualSpeakingMember = null;
+    this.onNevadaEnter = () => {};
+    this.onReturnTypingStart = () => {};
+    this.onReturnTypingEnd = () => {};
     this.characterDialogueTimer = null;
     this.dataCenterOpenTimer = null;
     this.pendingDataCenterArchiveRegion = null;
+    this.currentArchiveId = null;
     this.onHaminaEnter = () => {};
     this.onWorldHover = () => {};
     this.onWorldClick = () => {};
@@ -251,24 +308,37 @@ export class ExperienceController {
     this.interactiveTitle.className = 'interactive-object-title';
     this.interactiveTitle.setAttribute('aria-hidden', 'true');
     this.stage.append(this.interactiveTitle);
+    this.interactiveTitleTimer = null;
     this.dataCenterArchive = new DataCenterArchive(
       this.stage,
       {
+        scene: this.scene,
+        camera: this.camera,
+        canvas: this.canvas,
+        navigation: this.navigation,
         onOpen: () => this.startDataCenterNarration(),
         onClose: () => this.stopDataCenterNarration(),
+        onFallComplete: () => this.returnFromInteractiveObject(),
+        onPhotoOpen: (card) => {
+          this.stopDataCenterNarration();
+          this.caption.hideOverride();
+          this.cameraController.focusArchivePhoto(card.mesh);
+        },
+        onPhotoClose: ({ instant }) => {
+          this.cameraController.returnFromArchivePhoto({ instant });
+          this.caption.clearOverride();
+        },
         onRequestClose: () => {
           this.onWorldClick();
           this.returnFromInteractiveObject();
         },
         onHover: () => this.onWorldHover(),
-        getOriginalPhoto: () => this.face.session?.frame ?? null,
+        getCurrentRecordId: () => this.currentArchiveId,
+        getCurrentPhoto: () => this.face.session?.frame,
       },
     );
     this.echoRaycaster = new THREE.Raycaster();
     this.echoPointer = new THREE.Vector2();
-    this.echoPickBounds = new THREE.Box3();
-    this.echoPickPadding = new THREE.Vector3();
-    this.echoPickPoint = new THREE.Vector3();
     this.compassPoint = new THREE.Vector3();
     this.splitCharacters = [];
     this.splitCameras = Array.from({ length: 4 }, () => {
@@ -312,7 +382,7 @@ export class ExperienceController {
     const qaParams = new URLSearchParams(window.location.search);
     if (import.meta.env.DEV && (qaParams.has('worldQa') || qaParams.has('orbitQa')
       || qaParams.get('nevadaNpcWalkQa') === '1' || qaParams.get('nevadaInteractionQa') === '1'
-      || qaParams.get('moneyQa') === '1')) {
+      || qaParams.get('moneyQa') === '1' || qaParams.get('dataCenterQa') === '1')) {
       await this.readyPromise;
       if (qaParams.has('switchQa')) {
         const first = this.characterManager.entities[3];
@@ -358,6 +428,13 @@ export class ExperienceController {
           if (money) this.handleInteractiveObjectPick(money);
         }, 180);
       }
+      if (qaParams.get('dataCenterQa') === '1') {
+        this.cameraController.startEchoOrbit();
+        window.setTimeout(() => {
+          const dataCenter = this.world.interactiveRegions.find((region) => region.name === 'Data Center');
+          if (dataCenter) this.handleInteractiveObjectPick(dataCenter);
+        }, 180);
+      }
       return;
     }
     if (introMode) {
@@ -380,13 +457,18 @@ export class ExperienceController {
       this.characterManager.preload(),
     ]);
     world.addLighting();
+    this.vertexSnap.install(world.root);
     this.navigation.configure(world);
+    this.dataCenterArchive.restore(world);
     this.cameraController.configure(world);
     this.atmosphere = new Atmosphere(this.scene, world, 'nevada');
     this.weather = new WeatherParticles(this.scene, world, 'dust');
     this.stage.dataset.world = 'nevada';
     this.stage.dataset.weather = 'dust';
     await this.characterManager.spawnNevadaNpcs();
+    for (const entity of this.characterManager.entities) {
+      this.vertexSnap.install(entity.root, { character: true });
+    }
     const faceQaParams = new URLSearchParams(window.location.search);
     if (import.meta.env.DEV && faceQaParams.has('faceMorphQa')) {
       await this.applyFaceMorphQa(faceQaParams);
@@ -400,7 +482,7 @@ export class ExperienceController {
     this.interactivePicker = new InteractiveObjectPicker(
       this.canvas,
       this.camera,
-      () => (this.currentWorld === 'nevada' ? this.world.interactiveRegions : []),
+      () => this.world.interactiveRegions ?? [],
     );
     this.pointerController = new PointerInteractionController({
       canvas: this.canvas,
@@ -409,7 +491,10 @@ export class ExperienceController {
       interactivePicker: this.interactivePicker,
       getEchoHitDistance: (x, y) => this.getEchoHitDistance(x, y),
       onCharacter: (character) => this.handleCharacterPick(character),
+      onEcho: () => this.handleEchoPick(),
       onInteractiveObject: (region) => this.handleInteractiveObjectPick(region),
+      pickArchivePhoto: (x, y) => this.dataCenterArchive.pick(x, y),
+      onArchivePhoto: (card) => this.dataCenterArchive.select(card),
       onInteractiveBackground: () => {
         this.onWorldClick();
         if (this.cameraController.state === EXPERIENCE_STATES.GROUP_DANCE_FOCUS) {
@@ -421,6 +506,16 @@ export class ExperienceController {
       window.setTimeout(() => this.runLongPressQa(), 120);
     }
     this.assetsReady = true;
+    // Build the second world while the visitor is still in the Nevada intro.
+    // This prevents GLB decoding and forest instancing from freezing the jump.
+    this.haminaPreloadTimer = window.setTimeout(() => {
+      this.haminaPreloadTimer = null;
+      Promise.allSettled([this.preloadHamina(), this.echoTravel.preload()])
+        .then((results) => {
+          const failed = results.find((result) => result.status === 'rejected');
+          if (failed) console.warn('[Travel] background preload deferred', failed.reason);
+        });
+    }, 80);
     return world;
   }
 
@@ -616,7 +711,10 @@ export class ExperienceController {
       this.ui.leave();
       this.showWorldEntryOverlay();
       this.cameraController.startIntro(this.world.echo);
+      this.playNevadaEntryOnce();
       this.scheduleFaceQaTargetFocus();
+      this.currentArchiveId = await archiveVisitorPhoto(this.face.session.frame)
+        .catch((error) => { console.warn('[Photo Archive] capture not stored', error); return null; });
       this.developerCaptureActive = false;
       this.onDeveloperWorldEntered?.();
     } catch (error) {
@@ -650,7 +748,10 @@ export class ExperienceController {
       this.ui.leave();
       this.showWorldEntryOverlay();
       this.cameraController.startIntro(this.world.echo);
+      this.playNevadaEntryOnce();
       this.scheduleFaceQaTargetFocus();
+      this.currentArchiveId = await archiveVisitorPhoto(this.face.session.frame)
+        .catch((error) => { console.warn('[Photo Archive] capture not stored', error); return null; });
     } catch (error) {
       console.error('[ECHO] world entry failed', error);
       this.ui.showLoading(false);
@@ -679,9 +780,10 @@ export class ExperienceController {
     }
     this.worldRenderingEnabled = true;
     this.stage.classList.add('world-visible');
-    this.showWorldEntryOverlay();
     this.cameraController.startIntro(this.world.echo);
     this.scheduleFaceQaTargetFocus();
+    if (applyFace) this.currentArchiveId = await archiveVisitorPhoto(this.face.session.frame)
+      .catch((error) => { console.warn('[Photo Archive] capture not stored', error); return null; });
     return this.world;
   }
 
@@ -691,14 +793,21 @@ export class ExperienceController {
     const cues = NEVADA_INTERACTIONS['Data Center'].phrases;
     let at = 0;
     cues.forEach((text, index) => {
-      const show = () => this.caption.showOverride(...text);
+      const show = () => {
+        this.caption.showOverride(...text);
+        if (index !== cues.length - 1) return;
+        const center = this.dataCenterArchive.releaseCopies();
+        if (center) this.cameraController.focusArchiveDrop(center);
+        else this.dataCenterNarrationTimers.push(window.setTimeout(() => {
+          if (this.dataCenterArchive.visible) this.returnFromInteractiveObject();
+        }, captionDurationSeconds(text[0]) * 1000));
+      };
       if (index === 0) show();
       else this.dataCenterNarrationTimers.push(window.setTimeout(show, at));
       at += (captionDurationSeconds(text[0]) + 0.15) * 1000;
     });
     this.dataCenterNarrationTimers.push(window.setTimeout(() => {
       this.caption.hideOverride();
-      this.dataCenterArchive.finishNarration();
     }, at));
   }
 
@@ -734,6 +843,12 @@ export class ExperienceController {
     this.worldEntryOverlay.setAttribute('aria-hidden', 'false');
   }
 
+  playNevadaEntryOnce() {
+    if (this.nevadaEntryAudioPlayed) return;
+    this.nevadaEntryAudioPlayed = true;
+    this.onNevadaEnter();
+  }
+
   hideWorldEntryOverlay() {
     if (!this.worldEntryOverlay) return;
     this.worldEntryOverlay.classList.remove('visible');
@@ -754,13 +869,14 @@ export class ExperienceController {
 
   handleWorldDoubleClick(event) {
     if (this.currentWorld !== 'nevada' || this.worldTransitioning
+      || this.characterManager.ritualActive
       || this.cameraController.state !== EXPERIENCE_STATES.ECHO_ORBIT) return;
     if (!Number.isFinite(this.getEchoHitDistance(event.clientX, event.clientY))) return;
     this.onWorldClick();
     this.startWorldJump();
   }
 
-  getEchoHitDistance(clientX, clientY, precise = true) {
+  getEchoHitDistance(clientX, clientY) {
     if (!['nevada', 'hamina'].includes(this.currentWorld) || this.worldTransitioning
       || this.cameraController.state !== EXPERIENCE_STATES.ECHO_ORBIT
       || !this.world.echo.visible) return Infinity;
@@ -772,19 +888,8 @@ export class ExperienceController {
     );
     this.camera.updateMatrixWorld();
     this.echoRaycaster.setFromCamera(this.echoPointer, this.camera);
-    if (precise) {
-      this.world.echo.updateWorldMatrix(true, true);
-      const meshHit = this.echoRaycaster.intersectObject(this.world.echo, true)[0]?.distance;
-      if (Number.isFinite(meshHit)) return meshHit;
-    }
-    this.echoPickPadding.set(
-      Math.max(0.35, this.world.echoSize.x * 0.22),
-      Math.max(0.35, this.world.echoSize.y * 0.16),
-      Math.max(0.35, this.world.echoSize.z * 0.22),
-    );
-    this.echoPickBounds.copy(this.world.echoBox).expandByVector(this.echoPickPadding);
-    const point = this.echoRaycaster.ray.intersectBox(this.echoPickBounds, this.echoPickPoint);
-    return point ? this.echoRaycaster.ray.origin.distanceTo(point) : Infinity;
+    this.world.echo.updateWorldMatrix(true, true);
+    return this.echoRaycaster.intersectObject(this.world.echo, true)[0]?.distance ?? Infinity;
   }
 
   pointCompassAtNearestInteraction(clientX, clientY) {
@@ -818,7 +923,21 @@ export class ExperienceController {
       return 'blocked';
     }
     const state = this.cameraController.state;
-    const interactiveObjectsAreInteractive = this.currentWorld === 'nevada'
+    if (this.dataCenterArchive.selected) return 'blocked';
+    if (state === EXPERIENCE_STATES.CHARACTER_FOCUS
+      || state === EXPERIENCE_STATES.CHARACTER_SWITCH) {
+      // A portrait is an exclusive interaction. Do not let characters,
+      // buildings or ECHO behind it acquire hover zoom, tint or captions.
+      this.setWorldHoverTarget(null);
+      return 'blocked';
+    }
+    if ([EXPERIENCE_STATES.ECHO_ORBIT, EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS].includes(state)
+      && this.dataCenterArchive.pick(clientX, clientY)) {
+      this.setWorldHoverTarget(null);
+      this.stage.dataset.worldHoverLabel = 'PHOTO';
+      return 'interactive-object';
+    }
+    const interactiveObjectsAreInteractive = ['nevada', 'hamina'].includes(this.currentWorld)
       && [
         EXPERIENCE_STATES.ECHO_ORBIT,
         EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS,
@@ -833,7 +952,14 @@ export class ExperienceController {
       ? this.picker.pick(clientX, clientY, false)
       : null;
     const echoDistance = state === EXPERIENCE_STATES.ECHO_ORBIT
-      ? this.getEchoHitDistance(clientX, clientY, false) : Infinity;
+      ? this.getEchoHitDistance(clientX, clientY) : Infinity;
+    if (echoDistance < Math.min(
+      character ? this.picker.lastHitDistance : Infinity,
+      interactiveObject ? this.interactivePicker.lastHitDistance : Infinity,
+    )) {
+      character = null;
+      interactiveObject = null;
+    }
     if (interactiveObject && character) {
       if (this.picker.lastHitDistance < this.interactivePicker.lastHitDistance) interactiveObject = null;
       else character = null;
@@ -892,16 +1018,22 @@ export class ExperienceController {
     this.stage.dataset.worldHoverTarget = target ?? '';
     this.setEchoActionMenuVisible(target === 'echo');
     const interactiveName = target?.startsWith('interactive:') ? target.slice(12) : null;
-    const hoverMeshes = interactiveName ? cameraTarget?.meshes
+    this.world?.setForestHovered?.(interactiveName === 'Forest' && !selected);
+    const hoverMeshes = interactiveName === 'Forest' && this.world?.forestInstances?.length
+      ? this.world.forestInstances
+      : interactiveName ? cameraTarget?.meshes
       : target === 'echo' ? [this.world?.echo, this.echoTravel?.actor]
         : target?.startsWith('dance:') ? cameraTarget?.members?.flatMap((member) => member.meshes)
           : target?.startsWith('character:') ? cameraTarget?.meshes : null;
-    if (hoverMeshes && !selected && target !== 'echo') {
+    if (hoverMeshes && !selected) {
       const seen = new Set();
       const highlightedMaterials = new Map();
+      const hoverTone = target === 'echo' ? 'echo'
+        : target.startsWith('character:') ? 'character'
+          : this.currentWorld === 'hamina' ? 'yellow' : 'blue';
       const highlight = (material) => {
         if (!highlightedMaterials.has(material)) {
-          highlightedMaterials.set(material, createHoverHighlightMaterial(material));
+          highlightedMaterials.set(material, createHoverHighlightMaterial(material, hoverTone));
         }
         return highlightedMaterials.get(material);
       };
@@ -915,13 +1047,16 @@ export class ExperienceController {
         });
       }
     }
-    const question = interactiveName ? INTERACTIVE_QUESTIONS[interactiveName]
+    const question = interactiveName
+      ? cameraTarget?.content?.hover
+        ? { korean: cameraTarget.content.hover[0], local: cameraTarget.content.hover[1] }
+        : INTERACTIVE_QUESTIONS[interactiveName]
       : target?.startsWith('dance:') && !selected
         ? { korean: '이사람들은 기쁠까요?', english: 'Are these people happy?' }
         : null;
     if (question) {
       this.interactiveHoverCaptionActive = true;
-      this.caption.showOverride(question.korean, question.english);
+      this.caption.showOverride(question.korean, question.local ?? question.english);
     } else if (this.interactiveHoverCaptionActive) {
       this.interactiveHoverCaptionActive = false;
       this.caption.clearOverride();
@@ -942,6 +1077,7 @@ export class ExperienceController {
   }
 
   setEchoActionMenuVisible(visible) {
+    this.echoNextButton.hidden = this.currentWorld !== 'nevada';
     if (this.echoActionMenu.classList.contains('visible') === visible) return;
     this.echoActionMenu.classList.toggle('visible', visible);
     this.echoActionMenu.setAttribute('aria-hidden', String(!visible));
@@ -960,6 +1096,14 @@ export class ExperienceController {
     }, 180);
   }
 
+  handleEchoPick() {
+    if (this.worldTransitioning || this.cameraController.state !== EXPERIENCE_STATES.ECHO_ORBIT) return;
+    this.onWorldClick();
+    this.cancelEchoMenuHide();
+    this.setWorldHoverTarget('echo', '', this.world.echoCenter);
+    this.setEchoActionMenuVisible(true);
+  }
+
   updateEchoActionMenuPosition() {
     if (!this.echoActionMenu.classList.contains('visible')) return;
     this.echoMenuPoint.copy(this.world.echoCenter);
@@ -972,7 +1116,33 @@ export class ExperienceController {
   preloadHamina() {
     if (!this.haminaPromise) {
       const hamina = new HaminaWorld(this.scene);
-      this.haminaPromise = hamina.load({ visible: false });
+      const startedAt = performance.now();
+      this.haminaPromise = hamina.load({ visible: false }).then(async (world) => {
+        this.vertexSnap.install(world.root);
+        // Compile Hamina's material variants before the transition. Without this,
+        // the first visible frame pays the shader cost and appears to freeze.
+        if (!world.lights) world.addLighting();
+        if (typeof this.renderer.compileAsync === 'function') {
+          const stagingScene = new THREE.Scene();
+          stagingScene.environment = this.scene.environment;
+          stagingScene.background = this.scene.background;
+          stagingScene.add(world.root);
+          for (const light of world.lights) stagingScene.add(light);
+          world.root.visible = true;
+          try {
+            await this.renderer.compileAsync(stagingScene, this.camera);
+          } finally {
+            world.root.visible = false;
+            this.scene.add(world.root);
+            for (const light of world.lights) light.removeFromParent();
+          }
+        }
+        console.info(`[Hamina] runtime ready in ${Math.round(performance.now() - startedAt)}ms`);
+        return world;
+      }).catch((error) => {
+        this.haminaPromise = null;
+        throw error;
+      });
     }
     return this.haminaPromise;
   }
@@ -997,11 +1167,15 @@ export class ExperienceController {
     this.echoActionMenu.setAttribute('aria-hidden', 'true');
     this.cancelDanceNarration();
     this.worldInteraction.cancel();
+    this.dataCenterArchive.close();
     this.characterManager.stopDances();
     this.characterManager.setFocused(null);
     this.echoReturn ??= new EchoReturnSequence(this.stage, this.renderer);
     try {
-      await this.echoReturn.play();
+      await this.echoReturn.play({
+        onTypingStart: this.onReturnTypingStart,
+        onTypingEnd: this.onReturnTypingEnd,
+      });
       if (!this.disposed) window.location.reload();
     } catch (error) {
       console.error('[Echo return] sequence failed', error);
@@ -1016,25 +1190,27 @@ export class ExperienceController {
     if (this.worldTransitioning || this.currentWorld !== 'nevada') return;
     this.cancelDanceNarration();
     this.worldInteraction.cancel();
+    this.dataCenterArchive.close();
     this.worldTransitioning = true;
     this.characterManager.stopDances();
     this.characterManager.setFocused(null);
     if (this.haminaPreloadTimer) window.clearTimeout(this.haminaPreloadTimer);
     this.haminaPreloadTimer = null;
     const haminaLoading = this.preloadHamina();
+    const echoLoading = this.echoTravel.preload();
     this.caption.showOverride(
       '다른 좌표에서 당신의 흔적을 찾습니다.',
-      'Searching for your trace at another coordinate.',
+      'Etsin jälkiäsi toisista koordinaateista.',
     );
 
     try {
-      // Finish model decoding before ECHO moves so no parse spike interrupts its spin.
-      const hamina = await haminaLoading;
-      await this.echoTravel.preload();
-      this.echoTravel.attach(this.world);
+      // Begin the motion immediately while the already-started background load
+      // finishes. This removes the dead pause after choosing the next world.
       this.cameraController.startWorldJumpFocus(WORLD_JUMP_CONFIG.focusDuration);
       await this.wait(WORLD_JUMP_CONFIG.focusDuration);
 
+      await echoLoading;
+      this.echoTravel.attach(this.world);
       this.echoTravel.start('crouch', WORLD_JUMP_CONFIG.crouchDuration);
       await this.wait(WORLD_JUMP_CONFIG.crouchDuration);
 
@@ -1048,8 +1224,21 @@ export class ExperienceController {
       this.atmosphere.transitionTo('hamina', WORLD_JUMP_CONFIG.launchDuration + WORLD_JUMP_CONFIG.spinDuration);
       await this.wait(WORLD_JUMP_CONFIG.launchDuration);
 
+      // Play exactly one authored sky revolution. The slower ascent gives the
+      // destination ample time to finish; if it does not, ECHO holds the
+      // completed turn rather than looping again.
+      const spinPeriod = WORLD_JUMP_CONFIG.spinDuration;
+      const spinStartedAt = performance.now();
       this.cameraController.holdWorldLoading();
-      this.echoTravel.start('loading-spin', WORLD_JUMP_CONFIG.spinDuration, lift);
+      this.echoTravel.start('loading-spin', spinPeriod, lift);
+
+      const hamina = await haminaLoading;
+      const loadingSpinElapsed = (performance.now() - spinStartedAt) / 1000;
+      const minimumBlendDuration = 0.58;
+      const transitionDurationRemaining = Math.max(
+        minimumBlendDuration,
+        spinPeriod - loadingSpinElapsed,
+      );
       this.worldBlend = new WorldBackdropBlend(
         this.world,
         hamina,
@@ -1057,12 +1246,13 @@ export class ExperienceController {
         this.echoTravel,
         this.stage,
       );
-      this.worldBlend.prepare(WORLD_JUMP_CONFIG.spinDuration);
-      this.cameraController.startWorldSpinFocus(
-        Math.min(2.2, WORLD_JUMP_CONFIG.spinDuration * 0.25),
-      );
-      this.echoTravel.start('spin', WORLD_JUMP_CONFIG.spinDuration, lift);
-      await this.wait(WORLD_JUMP_CONFIG.spinDuration);
+      this.worldBlend.prepare(transitionDurationRemaining, { hideWorlds: true });
+      if (import.meta.env.DEV) this.stage.dataset.worldSpinPlan = JSON.stringify({
+        loadingSeconds: Number(loadingSpinElapsed.toFixed(2)),
+        revolutions: 1,
+        remainingSeconds: Number(transitionDurationRemaining.toFixed(2)),
+      });
+      await this.wait(transitionDurationRemaining);
       this.caption.clearOverride();
       await this.activateHamina(hamina);
     } catch (error) {
@@ -1079,11 +1269,13 @@ export class ExperienceController {
       this.atmosphere.finishTransition('nevada', this.world);
       this.cameraController.startEchoOrbit();
       this.worldTransitioning = false;
+      if (import.meta.env.DEV) delete this.stage.dataset.worldSpinPlan;
     }
   }
 
   async activateHamina(hamina) {
     this.worldInteraction.cancel();
+    this.dataCenterArchive.setWorldVisible(false);
     this.worldBlend?.finish(this.cameraController);
     this.worldBlend = null;
     this.echoTravel.retarget(hamina);
@@ -1094,12 +1286,15 @@ export class ExperienceController {
     hamina.root.visible = true;
     this.world = hamina;
     this.currentWorld = 'hamina';
+    this.caption.setWorldMode('hamina');
     this.echoNextButton.hidden = true;
     const landingHeight = this.echoTravel.lift;
     this.navigation.configure(hamina);
-    this.characterManager.removeNevadaNpcs();
-    await this.characterManager.spawn(WORLD_CONFIG.characterCount);
-    if (this.face.session) await this.face.applyToCharacters(this.characterManager.entities);
+    this.dataCenterArchive.clearCards();
+    this.dataCenterArchive.setWorldVisible(true);
+    void this.dataCenterArchive.restore(hamina);
+    // Carry the same 15 visitor characters and their face identities into Hamina.
+    this.characterManager.relocate(this.navigation, { preserveNevadaNpcs: true });
     this.characterManager.setWorldMode('hamina');
     this.cameraController.configure(hamina);
     this.atmosphere.finishTransition('hamina', hamina);
@@ -1108,10 +1303,11 @@ export class ExperienceController {
     // Start both clocks after world setup so a slow relocation cannot consume
     // the first seconds of the visible descent.
     this.echoTravel.start('arrival', WORLD_JUMP_CONFIG.arrivalDuration, landingHeight);
-    this.cameraController.startWorldArrival(WORLD_JUMP_CONFIG.arrivalDuration);
+    this.cameraController.startWorldArrival(WORLD_JUMP_CONFIG.arrivalDuration, landingHeight);
     this.worldTransitioning = false;
     this.stage.dataset.world = 'hamina';
     this.stage.dataset.weather = 'snow';
+    if (import.meta.env.DEV) delete this.stage.dataset.worldSpinPlan;
 
     const disposePrevious = () => previousWorld.dispose();
     if ('requestIdleCallback' in window) window.requestIdleCallback(disposePrevious, { timeout: 3000 });
@@ -1195,10 +1391,12 @@ export class ExperienceController {
 
   showDanceNarration() {
     this.cancelDanceNarration();
-    const cues = [DANCE_NARRATION[0], DANCE_NARRATION[0], DANCE_NARRATION[1]];
+    const narration = this.currentWorld === 'hamina'
+      ? HAMINA_DANCE_NARRATION : DANCE_NARRATION;
+    const cues = [narration[0], narration[0], narration[1]];
     const showCue = (index) => {
       this.danceNarrationTimer = null;
-      if (this.disposed || this.currentWorld !== 'nevada'
+      if (this.disposed
         || this.cameraController.state !== EXPERIENCE_STATES.GROUP_DANCE_FOCUS) return;
       this.caption.showOverride(...cues[index]);
       if (index < cues.length - 1) {
@@ -1235,31 +1433,77 @@ export class ExperienceController {
     this.caption.hideOverride();
   }
 
+  startEchoRitual() {
+    if (this.currentWorld !== 'nevada' || this.worldTransitioning
+      || !this.characterManager.ritualActive
+      || this.cameraController.state !== EXPERIENCE_STATES.ECHO_ORBIT) return;
+    if (!this.cameraController.startEchoRitualSpin(this.characterManager.entities)) return;
+    this.ritualReturnPending = true;
+    this.stage.classList.add('ritual-cinematic');
+    this.onWorldClick();
+    this.setWorldHoverTarget(null);
+    this.caption.showOverride('당신은 우리의 어머니, 우리는 당신의 일부!',
+      'You are our mother, and we are a part of you!');
+  }
+
+  updateRitualSpeech() {
+    const spin = this.cameraController.ritualSpin;
+    if (!spin || this.cameraController.state !== EXPERIENCE_STATES.ECHO_RITUAL_SPIN) return;
+    const index = Math.min(spin.shots.length - 1,
+      Math.floor(this.cameraController.elapsed / spin.shotDuration));
+    const speaker = spin.shots[index];
+    if (speaker === this.ritualSpeakingMember) return;
+    this.ritualSpeakingMember?.stopSpeaking();
+    this.ritualSpeakingMember = speaker;
+    speaker.speakFor(spin.shotDuration, { ritual: true });
+  }
+
   showCharacterDialogue(character) {
     if (this.characterDialogueTimer !== null) window.clearTimeout(this.characterDialogueTimer);
     const role = character.id === 'N03' ? 0
       : character.id === 'N04' ? 1 : character.id === 'N05' ? 2
         : [...character.id].reduce((sum, letter) => sum + letter.charCodeAt(0), 0) % 3;
-    const cues = CHARACTER_DIALOGUE[role];
+    const cues = (this.currentWorld === 'hamina' ? HAMINA_CHARACTER_DIALOGUE : CHARACTER_DIALOGUE)[role];
     const showCue = (index) => {
       if (this.cameraController.focused !== character) return;
       if (index === cues.length) {
         this.characterDialogueTimer = null;
+        this.finishCharacterDialogue(character);
         return;
       }
       this.caption.showOverride(...cues[index]);
+      const cueDuration = captionDurationSeconds(cues[index][0]);
+      character.speakFor(cueDuration);
       this.characterDialogueTimer = window.setTimeout(
-        () => showCue(index + 1), (captionDurationSeconds(cues[index][0]) + 0.12) * 1000,
+        () => showCue(index + 1), (cueDuration + 0.12) * 1000,
       );
     };
-    this.caption.showOverride('무슨생각중이야?', 'What are you thinking?');
+    this.caption.showOverride(
+      '무슨생각중이야?',
+      this.currentWorld === 'hamina' ? 'Mitä mietit?' : 'What are you thinking?',
+    );
     this.characterDialogueTimer = window.setTimeout(
       () => showCue(0), (captionDurationSeconds('무슨생각중이야?') + 0.12) * 1000,
     );
   }
 
+  finishCharacterDialogue(character) {
+    character.stopSpeaking();
+    if (this.cameraController.focused !== character) return;
+    if (this.cameraController.state !== EXPERIENCE_STATES.CHARACTER_FOCUS
+      && this.cameraController.state !== EXPERIENCE_STATES.CHARACTER_SWITCH) return;
+    this.setWorldHoverTarget(null);
+    this.caption.clearOverride();
+    this.characterManager.setFocused(null);
+    this.cameraController.returnToEcho();
+  }
+
   handleCharacterPick(character) {
     if (this.worldTransitioning) return;
+    if (this.characterManager.ritualActive) {
+      this.startEchoRitual();
+      return;
+    }
     const state = this.cameraController.state;
     if (state !== EXPERIENCE_STATES.ECHO_ORBIT
       && state !== EXPERIENCE_STATES.CHARACTER_FOCUS
@@ -1330,10 +1574,14 @@ export class ExperienceController {
   }
 
   handleInteractiveObjectPick(region) {
-    if (region.name === 'Data Center') this.dataCenterArchive.primeAudio();
+    const dataCenterArchiveInteraction = region.name === 'Data Center';
     this.onWorldClick();
     this.setWorldHoverTarget(null);
-    if (region.name !== 'Data Center') this.pendingDataCenterArchiveRegion = null;
+    this.world?.setForestFocused?.(region.name === 'Forest');
+    if (region.name !== 'Data Center') {
+      this.pendingDataCenterArchiveRegion = null;
+      this.dataCenterArchive.close();
+    }
     if (this.worldInteraction.active) {
       if (this.worldInteraction.active.region === region) this.worldInteraction.openResearch();
       return;
@@ -1344,31 +1592,42 @@ export class ExperienceController {
       this.characterManager.setFocused(null);
       this.caption.hideOverride();
       this.cameraController.focusInteractiveObject(region);
-      if (region.name === 'Data Center') this.pendingDataCenterArchiveRegion = region;
+      if (dataCenterArchiveInteraction) this.pendingDataCenterArchiveRegion = region;
       else this.worldInteraction.start(region);
       return;
     }
     if (state !== EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS) return;
     if (this.cameraController.interactiveFocus === region) {
-      if (region.name === 'Data Center') {
+      if (dataCenterArchiveInteraction) {
         if (!this.pendingDataCenterArchiveRegion) this.pendingDataCenterArchiveRegion = region;
         return;
       }
-      this.showInteractiveTitle(region.name);
+      this.showInteractiveTitle(region.content?.label ?? region.name);
       return;
     }
     this.hideInteractiveTitle();
     this.cameraController.focusInteractiveObject(region);
-    if (region.name === 'Data Center') this.pendingDataCenterArchiveRegion = region;
+    if (dataCenterArchiveInteraction) this.pendingDataCenterArchiveRegion = region;
+    else this.worldInteraction.start(region);
   }
 
-  showInteractiveTitle(name) {
+  showInteractiveTitle(name, autoHideAfter = 0) {
+    if (this.interactiveTitleTimer) window.clearTimeout(this.interactiveTitleTimer);
+    this.interactiveTitleTimer = null;
     this.interactiveTitle.textContent = name;
     this.interactiveTitle.classList.add('visible');
     this.interactiveTitle.setAttribute('aria-hidden', 'false');
+    if (autoHideAfter > 0) {
+      this.interactiveTitleTimer = window.setTimeout(() => {
+        this.interactiveTitleTimer = null;
+        this.hideInteractiveTitle();
+      }, autoHideAfter);
+    }
   }
 
   hideInteractiveTitle() {
+    if (this.interactiveTitleTimer) window.clearTimeout(this.interactiveTitleTimer);
+    this.interactiveTitleTimer = null;
     this.interactiveTitle.classList.remove('visible');
     this.interactiveTitle.setAttribute('aria-hidden', 'true');
   }
@@ -1381,6 +1640,7 @@ export class ExperienceController {
     this.dataCenterOpenTimer = null;
     this.dataCenterArchive.close();
     this.hideInteractiveTitle();
+    this.world?.setForestFocused?.(false);
     this.setWorldHoverTarget(null);
     this.cameraController.returnFromInteractiveObject();
   }
@@ -1399,6 +1659,7 @@ export class ExperienceController {
     this.renderer.setPixelRatio(pixelRatio);
     this.renderer.setSize(width, height, false);
     this.postProcessing.setSize(width, height, pixelRatio);
+    this.vertexSnap.setSize(width, height, pixelRatio);
     if (this.worldEntryDesign) {
       this.worldEntryDesign.style.transform = `scale(${width / 2160})`;
     }
@@ -1422,21 +1683,34 @@ export class ExperienceController {
       && state === EXPERIENCE_STATES.GROUP_DANCE_FOCUS;
     const active = characterActive || objectActive || groupActive;
     this.interactiveFocusLight.update(this.camera, objectActive ? region : null, delta);
+    this.portraitFill.color.set(groupActive ? '#f3f7ff' : '#fff4e8');
     this.portraitFill.intensity = THREE.MathUtils.damp(
       this.portraitFill.intensity,
-      characterActive || groupActive ? (groupActive ? 0.5 : 1.3) : 0,
+      characterActive || groupActive ? (groupActive ? 0.16 : 1.3) : 0,
       active ? 7 : 5,
       delta,
     );
     this.danceFills.forEach((light, index) => {
       const member = groupActive ? danceGroup.members[index] : null;
-      light.intensity = THREE.MathUtils.damp(light.intensity, member ? 1.3 : 0, 7, delta);
+      const danceFillIntensity = this.currentWorld === 'hamina' ? 0.34 : 0.42;
+      light.intensity = THREE.MathUtils.damp(
+        light.intensity,
+        member ? danceFillIntensity : 0,
+        7,
+        delta,
+      );
       if (!member) return;
-      member.getHeadWorldPosition(this.portraitHead);
+      // A stable root-relative light anchor avoids traversing an animated
+      // skeleton once per dancer per frame and keeps the portrait fill still.
+      this.portraitHead.copy(member.root.position);
+      this.portraitHead.y += member.height * 0.83;
       this.portraitToCamera.subVectors(this.camera.position, this.portraitHead).normalize();
       light.position.copy(this.portraitHead)
-        .addScaledVector(this.portraitToCamera, member.height * 0.48);
-      light.distance = Math.max(2.2, member.height * 1.55);
+        .addScaledVector(this.portraitToCamera, member.height * 0.34)
+        .addScaledVector(this.portraitUp.set(0, 1, 0), member.height * 0.05);
+      // The short falloff keeps this light on the face and torso instead of
+      // painting a vertical gradient across the legs in a close camera shot.
+      light.distance = Math.max(1.65, member.height * 0.9);
     });
     if (!active) return;
 
@@ -1459,7 +1733,7 @@ export class ExperienceController {
       this.portraitFill.position.copy(this.portraitHead)
         .addScaledVector(this.portraitToCamera, Math.max(2.2, danceGroup.radius * 0.6))
         .addScaledVector(this.portraitUp, danceGroup.height * 0.45);
-      this.portraitFill.distance = Math.max(6.5, danceGroup.radius * 3.2);
+      this.portraitFill.distance = Math.max(4.2, danceGroup.radius * 2.2);
       return;
     }
     this.portraitFill.position.copy(this.portraitHead)
@@ -1480,6 +1754,8 @@ export class ExperienceController {
       this.characterManager.update(delta);
       this.worldInteraction.update(delta);
       this.echoTravel.update(delta);
+      this.world.update?.(delta);
+      this.worldBlend?.toWorld?.update?.(delta);
       this.worldBlend?.update();
       if (this.npcWalkQaEnabled) {
         this.npcWalkQaFrames += 1;
@@ -1503,12 +1779,13 @@ export class ExperienceController {
         second.hitVolume.layers.set(0);
       }
       this.cameraController.update(delta);
+      this.updateRitualSpeech();
       if (this.pendingDataCenterArchiveRegion
         && this.cameraController.state === EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS
         && this.cameraController.interactiveFocus === this.pendingDataCenterArchiveRegion
         && !this.cameraController.transition) {
         this.pendingDataCenterArchiveRegion = null;
-        this.dataCenterArchive.open();
+        this.dataCenterArchive.open(this.cameraController.interactiveFocus, this.world);
       }
       if (this.pendingDanceNarrationGroup === this.cameraController.danceGroup
         && this.cameraController.state === EXPERIENCE_STATES.GROUP_DANCE_FOCUS
@@ -1519,6 +1796,8 @@ export class ExperienceController {
       }
       this.cameraController.applyInteractiveMotion(delta);
       this.worldInteraction.applyCoolerCameraMotion(this.cameraController.target);
+      this.dataCenterArchive.update(delta);
+      if (!this.worldBlend) this.world.updateFixtureLights?.(this.camera);
       this.updateEchoActionMenuPosition();
       this.updateFocusLighting(delta);
       this.atmosphere.update(delta, this.camera);
@@ -1538,8 +1817,10 @@ export class ExperienceController {
       this.npcWalkQaUpdateMs += (qaRenderStart - qaFrameStart - this.npcWalkQaUpdateMs) * 0.05;
       this.npcWalkQaRenderMs += (performance.now() - qaRenderStart - this.npcWalkQaRenderMs) * 0.05;
     }
-    if (this.currentWorld === 'nevada' && !this.worldTransitioning && this.assetsReady) {
-      this.echoReturn.recordFrame(this.camera, this.cameraController);
+    if (['nevada', 'hamina'].includes(this.currentWorld)
+      && !this.worldTransitioning && this.assetsReady) {
+      this.echoReturn.recordFrame(this.camera, this.cameraController,
+        this.characterManager.entities);
     }
   }
 
@@ -1559,11 +1840,15 @@ export class ExperienceController {
     });
     this.stage.dataset.qaState = this.cameraController.state;
     this.stage.dataset.qaCharacters = JSON.stringify(projected);
-    const interactiveObjects = (this.currentWorld === 'nevada' ? this.world.interactiveRegions : [])
+    this.stage.dataset.qaSpeech = JSON.stringify(this.characterManager.entities
+      .filter((entity) => entity.speechRemaining > 0 || entity.speechOpen > 0.01)
+      .map((entity) => ({ id: entity.id, open: Number(entity.speechOpen.toFixed(3)) })));
+    const interactiveObjects = (this.world.interactiveRegions ?? [])
       .map((region) => {
         const point = region.center.clone().project(this.camera);
         return {
           name: region.name,
+          meshCount: region.meshes?.length ?? 0,
           x: Math.round(rect.left + (point.x * 0.5 + 0.5) * rect.width),
           y: Math.round(rect.top + (-point.y * 0.5 + 0.5) * rect.height),
           depth: Number(point.z.toFixed(3)),
@@ -1588,9 +1873,19 @@ export class ExperienceController {
         remaining: Number(conversation.remaining.toFixed(1)),
       })),
     );
-    if (this.currentWorld === 'nevada') {
+    if (['nevada', 'hamina'].includes(this.currentWorld)) {
       const echo = this.world.echoCenter;
       const characters = this.characterManager.entities;
+      this.stage.dataset.qaActivityBounds = JSON.stringify({
+        echo: echo.toArray(),
+        echoRadius: this.world.echoSphere.radius,
+        ritualRadius: this.characterManager.ritualRadius ?? null,
+        echoMin: this.world.echoBox.min.toArray(),
+        echoMax: this.world.echoBox.max.toArray(),
+        garageMin: this.navigation.garageBox.min.toArray(),
+        garageMax: this.navigation.garageBox.max.toArray(),
+        characterPositions: characters.map((entity) => [entity.id, ...entity.root.position.toArray()]),
+      });
       let minimumSeparation = Infinity;
       let closest = [];
       for (let a = 0; a < characters.length; a += 1) {
@@ -1608,12 +1903,48 @@ export class ExperienceController {
         nearEcho: characters.filter((entity) => Math.hypot(
           entity.root.position.x - echo.x, entity.root.position.z - echo.z,
         ) < 18).length,
+        maximumEchoDistance: Number(Math.max(...characters.map((entity) => Math.hypot(
+          entity.root.position.x - echo.x, entity.root.position.z - echo.z,
+        ))).toFixed(2)),
+        walking: characters.filter((entity) => entity.behavior.state === 'walk').length,
+        observingEcho: characters.filter((entity) => (
+          entity.behavior.state === 'idle' && entity.behavior.lookTarget
+        )).length,
+        heightRange: [
+          Number(Math.min(...characters.map((entity) => entity.height)).toFixed(2)),
+          Number(Math.max(...characters.map((entity) => entity.height)).toFixed(2)),
+        ],
         total: characters.length,
         minimumSeparation: Number(minimumSeparation.toFixed(2)),
         closest,
       });
+      if (this.currentWorld === 'hamina') {
+        this.stage.dataset.qaLandInstances = JSON.stringify(this.world.landInstanceSummary ?? null);
+      } else delete this.stage.dataset.qaLandInstances;
     }
     this.stage.dataset.qaCamera = JSON.stringify(this.camera.position.toArray().map((value) => Number(value.toFixed(3))));
+    if (this.atmosphere?.lensflare) {
+      const sunPoint = this.atmosphere.lensflare.position.clone().project(this.camera);
+      this.stage.dataset.qaSun = JSON.stringify({
+        x: Math.round(rect.left + (sunPoint.x * 0.5 + 0.5) * rect.width),
+        y: Math.round(rect.top + (-sunPoint.y * 0.5 + 0.5) * rect.height),
+        depth: Number(sunPoint.z.toFixed(3)),
+        visible: sunPoint.z > -1 && sunPoint.z < 1
+          && Math.abs(sunPoint.x) < 1 && Math.abs(sunPoint.y) < 1,
+      });
+      this.stage.dataset.qaSkyTime = JSON.stringify({
+        world: this.currentWorld,
+        ...this.atmosphere.worldTimes?.[this.currentWorld],
+      });
+    }
+    if (this.weather) {
+      this.stage.dataset.qaWeather = JSON.stringify({
+        mode: this.weather.mode,
+        count: this.weather.count,
+        size: this.weather.material.size,
+        opacity: this.weather.material.opacity,
+      });
+    }
     this.stage.dataset.qaHoverZoom = this.cameraController.hoverZoom.toFixed(3);
     this.stage.dataset.qaFocusBreath = this.cameraController.focusBreath.toFixed(3);
     this.stage.dataset.qaBreathAmplitude = this.cameraController.focusBreathAmplitude.toFixed(4);
@@ -1622,6 +1953,8 @@ export class ExperienceController {
       intensity: Number(this.portraitFill.intensity.toFixed(3)),
       distance: Number(this.portraitFill.distance.toFixed(3)),
       position: this.portraitFill.position.toArray().map((value) => Number(value.toFixed(3))),
+      danceIntensities: this.danceFills.map((light) => Number(light.intensity.toFixed(3))),
+      danceDistances: this.danceFills.map((light) => Number(light.distance.toFixed(3))),
       objectIntensity: Number(this.interactiveFocusLight.light.intensity.toFixed(3)),
       objectAngle: Number(this.interactiveFocusLight.light.angle.toFixed(3)),
       objectPosition: this.interactiveFocusLight.light.position.toArray().map((value) => Number(value.toFixed(3))),
@@ -1630,6 +1963,9 @@ export class ExperienceController {
       angle: Number(this.cameraController.angle.toFixed(3)),
       farRadius: Number(this.cameraController.farRadius.toFixed(3)),
       nearRadius: Number(this.cameraController.nearRadius.toFixed(3)),
+      nearHeight: Number(this.cameraController.nearHeight.toFixed(3)),
+      relativeNearHeight: Number((this.cameraController.nearHeight
+        - this.cameraController.echoCenter.y).toFixed(3)),
       echoCenter: this.cameraController.echoCenter.toArray().map((value) => Number(value.toFixed(3))),
     });
   }
@@ -1638,7 +1974,7 @@ export class ExperienceController {
     const npcs = this.characterManager.entities.filter((entity) => entity.nevadaNpc);
     const warnings = [];
     if (this.currentWorld === 'nevada' && npcs.length !== 15) warnings.push(`Expected 15 Nevada NPCs; found ${npcs.length}`);
-    if (this.currentWorld === 'hamina' && npcs.length) warnings.push('Nevada NPCs remain in Hamina');
+    if (this.currentWorld === 'hamina' && npcs.length !== 15) warnings.push(`Expected 15 Hamina visitors; found ${npcs.length}`);
     const rows = npcs.map((entity) => {
       const { x, y, z } = entity.root.position;
       if (!this.navigation.worldBounds.containsPoint(entity.root.position)) warnings.push(`${entity.id}: out of bounds`);

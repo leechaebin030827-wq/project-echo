@@ -109,6 +109,104 @@
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+.world-interaction__forest-paper {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  height: min(84%, 119cqw);
+  max-width: 82%;
+  aspect-ratio: 1055 / 1491;
+  opacity: 0;
+  transform-origin: 47% 51%;
+  transform-style: preserve-3d;
+  perspective: 48cqw;
+  filter: drop-shadow(0 1.7cqw 2.8cqw rgba(7, 18, 26, .38));
+  will-change: transform, opacity, filter;
+}
+.world-interaction__forest-paper.is-ready {
+  animation: hamina-forest-paper-arrive 1380ms cubic-bezier(.16, .78, .18, 1) both;
+}
+.world-interaction__forest-paper-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #eee9dc;
+}
+.world-interaction__forest-paper.has-strips > .world-interaction__forest-paper-art { opacity: 0; }
+.world-interaction__forest-paper-strips {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+.world-interaction__forest-paper-strip {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  transform-origin: center;
+  backface-visibility: hidden;
+  animation: hamina-forest-strip-arrive 1240ms cubic-bezier(.2, .72, .2, 1) both;
+  animation-delay: calc(var(--paper-index) * 13ms);
+  will-change: transform, filter;
+}
+.world-interaction__forest-paper.is-leaving {
+  animation: hamina-forest-paper-leave 1180ms cubic-bezier(.46, .05, .78, .38) both;
+}
+.world-interaction__forest-paper.is-leaving .world-interaction__forest-paper-strip {
+  animation: hamina-forest-strip-leave 1080ms cubic-bezier(.4, .05, .72, .44) both;
+  animation-delay: calc(var(--paper-index) * 15ms);
+}
+@keyframes hamina-forest-paper-arrive {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(74cqw, -49cqh) rotateZ(27deg) rotateX(26deg) scale(.38);
+    filter: drop-shadow(0 .4cqw .7cqw rgba(7, 18, 26, .08)) blur(1.4px);
+  }
+  26% {
+    opacity: .74;
+    transform: translate(-50%, -50%) translate(28cqw, -24cqh) rotateZ(15deg) rotateX(-10deg) scale(.59);
+  }
+  54% {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(-7cqw, -5cqh) rotateZ(-7deg) rotateX(7deg) scale(.86);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(1.2cqw, .5cqh) rotateZ(-2.8deg) rotateX(-1deg) scale(1.025);
+  }
+  89% { transform: translate(-50%, -50%) rotateZ(-.8deg) rotateX(.4deg) scale(.992); }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotateZ(-1.65deg) scale(1);
+    filter: drop-shadow(0 1.7cqw 2.8cqw rgba(7, 18, 26, .38));
+  }
+}
+@keyframes hamina-forest-strip-arrive {
+  0% { transform: rotateY(calc(var(--paper-wave) * 42deg)) translateZ(calc(var(--paper-wave) * 1.6cqw)); }
+  32% { transform: rotateY(calc(var(--paper-wave) * -27deg)) translateZ(calc(var(--paper-wave) * -.9cqw)); }
+  58% { transform: rotateY(calc(var(--paper-wave) * 15deg)) translateZ(calc(var(--paper-wave) * .5cqw)); }
+  79% { transform: rotateY(calc(var(--paper-wave) * -6deg)) translateZ(calc(var(--paper-wave) * -.18cqw)); }
+  100% { transform: rotateY(0deg) translateZ(0); }
+}
+@keyframes hamina-forest-paper-leave {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotateZ(-1.65deg) scale(1);
+  }
+  16% { transform: translate(-50%, -50%) translate(1.2cqw, .8cqh) rotateZ(1deg) rotateX(3deg) scale(1.018); }
+  48% { opacity: .96; transform: translate(-50%, -50%) translate(-16cqw, -8cqh) rotateZ(-9deg) rotateX(-13deg) scale(.86); }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(-76cqw, -50cqh) rotateZ(-31deg) rotateX(24deg) scale(.46);
+  }
+}
+@keyframes hamina-forest-strip-leave {
+  0% { transform: rotateY(0deg) translateZ(0); }
+  28% { transform: rotateY(calc(var(--paper-wave) * 18deg)) translateZ(calc(var(--paper-wave) * .75cqw)); }
+  62% { transform: rotateY(calc(var(--paper-wave) * -34deg)) translateZ(calc(var(--paper-wave) * -1.2cqw)); }
+  100% { transform: rotateY(calc(var(--paper-wave) * 49deg)) translateZ(calc(var(--paper-wave) * 1.8cqw)); }
+}
 .world-interaction__card {
   position: absolute; left: 7%; right: 7%; bottom: 13%;
   max-height: 57%; overflow: auto;

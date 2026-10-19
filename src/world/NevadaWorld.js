@@ -6,6 +6,7 @@ import { replaceEchoModel } from './EchoModel.js';
 import { TerrainTextureSystem } from './TerrainTextureSystem.js';
 import { NevadaGrass } from './NevadaGrass.js';
 import { BillboardFaceTexture } from './BillboardFaceTexture.js';
+import { FixtureLights } from './FixtureLights.js';
 
 const INTERACTIVE_OBJECT_NAMES = new Set([
   'Data Center',
@@ -155,12 +156,19 @@ export class NevadaWorld {
         const size = bounds.getSize(new THREE.Vector3());
         const sphere = bounds.getBoundingSphere(new THREE.Sphere());
         const pickBounds = new THREE.Box3().setFromObject(marker);
-        this.interactiveRegions.push({
+        const region = {
           name: definition.name, bounds, center, size, radius: sphere.radius, meshes, pickBounds,
           pickMarker: marker,
           cover: definition.name === 'Money' ? findNode(this.root, 'Money_Cover') : null,
           money: definition.name === 'Money' ? findNode(this.root, 'Money') : null,
-        });
+        };
+        if (definition.name === 'Flag') {
+          region.cameraMode = 'flag';
+          region.focusTarget = center.clone();
+          if (size.y > size.x * 1.4) region.focusTarget.y = bounds.max.y - size.y * 0.22;
+          region.focusRadius = sphere.radius;
+        }
+        this.interactiveRegions.push(region);
         marker.removeFromParent();
         this.clickMarkers.push(marker);
       }
@@ -183,7 +191,14 @@ export class NevadaWorld {
         const center = bounds.getCenter(new THREE.Vector3());
         const size = bounds.getSize(new THREE.Vector3());
         const sphere = bounds.getBoundingSphere(new THREE.Sphere());
-        this.interactiveRegions.push({ name, bounds, center, size, radius: sphere.radius, meshes });
+        const region = { name, bounds, center, size, radius: sphere.radius, meshes };
+        if (name === 'Flag') {
+          region.cameraMode = 'flag';
+          region.focusTarget = center.clone();
+          if (size.y > size.x * 1.4) region.focusTarget.y = bounds.max.y - size.y * 0.22;
+          region.focusRadius = sphere.radius;
+        }
+        this.interactiveRegions.push(region);
       }
       object.removeFromParent();
       this.clickMarkers.push(object);
@@ -291,10 +306,10 @@ export class NevadaWorld {
   }
 
   addLighting() {
-    const hemisphere = new THREE.HemisphereLight('#a9bedb', '#85887e', 1.22);
+    const hemisphere = new THREE.HemisphereLight('#a2c3f3', '#8e8794', 1.24);
     this.scene.add(hemisphere);
 
-    const sun = new THREE.DirectionalLight('#fff0d2', 2.1);
+    const sun = new THREE.DirectionalLight('#ffe9df', 2.12);
     sun.position.copy(this.center).add(new THREE.Vector3(-34, 54, 22));
     sun.target.position.copy(this.echoCenter);
     this.scene.add(sun, sun.target);
@@ -302,30 +317,22 @@ export class NevadaWorld {
     const ambientFill = new THREE.AmbientLight('#9da7b3', 0.22);
     this.scene.add(ambientFill);
 
-    const echoGlow = new THREE.PointLight('#fff0ec', 1.05, Math.max(14, this.echoSphere.radius * 9), 2);
+    const echoGlow = new THREE.PointLight('#ffb7a9', 1.12, Math.max(14, this.echoSphere.radius * 9), 2);
     echoGlow.position.copy(this.echoCenter).add(new THREE.Vector3(-2.8, this.echoSize.y * 1.1, 3.2));
-    const echoRim = new THREE.PointLight('#dedbff', 0.48, Math.max(12, this.echoSphere.radius * 8), 2);
+    const echoRim = new THREE.PointLight('#8edcff', 0.54, Math.max(12, this.echoSphere.radius * 8), 2);
     echoRim.position.copy(this.echoCenter).add(new THREE.Vector3(3.6, this.echoSize.y * 0.45, -2.6));
     this.scene.add(echoGlow, echoRim);
 
-    const fixtureBox = new THREE.Box3();
-    const fixtureCenter = new THREE.Vector3();
-    const maxPracticalLights = 2;
-    const poleFixtures = [...new Set(this.lightFixtures)]
-      .filter((object) => /^Industrial_Light_Pole_A/.test(object.name));
-    const fixtureStep = Math.max(1, Math.ceil(poleFixtures.length / maxPracticalLights));
-    const practicalLights = poleFixtures
-      .filter((_, index) => index % fixtureStep === 0)
-      .slice(0, maxPracticalLights)
-      .map((fixture) => {
-        fixtureBox.setFromObject(fixture);
-        fixtureBox.getCenter(fixtureCenter);
-        const light = new THREE.PointLight('#ffdca0', 0.72, 5.8, 2);
-        light.position.set(fixtureCenter.x, fixtureBox.max.y - 0.08, fixtureCenter.z);
-        this.scene.add(light);
-        return light;
-      });
-    this.lights = [hemisphere, sun, sun.target, ambientFill, echoGlow, echoRim, ...practicalLights];
+    this.fixtureLights = new FixtureLights(this.scene, this.lightFixtures, {
+      color: '#ffdca0', intensity: 12, distance: 7.5, maxLights: 6,
+      focus: this.echoCenter,
+    });
+    this.lights = [hemisphere, sun, sun.target, ambientFill, echoGlow, echoRim,
+      ...this.fixtureLights.lights];
+  }
+
+  updateFixtureLights(camera) {
+    this.fixtureLights?.update(camera.position);
   }
 
   dispose() {

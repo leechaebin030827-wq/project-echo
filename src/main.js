@@ -4,8 +4,10 @@ import './interaction/nevada-interactions.css';
 import { ExperienceController } from './app/ExperienceController.js';
 import { IntroExperience } from './intro/IntroExperience.js';
 import { CAPTIONS, IntroState } from './intro/config.js';
+import { VintageFilmOverlay } from './ui/VintageFilmOverlay.js';
 
 const params = new URLSearchParams(window.location.search);
+new VintageFilmOverlay(document.querySelector('#stage'));
 if (import.meta.env.DEV && params.get('npcFaceQa') === 'N01') {
   import('./qa/N01FaceQa.js').then(({ startN01FaceQa }) => startN01FaceQa()).catch((error) => {
     console.error('[N01 Face QA] initialization failed', error);
@@ -20,7 +22,7 @@ if (import.meta.env.DEV && params.get('npcFaceQa') === 'N01') {
 const experience = new ExperienceController(document.querySelector('#stage'));
 const worldQa = import.meta.env.DEV && (params.has('worldQa') || params.has('orbitQa')
   || params.get('nevadaNpcWalkQa') === '1' || params.get('nevadaInteractionQa') === '1'
-  || params.get('moneyQa') === '1');
+  || params.get('moneyQa') === '1' || params.get('dataCenterQa') === '1');
 const introHandoffQa = import.meta.env.DEV && params.has('introHandoffQa');
 const narration2Qa = import.meta.env.DEV && params.has('narration2Qa');
 const introRoot = document.querySelector('#intro-root');
@@ -34,6 +36,11 @@ experience.initialize({ introMode: !worldQa }).catch((error) => {
 let intro = null;
 let worldAudio = null;
 let developerShortcutRunning = false;
+const restoreWorldMusicOnGesture = () => {
+  if (!experience.worldRenderingEnabled || (intro && !intro.destroyed)) return;
+  if (worldAudio?.audio.defaultBgm.paused) worldAudio.handoffToWorld();
+};
+window.addEventListener('pointerdown', restoreWorldMusicOnGesture, { passive: true });
 if (worldQa) {
   introRoot.hidden = true;
 } else {
@@ -43,14 +50,20 @@ if (worldQa) {
     onLoading: async (controller) => {
       await experience.enterWorldFromIntro({ applyFace: !introHandoffQa });
       await new Promise((resolve) => window.setTimeout(resolve, 650));
-      controller.audio.playNevadaEntry();
       controller.complete();
+    },
+    onComplete: () => {
+      experience.showWorldEntryOverlay();
+      experience.playNevadaEntryOnce();
     },
   });
   worldAudio = intro.controller.audio;
   experience.onWorldHover = () => worldAudio?.playUi('uiHover');
   experience.onWorldClick = () => worldAudio?.playUi('uiClick');
+  experience.onNevadaEnter = () => worldAudio?.playNevadaEntry();
   experience.onHaminaEnter = () => worldAudio?.playHaminaEntry();
+  experience.onReturnTypingStart = () => worldAudio?.playTyping();
+  experience.onReturnTypingEnd = () => worldAudio?.stopTyping();
   if (introHandoffQa) {
     window.setTimeout(() => intro?.controller.transition(IntroState.LOADING), 120);
   }
@@ -90,7 +103,7 @@ const handleDeveloperWorldShortcut = async (event) => {
       intro.destroy({ preserveMusic: true });
       intro = null;
     }
-    await experience.startDeveloperPhotoRoute(() => worldAudio?.playNevadaEntry());
+    await experience.startDeveloperPhotoRoute(() => {});
   } catch (error) {
     console.error('[Dev Shortcut] photo route initialization failed', error);
   } finally {
@@ -102,6 +115,7 @@ if (import.meta.env.DEV) window.addEventListener('keydown', handleDeveloperWorld
 
 window.addEventListener('pagehide', () => {
   window.removeEventListener('keydown', handleDeveloperWorldShortcut);
+  window.removeEventListener('pointerdown', restoreWorldMusicOnGesture);
   intro?.destroy();
   experience.dispose();
 }, { once: true });

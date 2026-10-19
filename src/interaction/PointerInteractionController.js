@@ -8,16 +8,22 @@ export class PointerInteractionController {
     interactivePicker,
     getEchoHitDistance = () => Infinity,
     onCharacter,
+    onEcho = () => {},
     onInteractiveObject,
+    pickArchivePhoto = () => null,
+    onArchivePhoto = () => {},
     onInteractiveBackground,
   }) {
     this.canvas = canvas;
     this.cameraController = cameraController;
     this.picker = picker;
     this.onCharacter = onCharacter;
+    this.onEcho = onEcho;
     this.interactivePicker = interactivePicker;
     this.getEchoHitDistance = getEchoHitDistance;
     this.onInteractiveObject = onInteractiveObject;
+    this.pickArchivePhoto = pickArchivePhoto;
+    this.onArchivePhoto = onArchivePhoto;
     this.onInteractiveBackground = onInteractiveBackground;
     this.active = null;
 
@@ -40,6 +46,16 @@ export class PointerInteractionController {
       EXPERIENCE_STATES.GROUP_DANCE_FOCUS,
       EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS,
     ].includes(state)) return;
+    const archivePhoto = [EXPERIENCE_STATES.ECHO_ORBIT, EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS]
+      .includes(state)
+      ? this.pickArchivePhoto(event.clientX, event.clientY) : null;
+    if (archivePhoto) {
+      this.active = {
+        id: event.pointerId, startX: event.clientX, startY: event.clientY,
+        lastX: event.clientX, lastY: event.clientY, state, archivePhoto,
+      };
+      return;
+    }
     let interactiveObject = [
       EXPERIENCE_STATES.ECHO_ORBIT,
       EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS,
@@ -52,6 +68,13 @@ export class PointerInteractionController {
     const echoDistance = state === EXPERIENCE_STATES.ECHO_ORBIT
       ? this.getEchoHitDistance(event.clientX, event.clientY)
       : Infinity;
+    if (echoDistance < Math.min(
+      character ? this.picker.lastHitDistance : Infinity,
+      interactiveObject ? this.interactivePicker.lastHitDistance : Infinity,
+    )) {
+      character = null;
+      interactiveObject = null;
+    }
     if (interactiveObject && character) {
       if (this.picker.lastHitDistance < this.interactivePicker.lastHitDistance) interactiveObject = null;
       else character = null;
@@ -64,6 +87,7 @@ export class PointerInteractionController {
       lastY: event.clientY,
       state,
       character,
+      echo: Number.isFinite(echoDistance) && !character && !interactiveObject,
       interactiveObject,
       longPressed: false,
     };
@@ -104,8 +128,10 @@ export class PointerInteractionController {
     const moved = Math.hypot(event.clientX - active.startX, event.clientY - active.startY);
     if (this.cameraController.state !== active.state) return;
     if (moved <= INTERACTION_CONFIG.clickMoveTolerance) {
-      if (active.interactiveObject) this.onInteractiveObject(active.interactiveObject);
+      if (active.archivePhoto) this.onArchivePhoto(active.archivePhoto);
+      else if (active.interactiveObject) this.onInteractiveObject(active.interactiveObject);
       else if (active.character) this.onCharacter(active.character);
+      else if (active.echo) this.onEcho();
       else if ([
         EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS,
         EXPERIENCE_STATES.GROUP_DANCE_FOCUS,

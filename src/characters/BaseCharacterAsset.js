@@ -1,5 +1,7 @@
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import * as THREE from 'three';
+import { subdivideFaceSurface } from '../face/FaceSurfaceSmoothing.js';
 
 export class BaseCharacterAsset {
   static cache = new Map();
@@ -7,9 +9,9 @@ export class BaseCharacterAsset {
   static load(base) {
     if (!this.cache.has(base)) {
       this.cache.set(base, (async () => {
-        const gltf = await new GLTFLoader().loadAsync(
-          `/models/semantic/character_${base.toLowerCase()}_face_ready.glb`,
-        );
+        const gltf = await new GLTFLoader()
+          .setMeshoptDecoder(MeshoptDecoder)
+          .loadAsync(`/models/semantic/character_${base.toLowerCase()}_runtime.glb`);
         return new BaseCharacterAsset(base, gltf);
       })());
     }
@@ -25,6 +27,9 @@ export class BaseCharacterAsset {
     this.scene.traverse((object) => {
       if (!object.isMesh) return;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
+      if (materials.some((material) => material.name === 'FACE')) {
+        object.geometry = subdivideFaceSurface(object.geometry);
+      }
       for (const material of materials) {
         for (const texture of [material.map, material.normalMap, material.roughnessMap]) {
           if (texture) texture.anisotropy = 4;
@@ -48,6 +53,7 @@ export class BaseCharacterAsset {
     // The semantic kit contains skinned helper geometry whose local bounds are
     // much larger than the rendered person. Keep the measured value inside the
     // validated human scale of the three supplied assets.
+    this.renderHeight = restHeight;
     this.height = THREE.MathUtils.clamp(restHeight, 1.45, 1.9);
   }
 }

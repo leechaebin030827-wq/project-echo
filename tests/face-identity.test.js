@@ -186,6 +186,89 @@ test('adaptive feature mapping preserves visitor-relative eye and mouth proporti
   assert.ok(lipY(mapped) > lipY(canonical.landmarks));
 });
 
+test('eye mapping retains the visitor eyelid aperture, asymmetry, and brow shape', () => {
+  const width = 960;
+  const height = 720;
+  const visitor = makeLandmarks({ width, height, faceWidth: 0.42, faceHeight: 0.42 });
+  const eyeCenters = {
+    left: [(visitor[362].x + visitor[263].x) / 2, (visitor[362].y + visitor[263].y) / 2],
+    right: [(visitor[33].x + visitor[133].x) / 2, (visitor[33].y + visitor[133].y) / 2],
+  };
+  for (const side of ['left', 'right']) {
+    const [cx, cy] = eyeCenters[side];
+    const widthScale = side === 'left' ? 1.35 : 0.78;
+    const apertureScale = side === 'left' ? 1.55 : 0.68;
+    for (const index of canonical.groups[`${side}_eye`]) {
+      visitor[index].x = cx + (visitor[index].x - cx) * widthScale;
+      visitor[index].y = cy + (visitor[index].y - cy) * apertureScale;
+    }
+    for (const index of canonical.groups[`${side}_eyebrow`]) {
+      visitor[index].y += side === 'left' ? -0.012 : 0.007;
+    }
+  }
+  const mapped = createAdaptiveFeatureLandmarks(canonical, {
+    adaptiveFeatureMappingEnabled: true,
+    adaptiveFeatureStrength: 0.72,
+    deformationParameters: null,
+    visitorLandmarks: visitor,
+    frameWidth: width,
+    frameHeight: height,
+  });
+  const extent = (landmarks, indices, axis) => Math.max(...indices.map((i) => landmarks[i][axis]))
+    - Math.min(...indices.map((i) => landmarks[i][axis]));
+  const leftEye = canonical.groups.left_eye;
+  const rightEye = canonical.groups.right_eye;
+  assert.ok(extent(mapped, leftEye, 0) > extent(canonical.landmarks, leftEye, 0) * 1.25);
+  assert.ok(extent(mapped, rightEye, 0) < extent(canonical.landmarks, rightEye, 0) * 0.85);
+  assert.ok(extent(mapped, leftEye, 1) > extent(canonical.landmarks, leftEye, 1) * 1.4);
+  assert.ok(extent(mapped, rightEye, 1) < extent(canonical.landmarks, rightEye, 1) * 0.8);
+  const browY = (landmarks, side) => canonical.groups[`${side}_eyebrow`]
+    .reduce((sum, index) => sum + landmarks[index][1], 0) / canonical.groups[`${side}_eyebrow`].length;
+  assert.ok(browY(mapped, 'left') < browY(canonical.landmarks, 'left'));
+  assert.ok(browY(mapped, 'right') > browY(canonical.landmarks, 'right'));
+  const contourIndex = canonical.contour[0];
+  assert.deepEqual(mapped[contourIndex], canonical.landmarks[contourIndex]);
+  const triangleArea = (landmarks, triangle) => {
+    const [a, b, c] = triangle.map((index) => landmarks[index]);
+    return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  };
+  assert.equal(canonical.triangles.filter((triangle) =>
+    triangleArea(canonical.landmarks, triangle) * triangleArea(mapped, triangle) < 0).length, 0);
+});
+
+test('visitor nose and lip contours survive the character face warp', () => {
+  const width = 960;
+  const height = 720;
+  const visitor = makeLandmarks({ width, height, faceWidth: 0.42, faceHeight: 0.42 });
+  for (const [name, widthScale, heightScale] of [['nose', 1.22, 1.08], ['lips', 1.28, 1.16]]) {
+    const indices = canonical.groups[name];
+    const cx = indices.reduce((sum, index) => sum + visitor[index].x, 0) / indices.length;
+    const cy = indices.reduce((sum, index) => sum + visitor[index].y, 0) / indices.length;
+    for (const index of indices) {
+      visitor[index].x = cx + (visitor[index].x - cx) * widthScale;
+      visitor[index].y = cy + (visitor[index].y - cy) * heightScale;
+    }
+  }
+  const mapped = createAdaptiveFeatureLandmarks(canonical, {
+    adaptiveFeatureMappingEnabled: true,
+    adaptiveFeatureStrength: 0.72,
+    deformationParameters: null,
+    visitorLandmarks: visitor,
+    frameWidth: width,
+    frameHeight: height,
+  });
+  const extent = (points, indices, axis) => Math.max(...indices.map((index) => points[index][axis]))
+    - Math.min(...indices.map((index) => points[index][axis]));
+  for (const name of ['nose', 'lips']) {
+    assert.ok(extent(mapped, canonical.groups[name], 0)
+      > extent(canonical.landmarks, canonical.groups[name], 0) * 1.08);
+  }
+  const area = (points, [a, b, c]) => (points[b][0] - points[a][0]) * (points[c][1] - points[a][1])
+    - (points[b][1] - points[a][1]) * (points[c][0] - points[a][0]);
+  assert.equal(canonical.triangles.filter((triangle) =>
+    area(canonical.landmarks, triangle) * area(mapped, triangle) < 0).length, 0);
+});
+
 test('V3 reconstruction quality is pose-aware and preserves visitor feature placement', () => {
   const points = makeLandmarks({ width: 960, height: 720, roll: 7 * Math.PI / 180 });
   const analysis = analyzeReconstructionLandmarks(points, 960, 720);

@@ -12,6 +12,9 @@ export class WorldNavigation {
     this.routes = [];
     this.rayOrigin = new THREE.Vector3();
     this.hitPoint = new THREE.Vector3();
+    this.surfaceCellSize = 2.5;
+    this.surfaceCells = new Map();
+    this.surfaceTriangleCount = 0;
   }
 
   configure(world) {
@@ -29,6 +32,7 @@ export class WorldNavigation {
       });
       this.surfaceBounds.union(new THREE.Box3().setFromObject(root));
     }
+    this.buildSurfaceIndex();
 
     const obstacleNamesToIgnore = new Set(['mountain']);
     for (const child of world.root.children) {
@@ -62,7 +66,65 @@ export class WorldNavigation {
     return this;
   }
 
+  buildSurfaceIndex() {
+    this.surfaceCells.clear();
+    this.surfaceTriangleCount = 0;
+    const a = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    const c = new THREE.Vector3();
+    const cellSize = this.surfaceCellSize;
+    for (const mesh of this.walkableMeshes) {
+      mesh.updateWorldMatrix(true, false);
+      const position = mesh.geometry.getAttribute('position');
+      const index = mesh.geometry.index;
+      const count = index?.count ?? position.count;
+      for (let offset = 0; offset < count; offset += 3) {
+        a.fromBufferAttribute(position, index ? index.getX(offset) : offset).applyMatrix4(mesh.matrixWorld);
+        b.fromBufferAttribute(position, index ? index.getX(offset + 1) : offset + 1).applyMatrix4(mesh.matrixWorld);
+        c.fromBufferAttribute(position, index ? index.getX(offset + 2) : offset + 2).applyMatrix4(mesh.matrixWorld);
+        const denominator = (b.z - c.z) * (a.x - c.x) + (c.x - b.x) * (a.z - c.z);
+        if (Math.abs(denominator) < 1e-8) continue;
+        const triangle = {
+          ax: a.x, ay: a.y, az: a.z,
+          bx: b.x, by: b.y, bz: b.z,
+          cx: c.x, cy: c.y, cz: c.z,
+          denominator,
+        };
+        const minCellX = Math.floor(Math.min(a.x, b.x, c.x) / cellSize);
+        const maxCellX = Math.floor(Math.max(a.x, b.x, c.x) / cellSize);
+        const minCellZ = Math.floor(Math.min(a.z, b.z, c.z) / cellSize);
+        const maxCellZ = Math.floor(Math.max(a.z, b.z, c.z) / cellSize);
+        for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+          for (let cellZ = minCellZ; cellZ <= maxCellZ; cellZ += 1) {
+            const key = `${cellX},${cellZ}`;
+            if (!this.surfaceCells.has(key)) this.surfaceCells.set(key, []);
+            this.surfaceCells.get(key).push(triangle);
+          }
+        }
+        this.surfaceTriangleCount += 1;
+      }
+    }
+    console.info(`[Navigation] indexed ${this.surfaceTriangleCount} walkable triangles`);
+  }
+
   sampleHeight(x, z) {
+    const cellX = Math.floor(x / this.surfaceCellSize);
+    const cellZ = Math.floor(z / this.surfaceCellSize);
+    const candidates = this.surfaceCells.get(`${cellX},${cellZ}`);
+    let height = null;
+    for (const triangle of candidates ?? []) {
+      const weightA = ((triangle.bz - triangle.cz) * (x - triangle.cx)
+        + (triangle.cx - triangle.bx) * (z - triangle.cz)) / triangle.denominator;
+      const weightB = ((triangle.cz - triangle.az) * (x - triangle.cx)
+        + (triangle.ax - triangle.cx) * (z - triangle.cz)) / triangle.denominator;
+      const weightC = 1 - weightA - weightB;
+      if (weightA < -1e-5 || weightB < -1e-5 || weightC < -1e-5) continue;
+      const candidate = weightA * triangle.ay + weightB * triangle.by + weightC * triangle.cy;
+      if (height === null || candidate > height) height = candidate;
+    }
+    if (height !== null) return height;
+
+    // Degenerate or unusually large authored faces fall back to raycasting.
     this.rayOrigin.set(x, this.worldBounds.max.y + 24, z);
     this.raycaster.set(this.rayOrigin, DOWN);
     this.raycaster.far = this.worldBounds.max.y - this.worldBounds.min.y + 48;
@@ -78,6 +140,12 @@ export class WorldNavigation {
     return true;
   }
 
+  isInActivityArea(x, z, padding = 0) {
+    if (this.world.root.name !== 'NevadaWorld') return true;
+    return x >= this.garageBox.min.x + padding && x <= this.garageBox.max.x - padding
+      && z >= this.garageBox.min.z + padding && z <= this.garageBox.max.z - padding;
+  }
+
   makeEllipse(centerX, centerZ, radiusX, radiusZ, samples = 36) {
     const points = [];
     for (let index = 0; index < samples; index += 1) {
@@ -85,7 +153,7 @@ export class WorldNavigation {
       const x = centerX + Math.cos(angle) * radiusX;
       const z = centerZ + Math.sin(angle) * radiusZ;
       const y = this.sampleHeight(x, z);
-      if (y === null || !this.isClear(x, y, z)) return null;
+      if (y === null || !this.isClear(x, y, z) || !this.isInActivityArea(x, z, 0.45)) return null;
       points.push(new THREE.Vector3(x, y, z));
     }
     return this.finishRoute(points);

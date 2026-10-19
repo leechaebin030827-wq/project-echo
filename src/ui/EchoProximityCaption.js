@@ -8,14 +8,27 @@ export class EchoProximityCaption {
     this.visible = false;
     this.override = false;
     this.proximityActive = false;
+    this.worldMode = 'nevada';
     this.korean = element.querySelector('.echo-caption-korean');
     this.english = element.querySelector('.echo-caption-english');
   }
 
-  showOverride(korean, english = '') {
+  setWorldMode(mode) {
+    this.worldMode = mode;
+    if (!this.override) this.setDefaultText();
+  }
+
+  setDefaultText() {
+    this.korean.textContent = '클라우드 너머, 이곳에서 당신을 목격했어요.';
+    this.english.textContent = this.worldMode === 'hamina'
+      ? 'Pilven tuolla puolen näin sinut täällä.'
+      : 'Beyond the cloud, I saw you here.';
+  }
+
+  showOverride(korean, local = '') {
     this.override = true;
     this.korean.textContent = korean;
-    this.english.textContent = english;
+    this.english.textContent = local;
     this.visible = true;
     this.element.classList.add('visible');
     this.element.setAttribute('aria-hidden', 'false');
@@ -30,8 +43,7 @@ export class EchoProximityCaption {
 
   clearOverride() {
     this.override = false;
-    this.korean.textContent = '클라우드 너머, 이곳에서 당신을 목격했어요.';
-    this.english.textContent = 'Beyond the cloud, I saw you here.';
+    this.setDefaultText();
     this.visible = false;
     this.element.classList.remove('visible');
     this.element.setAttribute('aria-hidden', 'true');

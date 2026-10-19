@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { ECHO_RIG_URL } from '../config.js';
+import { ECHO_TRAVEL_RIG_URL } from '../config.js';
 import { tuneEchoMaterial } from './EchoMaterial.js';
 
 const clamp = THREE.MathUtils.clamp;
@@ -10,12 +10,53 @@ const smooth = (value) => {
   return x * x * (3 - 2 * x);
 };
 
+function preserveEchoColorInFlight(material) {
+  if (!material) return;
+  tuneEchoMaterial(material);
+  if (!material.isMeshStandardMaterial) return;
+
+  // The travel rig exposes its underside against a very bright sky. Applying
+  // the albedo as a full emissive map washed the whole body into indistinct
+  // cyan/pink bands. Keep the authored opal finish above, then softly grade
+  // only downward-facing fragments to one deliberate deep-violet material.
+  const previousCompile = material.onBeforeCompile;
+  const previousCacheKey = material.customProgramCacheKey?.bind(material);
+  material.onBeforeCompile = (shader, renderer) => {
+    previousCompile.call(material, shader, renderer);
+    shader.vertexShader = `varying vec3 vEchoObjectNormal;\n${shader.vertexShader}`;
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <defaultnormal_vertex>',
+      `#include <defaultnormal_vertex>
+      vEchoObjectNormal = normalize(objectNormal);`,
+    );
+    shader.fragmentShader = `varying vec3 vEchoObjectNormal;\n${shader.fragmentShader}`;
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <opaque_fragment>',
+      `float echoUnderside = smoothstep(0.04, 0.72, -normalize(vEchoObjectNormal).y);
+      float echoUnderLight = clamp(
+        dot(outgoingLight, vec3(0.2126, 0.7152, 0.0722)), 0.0, 1.0
+      );
+      vec3 echoUnderbody = mix(
+        vec3(0.13, 0.09, 0.30),
+        vec3(0.38, 0.24, 0.56),
+        smoothstep(0.08, 0.72, echoUnderLight)
+      );
+      vec3 echoUnderSpecular = max(outgoingLight * vec3(0.62, 0.48, 0.82), echoUnderbody);
+      outgoingLight = mix(outgoingLight, echoUnderSpecular, echoUnderside * 0.86);
+      #include <opaque_fragment>`,
+    );
+  };
+  material.customProgramCacheKey = () => `${previousCacheKey?.() ?? ''}-echo-flight-underbody-v2`;
+  material.envMapIntensity = Math.max(material.envMapIntensity ?? 1, 1.12);
+  material.needsUpdate = true;
+}
+
 export function getEchoLaunchPose(progress, height) {
   return {
     lift: height * smooth((progress - 0.08) / 0.92),
     crouch: 1 - smooth(progress / 0.25),
-    tuck: smooth((progress - 0.06) / 0.72),
-    groundContact: 1 - smooth((progress - 0.08) / 0.27),
+    tuck: smooth((progress - 0.28) / 0.72),
+    groundContact: 1 - smooth((progress - 0.1) / 0.18),
   };
 }
 
@@ -51,7 +92,7 @@ export class EchoTravelAnimator {
     if (this.loadPromise) return this.loadPromise;
     this.loadPromise = new GLTFLoader()
       .setMeshoptDecoder(MeshoptDecoder)
-      .loadAsync(ECHO_RIG_URL)
+      .loadAsync(ECHO_TRAVEL_RIG_URL)
       .then(({ scene }) => {
         this.actor = scene;
         this.actor.name = 'ECHO_TravelRig';
@@ -137,7 +178,7 @@ export class EchoTravelAnimator {
     }
     this.travelTextures = [...copiedTextures.values()];
     for (const material of (Array.isArray(this.travelMaterial)
-      ? this.travelMaterial : [this.travelMaterial])) tuneEchoMaterial(material);
+      ? this.travelMaterial : [this.travelMaterial])) preserveEchoColorInFlight(material);
     this.mesh.material = this.travelMaterial;
     this.source = source;
     this.sourceWasVisible = source.visible;
@@ -340,10 +381,7 @@ export class EchoTravelAnimator {
 
   update(delta = 0) {
     if (!this.actor?.visible || this.phase === 'idle') return;
-    if (this.phase === 'arrival') this.elapsed += clamp(delta, 0, 0.05);
-    const progress = this.phase === 'arrival'
-      ? clamp(this.elapsed / this.duration, 0, 1)
-      : (performance.now() - this.startedAt) / (this.duration * 1000);
+    const progress = (performance.now() - this.startedAt) / (this.duration * 1000);
     const boundedProgress = clamp(progress, 0, 1);
     if (this.phase === 'crouch') {
       this.setPose(0, smooth(boundedProgress), 0, 0, 1);
@@ -352,8 +390,11 @@ export class EchoTravelAnimator {
       this.setPose(pose.lift, pose.crouch, pose.tuck, 0, pose.groundContact,
         smooth((boundedProgress - 0.78) / 0.22));
     } else if (this.phase === 'spin' || this.phase === 'loading-spin') {
+      // The world jump has one authored sky revolution. If the destination is
+      // still preparing, hold the completed pose instead of adding more turns.
+      const spinProgress = this.phase === 'loading-spin' ? boundedProgress : progress;
       this.setPose(this.height, 0, 1,
-        this.spinStart + Math.PI * 2 * progress, 0, 1);
+        this.spinStart + Math.PI * 2 * spinProgress, 0, 1);
     } else if (this.phase === 'arrival') {
       const alignment = smooth(boundedProgress);
       if (this.arrivalTarget) {
@@ -363,10 +404,10 @@ export class EchoTravelAnimator {
         );
         this.actor.scale.lerpVectors(this.arrivalFromScale, this.arrivalTarget.scale, alignment);
       }
-      const descent = smooth(progress / 0.86);
-      const bounce = progress > 0.86 ? Math.sin(Math.PI * (progress - 0.86) / 0.14) * this.worldScale * 0.035 : 0;
-      const tuck = 1 - smooth((progress - 0.65) / 0.23);
-      const impact = progress > 0.84 ? Math.sin(Math.PI * clamp((progress - 0.84) / 0.16, 0, 1)) * 0.65 : 0;
+      const descent = smooth(progress / 0.92);
+      const bounce = progress > 0.92 ? Math.sin(Math.PI * (progress - 0.92) / 0.08) * this.worldScale * 0.035 : 0;
+      const tuck = 1 - smooth((progress - 0.68) / 0.24);
+      const impact = progress > 0.9 ? Math.sin(Math.PI * clamp((progress - 0.9) / 0.1, 0, 1)) * 0.65 : 0;
       this.setPose(this.height * (1 - descent) + bounce, impact * 0.45, tuck, 0, 0,
         1 - smooth((progress - 0.56) / 0.28));
     }
