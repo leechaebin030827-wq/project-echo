@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as THREE from 'three';
-import { FixtureLights } from '../src/world/FixtureLights.js';
+import { FixtureLights } from '../src/world/shared/FixtureLights.js';
 
 test('point lights sit on the Light material surface and follow nearby fixtures', () => {
   const scene = new THREE.Scene();

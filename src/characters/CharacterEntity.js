@@ -24,6 +24,8 @@ export class CharacterEntity {
     this.speechRitual = false;
     this.ambientPose = null;
     this.ambientAge = 0;
+    this.ritualHovered = false;
+    this.ritualHoverWeight = 0;
     let seed = [...id].reduce((value, character) => value * 31 + character.charCodeAt(0), 7);
     this.random = () => {
       seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
@@ -40,6 +42,7 @@ export class CharacterEntity {
     this.ritualBoneRest = new Map();
     this.headBone = null;
     this.neckBone = null;
+    this.walkSpineBone = null;
     this.faceMeshes = [];
     this.bodyMaterialEntries = [];
     this.distantFillColor = new THREE.Color('#fff1d4');
@@ -48,6 +51,7 @@ export class CharacterEntity {
       object.userData.entityId = id;
       if (object.isBone && /head$/i.test(object.name) && !this.headBone) this.headBone = object;
       if (object.isBone && /^neck$/i.test(object.name) && !this.neckBone) this.neckBone = object;
+      if (object.isBone && /^spine$/i.test(object.name) && !this.walkSpineBone) this.walkSpineBone = object;
       if (object.isBone) this.ritualBoneRest.set(object, {
         position: object.position.clone(),
         rotation: object.quaternion.clone(),
@@ -162,6 +166,10 @@ export class CharacterEntity {
     this.idleHeadOffset = 0;
     this.idleHeadRotation = new THREE.Quaternion();
     this.idleHeadAxis = new THREE.Vector3(0, 1, 0);
+    this.walkObservationAge = this.random() * Math.PI * 2;
+    this.walkSpineOffset = 0;
+    this.walkSpineRotation = new THREE.Quaternion();
+    this.walkSpineAxis = new THREE.Vector3(0, 0, 1);
     this.echoObserveHeadOffset = 0;
     this.echoObserveHeadRotation = new THREE.Quaternion();
     this.echoObserveHeadAxis = new THREE.Vector3(1, 0, 0);
@@ -262,6 +270,12 @@ export class CharacterEntity {
   }
 
   play(name) {
+    if (name === 'idle' && this.conversation) {
+      // Keep a natural planted walk pose during a stationary conversation;
+      // the conversation head gesture continues without walking in place.
+      this.animator.hold('walk', 0);
+      return;
+    }
     this.animator.play(name === 'idle' ? 'walk' : name);
   }
   setAmbientPose(type, position, facing) {
@@ -300,6 +314,7 @@ export class CharacterEntity {
   }
 
   endRitualPose() {
+    this.ritualHovered = false;
     this.animator.stop();
     this.ritualExitPose = new Map([...this.ritualBoneRest.keys()].map((bone) => [bone, {
       position: bone.position.clone(),
@@ -337,6 +352,9 @@ export class CharacterEntity {
       if (blend >= 1) this.ritualExitPose = null;
     } else if (this.ambientPose === 'ritual') {
       const style = this.ritualStyle;
+      this.ritualHoverWeight = THREE.MathUtils.damp(
+        this.ritualHoverWeight, this.ritualHovered ? 1 : 0, 2.8, delta,
+      );
       const phase = (t + style.phase) % 9.6;
       // Each gesture returns to its resting pose with zero velocity, so the
       // cycle joins cleanly even when people start at different phases.
@@ -347,12 +365,12 @@ export class CharacterEntity {
       const breath = 0.5 - 0.5 * Math.cos((t + style.phase * 0.55) * Math.PI * 2 / 4.8);
       // Both arms travel through a full, slow gesture without the long idle
       // gap of a one-shot pulse. Their periods and phases differ per person.
-      const leftGreeting = 0.5 - 0.5 * Math.cos(
+      const leftGreeting = Math.min(1, 0.5 - 0.5 * Math.cos(
         (t + style.phase + (style.leadLeft ? 1.1 : 1.8)) * Math.PI * 2 / style.leftPeriod,
-      );
-      const rightGreeting = 0.5 - 0.5 * Math.cos(
+      ) + this.ritualHoverWeight * 0.16);
+      const rightGreeting = Math.min(1, 0.5 - 0.5 * Math.cos(
         (t + style.phase + (style.leadLeft ? 1.8 : 1.1)) * Math.PI * 2 / style.rightPeriod,
-      );
+      ) + this.ritualHoverWeight * 0.16);
       const curious = gesture(4.9, 8.8);
       const kneeBend = style.variant === 1 || style.variant === 3
         ? gesture(4.2, 8.7) * (style.variant === 1 ? 0.32 : 0.42) : 0;
@@ -571,6 +589,12 @@ export class CharacterEntity {
       ));
       this.idleHeadOffset = 0;
     }
+    if (this.walkSpineOffset && this.walkSpineBone) {
+      this.walkSpineBone.quaternion.multiply(this.walkSpineRotation.setFromAxisAngle(
+        this.walkSpineAxis, -this.walkSpineOffset,
+      ));
+      this.walkSpineOffset = 0;
+    }
     if (this.echoObserveHeadOffset) {
       this.headBone.quaternion.multiply(this.echoObserveHeadRotation.setFromAxisAngle(
         this.echoObserveHeadAxis, -this.echoObserveHeadOffset,
@@ -625,6 +649,23 @@ export class CharacterEntity {
       this.headBone.quaternion.multiply(this.conversationHeadRotation.setFromAxisAngle(
         this.conversationHeadAxis, this.conversationHeadOffset,
       ));
+    }
+    if (!this.ambientPose && !this.conversation && !this.focused && !this.lookingUp
+      && !this.danceGroup) {
+      this.walkObservationAge += delta;
+      const age = this.walkObservationAge;
+      this.idleHeadOffset = Math.sin(age * 0.58) * 0.065
+        + Math.sin(age * 0.23 + this.behavior.pacePhase) * 0.04;
+      this.headBone.quaternion.multiply(this.idleHeadRotation.setFromAxisAngle(
+        this.idleHeadAxis, this.idleHeadOffset,
+      ));
+      if (this.walkSpineBone) {
+        this.walkSpineOffset = Math.sin(age * 0.87 + this.behavior.pacePhase) * 0.025
+          + (this.behavior.turnAmount ?? 0) * 0.04;
+        this.walkSpineBone.quaternion.multiply(this.walkSpineRotation.setFromAxisAngle(
+          this.walkSpineAxis, this.walkSpineOffset,
+        ));
+      }
     }
     if (this.lookingUp) {
       this.lookUpElapsed = Math.min(this.lookUpDelay + this.lookUpDuration, this.lookUpElapsed + delta);

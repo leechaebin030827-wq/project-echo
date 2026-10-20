@@ -393,8 +393,9 @@ export class CharacterManager {
       }
       if (dispersal.moves.every((move) => move.complete)) {
         this.ritualDispersal = null;
-        this.danceEnabled = true;
-        this.danceDirector.ensurePersistentGroup(this.entities);
+        // The crowd now continues on individual walking destinations.
+        // Autonomous dance and conversation would pin several people in place.
+        this.danceEnabled = false;
       }
     }
     if (this.danceEnabled) {
@@ -406,6 +407,30 @@ export class CharacterManager {
   }
 
   getDanceGroup(entity) { return this.danceDirector.getGroupFor(entity); }
+
+  setRitualHovered(active) {
+    for (const entity of this.entities) entity.ritualHovered = active && this.ritualActive;
+  }
+
+  startMoneyInterest(center) {
+    if (this.ritualActive) this.releaseEchoRitual();
+    this.stopDances();
+    this.clearMoneyInterest();
+    const visitors = this.entities
+      .filter((entity) => entity.root.visible && entity.behavior?.setInterest)
+      .sort((a, b) => a.root.position.distanceToSquared(center)
+        - b.root.position.distanceToSquared(center))
+      .slice(0, 5);
+    for (const visitor of visitors) visitor.behavior.setInterest(center, 19);
+    const towardEcho = this.navigation.world.echoCenter.clone().sub(center).setY(0);
+    if (towardEcho.lengthSq() > 0.001) towardEcho.normalize().multiplyScalar(2.2);
+    return center.clone().add(towardEcho);
+  }
+
+  clearMoneyInterest() {
+    for (const visitor of this.entities) visitor.behavior?.clearInterest?.();
+  }
+
   viewDanceGroup(group) { this.danceDirector.view(group); }
   releaseDanceGroup(group) { this.danceDirector.release(group); }
   stopDances() {
@@ -431,8 +456,7 @@ export class CharacterManager {
       character.behavior.state = 'walk';
       character.play('walk');
     }
-    this.danceEnabled = true;
-    this.danceDirector.ensurePersistentGroup(this.entities);
+    this.danceEnabled = false;
   }
 
   setLookingUp(active, selected = null) {

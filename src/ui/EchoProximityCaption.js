@@ -1,4 +1,5 @@
 import { EXPERIENCE_STATES } from '../config.js';
+import { WORLD_PRESENTATION } from '../content/WorldPresentation.js';
 
 export class EchoProximityCaption {
   constructor(element, camera, cameraController) {
@@ -19,16 +20,18 @@ export class EchoProximityCaption {
   }
 
   setDefaultText() {
-    this.korean.textContent = '클라우드 너머, 이곳에서 당신을 목격했어요.';
-    this.english.textContent = this.worldMode === 'hamina'
-      ? 'Pilven tuolla puolen näin sinut täällä.'
-      : 'Beyond the cloud, I saw you here.';
+    const caption = WORLD_PRESENTATION[this.worldMode]?.defaultCaption;
+    if (!caption) return;
+    this.korean.textContent = caption.korean;
+    this.english.textContent = caption.local;
+    this.element.classList.remove('multiline');
   }
 
   showOverride(korean, local = '') {
     this.override = true;
     this.korean.textContent = korean;
     this.english.textContent = local;
+    this.element.classList.toggle('multiline', korean.includes('\n') || local.includes('\n'));
     this.visible = true;
     this.element.classList.add('visible');
     this.element.setAttribute('aria-hidden', 'false');

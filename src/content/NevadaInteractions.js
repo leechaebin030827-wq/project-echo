@@ -8,7 +8,8 @@ export const NEVADA_INTERACTIONS = Object.freeze({
     phrases: [
       ['걱정마요. 당신이 클라우드에 전송한 사진은', "Don't worry. The photo you sent to the cloud"],
       ['잘 보관되고 있어요.', 'is being kept safe.'],
-      ['네~ 복사본 또 만들었어요. 봤죠?', 'Yep~ I made another copy. See?'],
+      ['방금 복사본이 또 만들어졌어요.', 'Another copy was just made.'],
+      ['이거 봤죠?', 'You saw that, right?'],
     ],
     effectDuration: 4.4,
     research: {
@@ -23,7 +24,7 @@ export const NEVADA_INTERACTIONS = Object.freeze({
     label: 'COOLING / INFRASTRUCTURE',
     phrases: [
       ['쉬이익! 쉬이익!', 'Whoosh! Whoosh!'],
-      ['기계가 열을 식히는 중이에요.', 'The machines are cooling off the heat.'],
+      ['기계가 열심히 열을 식히는 중이에요.', 'The machines are working hard to cool things down.'],
       ['아아, 우리의 추억은 춥네요.', 'Ah, our memories are cold.'],
     ],
     effectDuration: 5.2,
@@ -42,7 +43,7 @@ export const NEVADA_INTERACTIONS = Object.freeze({
       ['투자자들이 이곳을 인수 완료했대요', 'The investors have finished buying this place.'],
       ['그게 무슨 뜻이냐면요', 'And what that means is...'],
       ['우리의 주인이 바뀌었다는 거에요', 'our owners have changed.'],
-      ['영원한 주인은 없는걸까요..', 'Maybe no owner stays forever...'],
+      ['영원한 주인은 없는 걸까요?', 'Can anyone remain an owner forever?'],
     ],
     effectDuration: 3.4,
     research: {
@@ -56,8 +57,9 @@ export const NEVADA_INTERACTIONS = Object.freeze({
   Money: {
     label: 'POWER / IMPACT FEE',
     phrases: [
-      ['전기 공급 전환 비용이', 'The cost of switching power suppliers was'],
-      ['무려 2,700만 달러!', 'a whopping $27 million!'],
+      ['무려 2,700만 달러!', 'A whopping $27 million!'],
+      ['이곳의 전기 공급 전환을 위해', 'For changing the power supply here,'],
+      ['그들이 지불한 돈이에요.', 'that is what they paid.'],
       ['이 돈이 없었다면', 'Without this money,'],
       ['우리도 없어요', 'we would not be here.'],
       ['우리는 돈! 돈은 우리!', 'We are money! Money is us!'],
@@ -74,13 +76,11 @@ export const NEVADA_INTERACTIONS = Object.freeze({
   Flag: {
     label: 'NEVADA / UNITED STATES',
     phrases: [
-      ['짜잔! 미국 네바다주에 오신 걸 환영해요!', 'Ta-da! Welcome to Nevada, USA!'],
+      ['미국 네바다주에 오신 걸 환영해요!', 'Welcome to Nevada, USA!'],
       ['사막 한가운데 아주 커다란 데이터센터가 있죠.', 'There is a huge data center in the middle of the desert.'],
       ['이곳에서는 수많은 서버가', 'Here, countless servers'],
       ['밤낮없이 열심히 일하고 있답니다.', 'work hard day and night.'],
-      ['전기도 먹고, 열도 내뿜고요!', 'They use electricity and give off heat, too!'],
-      ['구름이라더니, 꽤 묵직하죠?', 'For a cloud, it is pretty heavy, right?'],
-      ['자, 당신의 흔적도 한번 찾아볼까요?', 'Now, shall we look for your trace?'],
+      ['이 구름은 꽤 묵직하고 건조하네요.', 'This cloud feels rather heavy and dry.'],
     ],
     effectDuration: 4.5,
     research: {

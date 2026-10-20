@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { BILLBOARD_FACE_SLOTS, visitorFaceCrop } from '../src/world/BillboardFaceTexture.js';
+import { BILLBOARD_FACE_SLOTS, visitorFaceCrop } from '../src/world/shared/BillboardFaceTexture.js';
 
 test('the four poster faces occupy separate locations inside the artwork', () => {
   assert.equal(BILLBOARD_FACE_SLOTS.length, 4);

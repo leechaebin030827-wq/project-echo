@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { ECHO_TRAVEL_RIG_URL } from '../config.js';
+import { ECHO_TRAVEL_RIG_URL } from '../../config.js';
 import { tuneEchoMaterial } from './EchoMaterial.js';
 
 const clamp = THREE.MathUtils.clamp;

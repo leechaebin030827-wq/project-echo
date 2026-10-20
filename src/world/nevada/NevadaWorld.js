@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { TERRAIN_TEXTURE_CONFIG, WORLD_CONFIG } from '../config.js';
-import { replaceEchoModel } from './EchoModel.js';
-import { TerrainTextureSystem } from './TerrainTextureSystem.js';
+import { TERRAIN_TEXTURE_CONFIG, WORLD_CONFIG } from '../../config.js';
+import { replaceEchoModel } from '../shared/EchoModel.js';
+import { TerrainTextureSystem } from '../shared/TerrainTextureSystem.js';
 import { NevadaGrass } from './NevadaGrass.js';
-import { BillboardFaceTexture } from './BillboardFaceTexture.js';
-import { FixtureLights } from './FixtureLights.js';
+import { BillboardFaceTexture } from '../shared/BillboardFaceTexture.js';
+import { FixtureLights } from '../shared/FixtureLights.js';
 
 const INTERACTIVE_OBJECT_NAMES = new Set([
   'Data Center',
@@ -84,7 +84,7 @@ export class NevadaWorld {
   async load() {
     const [gltf, billboardImage] = await Promise.all([
       new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(WORLD_CONFIG.modelUrl),
-      new THREE.ImageLoader().loadAsync('/textures/nevada/billboard/acquired.jpg'),
+      new THREE.ImageLoader().loadAsync('/textures/nevada/billboard/acquired-no-text.png'),
     ]);
     this.billboardFaceTexture = new BillboardFaceTexture(billboardImage);
     const billboardTexture = this.billboardFaceTexture.texture;
@@ -167,6 +167,14 @@ export class NevadaWorld {
           region.focusTarget = center.clone();
           if (size.y > size.x * 1.4) region.focusTarget.y = bounds.max.y - size.y * 0.22;
           region.focusRadius = sphere.radius;
+        } else if (definition.name === 'Cooler') {
+          // The rear service bays and platform belong to the cooling assembly.
+          // Keep the small marker for picking, but frame the entire assembly.
+          region.focusBounds = bounds.clone();
+          for (const mesh of meshes) region.focusBounds.union(new THREE.Box3().setFromObject(mesh));
+          region.focusTarget = region.focusBounds.getCenter(new THREE.Vector3());
+          region.focusSize = region.focusBounds.getSize(new THREE.Vector3());
+          region.focusRadius = region.focusBounds.getBoundingSphere(new THREE.Sphere()).radius;
         }
         this.interactiveRegions.push(region);
         marker.removeFromParent();

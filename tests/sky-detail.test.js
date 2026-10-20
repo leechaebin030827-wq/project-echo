@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getSkyVisibility, getSolarTimes } from '../src/world/SkyDetail.js';
+import { getSkyVisibility, getSolarTimes } from '../src/world/shared/SkyDetail.js';
 
 test('stars emerge after dusk and disappear before daylight', () => {
   const noon = getSkyVisibility(12);

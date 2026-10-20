@@ -40,7 +40,7 @@ export function createHoverHighlightMaterial(material, tone = 'blue') {
     isCharacter ? 0.58 : isEcho ? 0.08 : isYellow ? 0.5 : 0.38);
   if (copy.emissive?.isColor) {
     copy.emissive.copy(isEcho ? ECHO_EMISSION : isYellow ? YELLOW_EMISSION : HOVER_EMISSION);
-    copy.emissiveIntensity = isCharacter ? 1.5 : isEcho ? 0.12 : isYellow ? 1.55 : 1.35;
+    copy.emissiveIntensity = isCharacter ? 1.5 : isEcho ? 0.12 : isYellow ? 1.55 : 1;
     // Baked emission masks vary between Nevada objects. A white map keeps
     // their existing shader variant while giving every surface the same glow.
     if (copy.emissiveMap) copy.emissiveMap = WHITE_EMISSION_MAP;

@@ -61,14 +61,6 @@
   transform: scaleX(var(--scale-x)) skewX(var(--skew));
 }
 @keyframes echo-copy-flow { to { transform: translateY(-550%); } }
-.world-interaction__fact-flip {
-  position: absolute; bottom: 11%; left: 8%; width: 84%;
-  display: grid; gap: .18em; text-align: center;
-  transform-origin: center; animation: echo-sale-flip 1s cubic-bezier(.2,.7,.2,1) both;
-}
-.world-interaction__fact-flip strong { font-size: clamp(60px, 17cqw, 170px); line-height: .8; letter-spacing: -.085em; }
-.world-interaction__fact-flip span { font: 600 clamp(24px, 5cqw, 52px)/1 monospace; letter-spacing: -.065em; }
-@keyframes echo-sale-flip { from { opacity: 0; transform: perspective(600px) rotateY(-75deg); } to { opacity: 1; transform: perspective(600px) rotateY(0); } }
 .world-interaction__money-burst {
   position: absolute; top: 50%; left: 50%; transform: translateY(var(--money-offset, 0px));
 }
@@ -92,23 +84,6 @@
   animation: echo-amount-in 420ms ease-out 600ms both;
 }
 @keyframes echo-amount-in { from { opacity: 0; transform: translate(-50%, -40%); } to { opacity: 1; transform: translate(-50%, -50%); } }
-.world-interaction__location {
-  position: absolute; bottom: 12%; left: 8%; width: 84%;
-  text-align: center;
-  font: 700 clamp(32px, 8cqw, 72px)/1.1 monospace;
-  letter-spacing: .08em;
-  text-shadow: 0 0 18px rgba(255,255,255,.5);
-  animation: echo-location-in 600ms ease-out both;
-}
-.world-interaction__location small {
-  display: block; margin-top: .7em;
-  font: 600 clamp(12px, 2cqw, 18px)/1.3 monospace;
-  letter-spacing: .2em;
-}
-@keyframes echo-location-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 .world-interaction__forest-paper {
   position: absolute;
   z-index: 1;

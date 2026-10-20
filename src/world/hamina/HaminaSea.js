@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Water } from 'three/addons/objects/Water.js';
-import { HAMINA_TERRAIN_TEXTURE_CONFIG } from '../config.js';
+import { HAMINA_TERRAIN_TEXTURE_CONFIG } from '../../config.js';
 
 // The authored Ocean mesh marks the exact sea level and extent. Keep its
 // geometry completely fixed; only the normal-map lighting and reflections move.

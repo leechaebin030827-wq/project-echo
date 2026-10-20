@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { NEVADA_INTERACTIONS, captionDurationSeconds } from './NevadaInteractionContent.js';
+import { NEVADA_INTERACTIONS, captionDurationSeconds } from '../content/NevadaInteractions.js';
+import { RESEARCH_UI } from '../content/WorldUiCopy.js';
 import {
   buildHaminaForestPaperStrips,
   preloadHaminaForestPoster,
@@ -40,16 +41,16 @@ export class WorldInteractionExperience {
     this.root.innerHTML = `
       <div class="world-interaction__visual" aria-hidden="true"></div>
       <div class="world-interaction__actions">
-        <button type="button" class="world-interaction__research-button" aria-label="자료 보기" title="자료 보기" hidden>↗</button>
-        <button type="button" class="world-interaction__close" aria-label="월드로 돌아가기" title="월드로 돌아가기">×</button>
+        <button type="button" class="world-interaction__research-button" aria-label="${RESEARCH_UI.view}" title="${RESEARCH_UI.view}" hidden>↗</button>
+        <button type="button" class="world-interaction__close" aria-label="${RESEARCH_UI.returnToWorld}" title="${RESEARCH_UI.returnToWorld}">×</button>
       </div>
       <section class="world-interaction__card" hidden aria-label="Research record">
         <div class="world-interaction__card-index"></div>
         <h2 class="world-interaction__card-title"></h2>
         <p class="world-interaction__card-fact"></p>
         <p class="world-interaction__card-interpretation"></p>
-        <a class="world-interaction__source" target="_blank" rel="noopener noreferrer">VIEW SOURCE ↗</a>
-        <button type="button" class="world-interaction__card-close" aria-label="자료 닫기" title="자료 닫기">×</button>
+        <a class="world-interaction__source" target="_blank" rel="noopener noreferrer">${RESEARCH_UI.source}</a>
+        <button type="button" class="world-interaction__card-close" aria-label="${RESEARCH_UI.close}" title="${RESEARCH_UI.close}">×</button>
       </section>`;
     stage.append(this.root);
     this.visual = this.root.querySelector('.world-interaction__visual');
@@ -106,8 +107,6 @@ export class WorldInteractionExperience {
       grid.className = 'world-interaction__copy-grid';
       active.copyGrid = grid;
       this.visual.append(grid);
-    } else if (!active.isHamina && name === 'Billboard') {
-      this.visual.innerHTML = '<div class="world-interaction__fact-flip"><strong>SOLD!</strong><span>$11,000,000,000</span></div>';
     } else if (!active.isHamina && name === 'Money') {
       if (active.region.cover) {
         active.cover = active.region.cover;
@@ -129,8 +128,6 @@ export class WorldInteractionExperience {
       amount.className = 'world-interaction__amount';
       amount.textContent = '$27,000,000';
       this.visual.append(burst, amount);
-    } else if (!active.isHamina && name === 'Flag') {
-      this.visual.innerHTML = '<div class="world-interaction__location">NEVADA<small>UNITED STATES</small></div>';
     } else if (active.isHamina && name === 'Forest') {
       const paper = document.createElement('div');
       paper.className = 'world-interaction__forest-paper';
@@ -313,10 +310,10 @@ export class WorldInteractionExperience {
     const active = this.active;
     if (!active || this.researchButton.hidden || !active.content.research) return;
     const research = active.content.research;
-    this.card.querySelector('.world-interaction__card-index').textContent = `RESEARCH ${research.number} / ${research.topic}`;
+    this.card.querySelector('.world-interaction__card-index').textContent = `${RESEARCH_UI.index} ${research.number} / ${research.topic}`;
     this.card.querySelector('.world-interaction__card-title').textContent = research.title;
-    this.card.querySelector('.world-interaction__card-fact').textContent = `FACT / ${research.fact}`;
-    this.card.querySelector('.world-interaction__card-interpretation').textContent = `SIMULATION / ${research.interpretation}`;
+    this.card.querySelector('.world-interaction__card-fact').textContent = `${RESEARCH_UI.fact} / ${research.fact}`;
+    this.card.querySelector('.world-interaction__card-interpretation').textContent = `${RESEARCH_UI.simulation} / ${research.interpretation}`;
     const source = this.card.querySelector('.world-interaction__source');
     source.href = research.sourceUrl;
     source.textContent = `${research.sourceLabel} ↗`;

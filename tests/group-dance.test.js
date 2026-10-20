@@ -64,30 +64,35 @@ test('dance partners gather in a circle, face inward, then return to their own r
   }
 });
 
-test('both walking behaviors yield before stepping into another character', () => {
+test('purposeful walker yields to a neighbor and resumes its destination', () => {
   const route = { length: 10 };
   const navigation = {
+    routes: [route],
     getRoute: () => route,
     sampleRoute: (_route, distance, target) => target.set(distance, 0, 0),
+    sampleHeight: () => 0,
+    isClear: () => true,
+    isInActivityArea: () => true,
+    canWalkBetween: () => true,
   };
   const makeWalker = () => ({
     root: { position: new THREE.Vector3(), rotation: { y: 0 } },
+    animator: { setLocomotionSpeed() {} },
     play() {},
   });
   const blocker = makeWalker();
   blocker.root.position.x = 1;
   const standard = makeWalker();
   const standardBehavior = new CharacterBehavior(standard, navigation, 0, () => 0.5);
-  standardBehavior.distance = 0;
-  standardBehavior.current.set(0, 0, 0);
-  standard.root.position.set(0, 0, 0);
-  standardBehavior.state = 'walk';
-  standardBehavior.update(0.1, [standard, blocker]);
+  standardBehavior.setStartDistance(0);
+  for (let frame = 0; frame < 10; frame += 1) standardBehavior.update(0.1, [standard, blocker]);
   assert.equal(standard.root.position.x, 0);
-  assert.equal(standardBehavior.directionSign, -1);
-  standardBehavior.state = 'walk';
-  standardBehavior.update(0.1, [standard, blocker]);
-  assert.ok(standard.root.position.x < 0);
+  blocker.root.position.x = 30;
+  for (let frame = 0; frame < 80; frame += 1) standardBehavior.update(0.1, [standard, blocker]);
+  assert.ok(standard.root.position.x > 1);
+
+  // The older roaming behavior remains available for authored routes.
+  blocker.root.position.x = 1;
 
   const roaming = makeWalker();
   const roamingBehavior = new NevadaRoamingBehavior(roaming, navigation, 0, () => 0.8);
@@ -124,19 +129,21 @@ test('group camera moves smoothly between close face shots', () => {
   for (let step = 0; step < 55; step += 1) controller.update(0.05);
   assert.equal(controller.danceHeroIndex, 1);
   assert.ok(camera.position.distanceTo(firstPosition) > 0.1);
+  // The cut has a deliberate slow move; inspect the shot after that move settles.
+  for (let step = 0; step < 20; step += 1) controller.update(0.05);
   assert.ok(camera.position.distanceTo(members[1].root.position) > 4);
   assert.ok(camera.position.distanceTo(members[1].root.position) < 7);
   const face = members[1].root.position.clone()
     .add(new THREE.Vector3(0, members[1].height * 0.78, 0)).project(camera);
   assert.ok(Math.abs(face.x) < 0.35 && face.y > 0.08 && face.y < 0.5);
-  for (let step = 0; step < 44; step += 1) controller.update(0.05);
+  for (let step = 0; step < 90 && controller.danceHeroIndex !== 2; step += 1) controller.update(0.05);
   assert.equal(controller.danceHeroIndex, 2);
-  for (let step = 0; step < 44; step += 1) controller.update(0.05);
+  for (let step = 0; step < 90 && controller.danceHeroIndex !== -1; step += 1) controller.update(0.05);
   assert.equal(controller.danceHeroIndex, -1);
-  for (let step = 0; step < 20; step += 1) controller.update(0.05);
+  for (let step = 0; step < 60 && controller.danceMove; step += 1) controller.update(0.05);
   assert.equal(controller.danceHeroIndex, -1);
   assert.ok(camera.position.distanceTo(group.center) > 5);
-  for (let step = 0; step < 90; step += 1) controller.update(0.05);
+  for (let step = 0; step < 120 && !controller.danceSequenceComplete; step += 1) controller.update(0.05);
   assert.equal(controller.danceSequenceComplete, true);
   assert.equal(controller.danceHeroIndex, -1);
   assert.equal(controller.danceShotStep, group.members.length);

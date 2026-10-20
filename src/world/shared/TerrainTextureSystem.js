@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TERRAIN_TEXTURE_CONFIG } from '../config.js';
+import { TERRAIN_TEXTURE_CONFIG } from '../../config.js';
 
 export class TerrainTextureSystem {
   constructor(config = TERRAIN_TEXTURE_CONFIG, options = {}) {

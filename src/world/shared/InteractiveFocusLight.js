@@ -15,7 +15,7 @@ export class InteractiveFocusLight {
     this.target = new THREE.Vector3();
   }
 
-  update(camera, region, delta) {
+  update(camera, region, delta, cameraTarget = null, filmElapsed = 0) {
     if (!region) {
       this.light.intensity = THREE.MathUtils.damp(this.light.intensity, 0, 7, delta);
       return;
@@ -28,16 +28,27 @@ export class InteractiveFocusLight {
       .addScaledVector(this.forward, 0.45)
       .addScaledVector(this.right, 0.22)
       .addScaledVector(this.up, 0.14);
-    this.target.copy(region.center);
-    this.target.y += region.size.y * 0.06;
+    const billboardReveal = region.name === 'Billboard'
+      ? THREE.MathUtils.smoothstep(filmElapsed, 8.2, 12) : 0;
+    const focusCenter = region.name === 'Cooler' && region.focusTarget
+      ? region.focusTarget : region.center;
+    const focusSize = region.name === 'Cooler' && region.focusSize
+      ? region.focusSize : region.size;
+    const focusRadius = region.name === 'Cooler' && region.focusRadius
+      ? region.focusRadius : region.radius;
+    this.target.copy(region.name === 'Billboard' && cameraTarget
+      ? cameraTarget : focusCenter);
+    if (region.name === 'Billboard') this.target.lerp(region.center, billboardReveal);
+    else this.target.y += focusSize.y * 0.06;
     this.light.target.position.copy(this.target);
 
     const distance = this.light.position.distanceTo(this.target);
     this.light.angle = THREE.MathUtils.clamp(
-      Math.atan2(Math.max(region.radius * 1.2, 1.2), distance), 0.24, 0.82,
+      Math.atan2(Math.max(focusRadius * (1.2 + billboardReveal * 0.4), 1.2), distance),
+      0.24, region.name === 'Billboard' ? 0.95 : 0.82,
     );
     const intensity = THREE.MathUtils.clamp(
-      distance * distance * 1.15, MIN_INTENSITY, MAX_INTENSITY,
+      distance * distance * (1.15 + billboardReveal * 0.34), MIN_INTENSITY, MAX_INTENSITY,
     );
     this.light.intensity = THREE.MathUtils.damp(this.light.intensity, intensity, 5, delta);
   }

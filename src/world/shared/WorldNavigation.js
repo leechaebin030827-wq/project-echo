@@ -146,6 +146,22 @@ export class WorldNavigation {
       && z >= this.garageBox.min.z + padding && z <= this.garageBox.max.z - padding;
   }
 
+  canWalkBetween(from, to) {
+    const distance = Math.hypot(to.x - from.x, to.z - from.z);
+    const steps = Math.max(2, Math.ceil(distance / 0.65));
+    let previousY = from.y;
+    for (let step = 1; step <= steps; step += 1) {
+      const amount = step / steps;
+      const x = THREE.MathUtils.lerp(from.x, to.x, amount);
+      const z = THREE.MathUtils.lerp(from.z, to.z, amount);
+      if (!this.isInActivityArea(x, z, 0.55)) return false;
+      const y = this.sampleHeight(x, z);
+      if (y === null || Math.abs(y - previousY) > 0.55 || !this.isClear(x, y, z)) return false;
+      previousY = y;
+    }
+    return true;
+  }
+
   makeEllipse(centerX, centerZ, radiusX, radiusZ, samples = 36) {
     const points = [];
     for (let index = 0; index < samples; index += 1) {

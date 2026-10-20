@@ -1,3 +1,5 @@
+import { CURSOR_LABELS } from '../content/WorldUiCopy.js';
+
 export class InteractionCursor {
   constructor(stage, resolveWorldMode = () => 'blocked') {
     this.stage = stage;
@@ -96,10 +98,10 @@ export class InteractionCursor {
     this.currentLabel = label;
     this.element.dataset.mode = mode;
     this.glyph.textContent = mode === 'button' ? '↗'
-      : mode === 'echo' ? 'PROJECT ECHO'
-        : mode === 'character' ? '누구세요?'
-          : mode === 'dance-group' ? '춤 보기'
-          : mode === 'character-back' ? '이전으로'
+      : mode === 'echo' ? CURSOR_LABELS.echo
+        : mode === 'character' ? CURSOR_LABELS.character
+          : mode === 'dance-group' ? CURSOR_LABELS.danceGroup
+          : mode === 'character-back' ? CURSOR_LABELS.characterBack
             : mode === 'interactive-object' ? label
             : mode === 'compass' ? '↑'
             : mode === 'camera-guide' ? '↗'

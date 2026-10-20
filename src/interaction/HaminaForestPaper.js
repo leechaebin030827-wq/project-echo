@@ -1,4 +1,4 @@
-import { visitorFaceCrop, visitorFaceCutout } from '../world/BillboardFaceTexture.js';
+import { visitorFaceCrop, visitorFaceCutout } from '../world/shared/BillboardFaceTexture.js';
 
 const POSTER_URL = '/textures/hamina/forest-land-poster.jpg';
 

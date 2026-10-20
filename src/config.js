@@ -1,4 +1,4 @@
-import { NEVADA_INTERACTIONS } from './interaction/NevadaInteractionContent.js';
+import { HAMINA_INTERACTIONS } from './content/HaminaInteractions.js';
 
 export const EXPERIENCE_STATES = Object.freeze({
   CAPTURE: 'CAPTURE',
@@ -82,73 +82,7 @@ export const HAMINA_CONFIG = Object.freeze({
   fogColor: '#e6f4fc',
   farOrbitScale: 0.8,
   nearOrbitScale: 0.9,
-  // Korean exhibition script and Finnish subtitle for each Hamina object.
-  interactions: Object.freeze({
-    'Data Center': NEVADA_INTERACTIONS['Data Center'],
-    Cooler: {
-      label: 'JÄÄHDYTYS',
-      hover: ['무슨 소리가 들리지 않아요?', 'Kuuletko tuon äänen?'],
-      phrases: [
-        ['쉬이익! 쉬이익!', 'Suhinaa! Suhinaa!'],
-        ['기계가 열을 식히는 중이에요.', 'Koneet poistavat lämpöä.'],
-        ['아아, 우리의 추억은 춥네요.', 'Voi, muistomme ovat kylmiä.'],
-      ],
-      effectDuration: 3,
-    },
-    Timer: {
-      label: 'AJASTIN',
-      hover: ['시간이 얼마나 남았을까요?', 'Kuinka paljon aikaa on jäljellä?'],
-      phrases: [
-        ['째깍! 째깍!', 'Tik tak! Tik tak!'],
-        ['이곳은 전기를 무려 22년 동안', 'Täällä on kuulemma sovittu sähkön ostamisesta'],
-        ['사기로 약속했대요!', 'peräti 22 vuodeksi!'],
-        ['발전소는 2050년까지', 'Voimalaitos valmistautuu'],
-        ['더 일할 준비를 하고 있고요.', 'jatkamaan töitä vuoteen 2050 asti.'],
-        ['그때 당신의 사진은 몇 살일까요?', 'Kuinka vanha sinun valokuvasi silloin on?'],
-        ['우와, 오래 사는 것도 참 바쁘네요!', 'Vau, pitkäikäisenäkin saa olla kiireinen!'],
-      ],
-      effectDuration: 3,
-    },
-    Finland: {
-      label: 'SUOMI / HAMINA',
-      hover: ['수오미! 수오미!', 'Suomi! Suomi!'],
-      phrases: [
-        ['짜잔! 핀란드 하미나에 오신 걸 환영해요!', 'Tadaa! Tervetuloa Haminaan, Suomeen!'],
-        ['바다 옆에 있는 커다란 데이터센터예요.', 'Meren rannalla on suuri datakeskus.'],
-        ['여기는 원래 종이를 만들던 공장이었대요.', 'Tämä oli ennen paperitehdas.'],
-        ['지금은 종이 대신 데이터를 다루죠.', 'Nyt täällä käsitellään paperin sijaan dataa.'],
-        ['종이에서 구름으로!', 'Paperista pilveen!'],
-        ['그런데 왜 이렇게 네모난 구름뿐일까요?', 'Mutta miksi kaikki pilvet ovat täällä niin neliskanttisia?'],
-      ],
-      effectDuration: 3,
-    },
-    Ocean: {
-      label: 'MERI',
-      hover: ['바다도 일을 하나요?', 'Tekeekö merikin töitä?'],
-      phrases: [
-        ['첨벙!', 'Loiskis!'],
-        ['이 바닷물이 기계를 식혀준대요!', 'Tämä merivesi kuulemma jäähdyttää koneita!'],
-        ['그런데 기계에서 나온 열은', 'Mutta koneiden tuottama lämpö'],
-        ['동네 사람들의 집을 데워준대요.', 'lämmittää lähiseudun asukkaiden koteja.'],
-        ['어라? 차가웠다가, 뜨거웠다가…', 'Häh? Ensin kylmää, sitten kuumaa…'],
-        ['이 동네는 참 바쁘네요!', 'Tässä kaupungissa riittää touhua!'],
-      ],
-      effectDuration: 3,
-    },
-    Forest: {
-      label: 'METSÄ',
-      hover: ['저 나무들은 무슨 생각을 할까요?', 'Mitäköhän nuo puut ajattelevat?'],
-      phrases: [
-        ['쉿! 숲한테는 비밀인데요.', 'Hys! Älä kerro tätä metsälle.'],
-        ['이 근처 땅을 더 샀대요!', 'Lähistöltä on kuulemma ostettu lisää maata!'],
-        ['구름을 더 크게 키울 생각인가 봐요.', 'Pilveä aiotaan kai kasvattaa suuremmaksi.'],
-        ['그런데 나무들은 아직 모르나 봐요.', 'Mutta puut eivät taida vielä tietää siitä.'],
-        ['혹시 이사해야 하면 어떡하죠?', 'Entä jos niiden täytyy muuttaa?'],
-        ['앗, 나무는 걸을 수 없잖아요!', 'Ai niin, eiväthän puut osaa kävellä!'],
-      ],
-      effectDuration: 3,
-    },
-  }),
+  interactions: HAMINA_INTERACTIONS,
 });
 
 export const WORLD_JUMP_CONFIG = Object.freeze({

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { INTRO_TEXT, TIMING } from '../intro/config.js';
+import { RETURN_LINES } from '../content/WorldUiCopy.js';
 
 const WIDTH = 450;
 const HEIGHT = 800;
@@ -128,13 +129,7 @@ export class EchoReturnSequence {
     }
     this.overlay.classList.add('visible');
     const question = this.overlay.querySelector('.echo-return-question');
-    const lines = [
-      ['프로젝트 에코는', 'PROJECT ECHO'],
-      ['당신이 업로드한 사진의 흔적을 따라', 'followed the trace of the photo you uploaded'],
-      ['클라우드 너머로 향했습니다.', 'and traveled beyond the cloud.'],
-      ['그 너머의 공간을 보았나요?', 'Did you see the space beyond it?'],
-      ['그곳에서 마주한 것은 정말 당신이었나요?', 'Was what you encountered there really you?'],
-    ];
+    const lines = RETURN_LINES;
     const steps = Math.max(frames.length, lines.length);
     let activeLine = -1;
     for (let index = 0; index < steps; index += 1) {

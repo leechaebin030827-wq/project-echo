@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as THREE from 'three';
-import { InteractiveFocusLight } from '../src/world/InteractiveFocusLight.js';
+import { InteractiveFocusLight } from '../src/world/shared/InteractiveFocusLight.js';
 
 test('interactive focus light follows the camera, illuminates the target, and fades out', () => {
   const scene = new THREE.Scene();

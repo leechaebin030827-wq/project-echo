@@ -2,6 +2,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import * as THREE from 'three';
 import { subdivideFaceSurface } from '../face/FaceSurfaceSmoothing.js';
+import { smoothCharacterHeadNormals } from './HeadSurfaceSmoothing.js';
 
 export class BaseCharacterAsset {
   static cache = new Map();
@@ -29,6 +30,8 @@ export class BaseCharacterAsset {
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       if (materials.some((material) => material.name === 'FACE')) {
         object.geometry = subdivideFaceSurface(object.geometry);
+      } else if (object.isSkinnedMesh) {
+        smoothCharacterHeadNormals(object);
       }
       for (const material of materials) {
         for (const texture of [material.map, material.normalMap, material.roughnessMap]) {

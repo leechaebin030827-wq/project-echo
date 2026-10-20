@@ -29,7 +29,7 @@ export class WeatherParticles {
     this.scene = scene;
     this.world = world;
     this.mode = mode;
-    this.count = mode === 'snow' ? 3600 : 860;
+    this.count = mode === 'snow' ? 3600 : 2200;
     this.center = world.center.clone();
     this.spanX = Math.max(36, Math.min(110, world.size.x * 0.72));
     this.spanZ = Math.max(36, Math.min(110, world.size.z * 0.72));
@@ -48,8 +48,8 @@ export class WeatherParticles {
       color: mode === 'snow' ? '#e8f7ff' : '#e8c99c',
       map: this.texture,
       alphaMap: this.texture,
-      size: mode === 'snow' ? 0.3 : 0.14,
-      opacity: mode === 'snow' ? 0.98 : 0.5,
+      size: mode === 'snow' ? 0.3 : 0.16,
+      opacity: mode === 'snow' ? 0.98 : 0.56,
       transparent: true,
       depthWrite: false,
       sizeAttenuation: true,

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-// Pixel coordinates in the 1774 × 887 ACQUIRED poster. Keep these separate
+// Pixel coordinates in the 1774 × 887 billboard illustration. Keep these separate
 // from the GLB UVs so one composite texture serves both sides of the sign.
 export const BILLBOARD_FACE_SLOTS = Object.freeze([
   { x: 689, y: 224, width: 359, height: 423 },

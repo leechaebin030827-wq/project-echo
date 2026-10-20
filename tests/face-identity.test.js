@@ -333,7 +333,9 @@ test('face QA framing reuses Character Focus with a closer head-centered pose', 
   const normalTargetY = normalPose.target.y;
   controller.focusCharacter(entity, { framing: 'face' });
   const facePose = controller.getFocusPose(entity, new THREE.Vector3(), new THREE.Vector3());
-  assert.ok(facePose.position.distanceTo(facePose.target) < normalDistance * 0.6);
+  // The QA lens moves closer while keeping the camera outside the face mesh.
+  assert.ok(facePose.position.distanceTo(facePose.target) < normalDistance * 0.85);
+  assert.ok(facePose.position.distanceTo(facePose.target) > entity.height * 0.8);
   assert.ok(facePose.target.y > normalTargetY);
 });
 

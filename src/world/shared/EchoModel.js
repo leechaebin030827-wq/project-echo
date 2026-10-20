@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { ECHO_RIG_URL } from '../config.js';
+import { ECHO_RIG_URL } from '../../config.js';
 import { tuneEchoMaterial } from './EchoMaterial.js';
 
 // Preserve the placement authored in each world GLB. Nevada's Echo node is a

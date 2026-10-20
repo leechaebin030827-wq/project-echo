@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { ECHO_RIG_URL } from '../config.js';
-import { tuneEchoMaterial } from '../world/EchoMaterial.js';
+import { tuneEchoMaterial } from '../world/shared/EchoMaterial.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const UP = new THREE.Vector3(0, 1, 0);

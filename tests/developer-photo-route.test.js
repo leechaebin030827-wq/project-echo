@@ -18,6 +18,7 @@ function createPhotoRoute(captureResult) {
       leave: () => calls.push('leave'),
     },
     face: {
+      session: captureResult,
       webcam: { stream: {} },
       capture: async () => captureResult,
       status: (message) => calls.push(`status:${message}`),
@@ -27,6 +28,7 @@ function createPhotoRoute(captureResult) {
     readyPromise: Promise.resolve(),
     characterManager: { entities: [] },
     showWorldEntryOverlay: () => calls.push('entry-overlay'),
+    playFirstEntryOnce: () => calls.push('first-entry-audio'),
     cameraController: { startIntro: () => calls.push('world-camera') },
     world: {
       echo: {},

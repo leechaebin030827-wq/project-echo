@@ -7,12 +7,14 @@ export class PointerInteractionController {
     picker,
     interactivePicker,
     getEchoHitDistance = () => Infinity,
+    isEchoOnly = () => false,
     onCharacter,
     onEcho = () => {},
     onInteractiveObject,
     pickArchivePhoto = () => null,
     onArchivePhoto = () => {},
     onInteractiveBackground,
+    onPointerPosition = () => {},
   }) {
     this.canvas = canvas;
     this.cameraController = cameraController;
@@ -21,10 +23,12 @@ export class PointerInteractionController {
     this.onEcho = onEcho;
     this.interactivePicker = interactivePicker;
     this.getEchoHitDistance = getEchoHitDistance;
+    this.isEchoOnly = isEchoOnly;
     this.onInteractiveObject = onInteractiveObject;
     this.pickArchivePhoto = pickArchivePhoto;
     this.onArchivePhoto = onArchivePhoto;
     this.onInteractiveBackground = onInteractiveBackground;
+    this.onPointerPosition = onPointerPosition;
     this.active = null;
 
     this.onPointerDown = this.handlePointerDown.bind(this);
@@ -46,6 +50,15 @@ export class PointerInteractionController {
       EXPERIENCE_STATES.GROUP_DANCE_FOCUS,
       EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS,
     ].includes(state)) return;
+    if (this.isEchoOnly()) {
+      const echoDistance = this.getEchoHitDistance(event.clientX, event.clientY);
+      this.active = {
+        id: event.pointerId, startX: event.clientX, startY: event.clientY,
+        lastX: event.clientX, lastY: event.clientY, state,
+        echo: Number.isFinite(echoDistance), longPressed: false,
+      };
+      return;
+    }
     const archivePhoto = [EXPERIENCE_STATES.ECHO_ORBIT, EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS]
       .includes(state)
       ? this.pickArchivePhoto(event.clientX, event.clientY) : null;
@@ -107,6 +120,7 @@ export class PointerInteractionController {
   }
 
   handlePointerMove(event) {
+    this.onPointerPosition(event.clientX, event.clientY);
     if (!this.active || this.active.id !== event.pointerId) return;
     const dx = event.clientX - this.active.lastX;
     const dy = event.clientY - this.active.lastY;

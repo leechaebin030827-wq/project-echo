@@ -22,7 +22,8 @@ if (import.meta.env.DEV && params.get('npcFaceQa') === 'N01') {
 const experience = new ExperienceController(document.querySelector('#stage'));
 const worldQa = import.meta.env.DEV && (params.has('worldQa') || params.has('orbitQa')
   || params.get('nevadaNpcWalkQa') === '1' || params.get('nevadaInteractionQa') === '1'
-  || params.get('moneyQa') === '1' || params.get('dataCenterQa') === '1');
+  || params.get('moneyQa') === '1' || params.get('dataCenterQa') === '1'
+  || params.has('lightCableQa'));
 const introHandoffQa = import.meta.env.DEV && params.has('introHandoffQa');
 const narration2Qa = import.meta.env.DEV && params.has('narration2Qa');
 const introRoot = document.querySelector('#intro-root');
@@ -54,7 +55,7 @@ if (worldQa) {
     },
     onComplete: () => {
       experience.showWorldEntryOverlay();
-      experience.playNevadaEntryOnce();
+      experience.playFirstEntryOnce();
     },
   });
   worldAudio = intro.controller.audio;

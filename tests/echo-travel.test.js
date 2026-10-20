@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import * as THREE from 'three';
-import { EchoTravelAnimator, getEchoLaunchPose } from '../src/world/EchoTravelAnimator.js';
+import { EchoTravelAnimator, getEchoLaunchPose } from '../src/world/shared/EchoTravelAnimator.js';
 import { CinematicCameraController } from '../src/camera/CinematicCameraController.js';
 import { EXPERIENCE_STATES } from '../src/config.js';
 

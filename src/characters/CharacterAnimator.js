@@ -6,6 +6,8 @@ export class CharacterAnimator {
     this.actions = {};
     this.current = null;
     this.accumulated = 0;
+    this.walkPlayback = 0.72;
+    this.locomotionSpeed = 0.6;
     for (const clip of clips) {
       const key = /idle/i.test(clip.name) ? 'idle'
         : /walk/i.test(clip.name) ? 'walk'
@@ -70,7 +72,16 @@ export class CharacterAnimator {
     this.accumulated = 0;
   }
 
+  setLocomotionSpeed(speed) {
+    this.locomotionSpeed = Math.max(0, speed);
+  }
+
   update(delta, distance, focused) {
+    if (this.current === this.actions.walk && !this.current.paused) {
+      const target = THREE.MathUtils.clamp(this.locomotionSpeed / 0.78, 0.38, 1.12);
+      this.walkPlayback = THREE.MathUtils.damp(this.walkPlayback, target, 3.5, delta);
+      this.current.setEffectiveTimeScale(this.walkPlayback);
+    }
     this.accumulated += delta;
     const interval = focused || distance < 6 ? 0 : distance < 14 ? 1 / 30 : 1 / 18;
     if (this.accumulated >= interval) {

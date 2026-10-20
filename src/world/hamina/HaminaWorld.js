@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { HAMINA_CONFIG, HAMINA_TERRAIN_TEXTURE_CONFIG } from '../config.js';
-import { replaceEchoModel } from './EchoModel.js';
+import { HAMINA_CONFIG, HAMINA_TERRAIN_TEXTURE_CONFIG } from '../../config.js';
+import { replaceEchoModel } from '../shared/EchoModel.js';
 import { populateHaminaForest } from './HaminaForest.js';
 import {
   HAMINA_LAND_INSTANCE_SOURCE_NAMES,
@@ -10,8 +10,8 @@ import {
 } from './HaminaLandInstances.js';
 import { createHaminaSea } from './HaminaSea.js';
 import { HaminaCountdownDisplay } from './HaminaCountdownDisplay.js';
-import { TerrainTextureSystem } from './TerrainTextureSystem.js';
-import { FixtureLights } from './FixtureLights.js';
+import { TerrainTextureSystem } from '../shared/TerrainTextureSystem.js';
+import { FixtureLights } from '../shared/FixtureLights.js';
 
 const HAMINA_FIXTURE_GLOW = '#ffc878';
 const HAMINA_FIXTURE_LIGHT = '#ffd8a3';

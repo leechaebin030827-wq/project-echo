@@ -4,7 +4,10 @@ import {
   CHARACTER_CAMERA_CONFIG,
   EXPERIENCE_STATES,
 } from '../config.js';
-import { getEchoLaunchPose } from '../world/EchoTravelAnimator.js';
+import { getEchoLaunchPose } from '../world/shared/EchoTravelAnimator.js';
+import {
+  sampleBillboardScan, sampleDataCenterSweep, sampleInteractiveShot, sampleMoneyOrbit,
+} from './InteractiveCameraShots.js';
 
 const smoothStep = (value) => value * value * (3 - 2 * value);
 
@@ -51,6 +54,8 @@ export class CinematicCameraController {
     this.onStateChange = () => {};
     this.interactiveFocus = null;
     this.interactiveOrigin = null;
+    this.interactiveFilm = null;
+    this.archiveDropFilm = null;
     this.archivePhotoOrigin = null;
     this.hoverTarget = null;
     this.hoverZoom = 0;
@@ -76,6 +81,8 @@ export class CinematicCameraController {
 
   configure(world) {
     this.world = world;
+    this.interactiveFilm = null;
+    this.archiveDropFilm = null;
     this.echoCenter.copy(world.echoCenter);
     this.echoSize.copy(world.echoSize);
     this.echoSphere = world.echoSphere;
@@ -308,7 +315,7 @@ export class CinematicCameraController {
     this.focusForward.y = 0;
     if (this.focusForward.lengthSq() < 1e-6) this.focusForward.set(0, 0, 1);
     this.focusForward.normalize().multiplyScalar(
-      entity.height * this.config.portraitDistanceFromHeight * (faceFraming ? 1.8 : 1.08),
+      entity.height * this.config.portraitDistanceFromHeight * (faceFraming ? 0.88 : 1.08),
     );
     positionTarget.copy(lookTarget).add(this.focusForward);
     positionTarget.y += entity.height * (faceFraming
@@ -320,7 +327,7 @@ export class CinematicCameraController {
   keepCharacterCameraOutsideFace() {
     if (!this.focused) return;
     this.focused.getHeadWorldPosition(this.tempC);
-    const minimum = this.focused.height * (this.focusFraming === 'face' ? 1.6 : 1.02);
+    const minimum = this.focused.height * (this.focusFraming === 'face' ? 0.92 : 1.02);
     this.tempB.subVectors(this.camera.position, this.tempC);
     const distance = this.tempB.length();
     if (distance >= minimum) return;
@@ -394,9 +401,12 @@ export class CinematicCameraController {
         target.copy(point);
         target.y += member.height * 0.83;
       }
-      const forward = this.dancePoseForward.set(
-        Math.sin(member.root.rotation.y), 0, Math.cos(member.root.rotation.y),
-      );
+      const forward = member.getFaceSurfaceDirection
+        ? member.getFaceSurfaceDirection(this.dancePoseForward)
+        : this.dancePoseForward.set(
+          Math.sin(member.root.rotation.y), 0, Math.cos(member.root.rotation.y),
+        );
+      forward.y = 0;
       if (forward.lengthSq() < 0.04) forward.copy(this.danceViewDirection).negate();
       forward.normalize();
       const side = this.dancePoseSide.set(-forward.z, 0, forward.x);
@@ -405,7 +415,7 @@ export class CinematicCameraController {
         .addScaledVector(side, member.height * 0.07 * (this.danceHeroIndex % 2 ? -1 : 1));
       position.y += member.height * 0.025;
       // Aim below the eyes so the face sits higher in the portrait frame.
-      target.y -= member.height * 0.13;
+      target.y -= member.height * 0.20;
       return { position, target };
     }
     const direction = this.tempC.copy(this.danceViewDirection)
@@ -616,7 +626,10 @@ export class CinematicCameraController {
       };
     }
     this.interactiveFocus = region;
-    const flagFocus = region.cameraMode === 'flag';
+    this.interactiveFilm = null;
+    this.archiveDropFilm = null;
+    const flagFocus = region.cameraMode === 'flag' || region.name === 'Flag';
+    const coolerFocus = region.name === 'Cooler';
     const haminaCoolerFocus = region.cameraMode === 'hamina-cooler';
     const focusCenter = region.focusTarget ?? region.center;
     const focusBounds = region.focusBounds ?? region.bounds;
@@ -632,7 +645,7 @@ export class CinematicCameraController {
       viewDirection.subVectors(this.echoCenter, focusCenter);
       viewDirection.y = 0.13;
       viewDirection.normalize();
-    } else if (!flagFocus && region.radius > 10) {
+    } else if (!flagFocus && !coolerFocus && region.radius > 10) {
       // Approach the facade from ECHO's side, with enough lateral offset to
       // keep the ECHO out of the building's center frame.
       viewDirection.subVectors(this.echoCenter, region.center);
@@ -642,23 +655,42 @@ export class CinematicCameraController {
       viewDirection.addScaledVector(this.tempB, 0.45).normalize();
     }
     const distance = flagFocus
-      ? Math.max(7, Math.min((region.focusRadius ?? region.radius) * 3.2, 14))
+      ? Math.max(5.6, Math.min(Math.max(focusSize.x, focusSize.z) * 2.3, 9.5))
       : haminaCoolerFocus
-        ? Math.max(18, Math.min((region.focusRadius ?? region.radius) * 1.7, 30))
+        ? Math.max(9, Math.min((region.focusRadius ?? region.radius) * 1.45, 18))
       : region.name === 'Data Center'
       ? (region.focusDistance ?? region.radius * 1.55)
       : region.name === 'Cooler'
-        ? Math.max(20.5, region.radius * 5.25)
+        ? region.focusRadius
+          ? Math.max(16, Math.min(region.focusRadius * 2.6, 42))
+          : Math.max(7.5, Math.min(region.radius * 2.5, 14))
         : region.name === 'Money'
           ? Math.max(9.5, Math.min(region.radius * 2.8, 38))
         : Math.max(7.5, Math.min(region.radius * 2.2, 34));
     const destination = focusCenter.clone().addScaledVector(viewDirection, distance);
-    if (flagFocus) destination.y = focusCenter.y;
+    if (flagFocus) destination.y = Math.max(focusBounds.min.y + 3.5,
+      focusCenter.y - Math.max(1.4, focusSize.y * 0.18));
+    else if (coolerFocus) destination.y = focusCenter.y + Math.max(5, focusSize.y * 0.65);
     else destination.y = Math.max(destination.y, focusBounds.min.y + focusSize.y * 0.72);
     const destinationTarget = focusCenter.clone();
-    if (!flagFocus) destinationTarget.y += focusSize.y * 0.06;
+    if (!flagFocus) destinationTarget.y += focusSize.y * (coolerFocus ? 0.1 : 0.06);
+    if (region.name === 'Billboard') {
+      const graphic = region.meshes?.[0];
+      graphic?.updateWorldMatrix(true, false);
+      const axis = graphic
+        ? new THREE.Vector3(1, 0, 0).transformDirection(graphic.matrixWorld).setY(0)
+        : new THREE.Vector3(viewDirection.z, 0, -viewDirection.x);
+      axis.normalize();
+      const screenRight = new THREE.Vector3(viewDirection.z, 0, -viewDirection.x);
+      if (axis.dot(screenRight) < 0) axis.negate();
+      const span = focusSize.x * Math.abs(axis.x) + focusSize.z * Math.abs(axis.z);
+      destinationTarget.addScaledVector(axis, -span * 0.3);
+      destination.addScaledVector(axis, -span * 0.34);
+    }
     const travelDistance = this.camera.position.distanceTo(destination);
-    const duration = THREE.MathUtils.clamp(0.82 + travelDistance * 0.045, 1.2, 2.55);
+    const duration = coolerFocus
+      ? THREE.MathUtils.clamp(1.35 + travelDistance * 0.045, 2.1, 3.2)
+      : THREE.MathUtils.clamp(0.82 + travelDistance * 0.045, 1.2, 2.55);
     this.transition = {
       fromPosition: this.camera.position.clone(),
       fromTarget: this.target.clone(),
@@ -666,6 +698,7 @@ export class CinematicCameraController {
       destinationTarget,
       duration,
       arcHeight: flagFocus ? 0 : Math.min(3.4, travelDistance * 0.1),
+      filmEntry: true,
     };
     this.elapsed = 0;
     this.setState(EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS, region.name);
@@ -674,7 +707,7 @@ export class CinematicCameraController {
 
   deepenInteractiveObjectFocus(region) {
     if (!region || this.interactiveFocus !== region) return;
-    const flagFocus = region.cameraMode === 'flag';
+    const flagFocus = region.cameraMode === 'flag' || region.name === 'Flag';
     const haminaCoolerFocus = region.cameraMode === 'hamina-cooler';
     const focusCenter = region.focusTarget ?? region.center;
     const focusBounds = region.focusBounds ?? region.bounds;
@@ -684,14 +717,16 @@ export class CinematicCameraController {
     if (flagFocus) viewDirection.y = 0;
     viewDirection.normalize();
     const distance = flagFocus
-      ? Math.max(5.8, Math.min((region.focusRadius ?? region.radius) * 2.65, 11.5))
+      ? Math.max(5, Math.min(Math.max(focusSize.x, focusSize.z) * 1.85, 8.2))
       : haminaCoolerFocus
-        ? Math.max(13.5, Math.min((region.focusRadius ?? region.radius) * 1.28, 22))
+        ? Math.max(7.5, Math.min((region.focusRadius ?? region.radius) * 1.15, 14))
       : region.name === 'Data Center'
       ? region.radius * 1.22
       : Math.max(4.8, region.radius * 2.15);
     const destination = focusCenter.clone().addScaledVector(viewDirection, distance);
-    if (flagFocus) destination.y = focusCenter.y;
+    if (flagFocus) destination.y = Math.max(focusBounds.min.y + 1.7,
+      focusCenter.y - Math.max(2.5, focusSize.y * 0.45));
+    else if (region.name === 'Cooler') destination.y = focusCenter.y + Math.max(4.2, focusSize.y * 0.95);
     else destination.y = Math.max(destination.y, focusBounds.min.y + focusSize.y * 0.66);
     const destinationTarget = focusCenter.clone();
     if (!flagFocus) destinationTarget.y += focusSize.y * 0.045;
@@ -705,13 +740,22 @@ export class CinematicCameraController {
     this.elapsed = 0;
   }
 
-  focusArchiveDrop(center) {
-    if (!center || this.state !== EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS) return;
-    const outward = this.tempA.subVectors(this.camera.position, center).setY(0).normalize();
-    if (outward.lengthSq() < 0.001) outward.set(0, 0, 1);
-    const destination = center.clone().addScaledVector(outward, 9.5);
-    destination.y = center.y + 5.2;
-    const destinationTarget = center.clone().add(new THREE.Vector3(0, 3.3, 0));
+  focusArchiveDrop({ launch, echo, groundY, outward }) {
+    if (!launch || !echo || this.state !== EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS) return;
+    const viewOutward = outward?.clone() ?? this.tempA.subVectors(this.camera.position, launch).setY(0).normalize();
+    if (viewOutward.lengthSq() < 0.001) viewOutward.set(0, 0, 1);
+    const side = new THREE.Vector3(0, 1, 0).cross(viewOutward).normalize();
+    if (side.dot(this.camera.position.clone().sub(launch)) < 0) side.negate();
+    this.archiveDropFilm = {
+      launch: launch.clone(), echo: echo.clone(), outward: viewOutward,
+      side,
+      groundY,
+    };
+    const destination = launch.clone().addScaledVector(viewOutward, 6.5)
+      .addScaledVector(side, 5);
+    destination.y = groundY + 1.85;
+    const destinationTarget = launch.clone();
+    destinationTarget.y += 12;
     this.transition = {
       fromPosition: this.camera.position.clone(),
       fromTarget: this.target.clone(),
@@ -720,6 +764,101 @@ export class CinematicCameraController {
       duration: 1.05,
     };
     this.elapsed = 0;
+  }
+
+  applyInteractiveFilm(delta, archive = null) {
+    if (this.state !== EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS
+      || !this.interactiveFocus || this.transition || this.archivePhotoOrigin) return;
+    if (this.interactiveFocus.name === 'Cooler') return;
+
+    if (this.archiveDropFilm && archive?.dropActive) {
+      const fall = this.archiveDropFilm;
+      const age = archive.dropElapsed;
+      const subject = archive.getFallingCameraSubject();
+      const travel = THREE.MathUtils.smoothstep(age, 1.55, 6.4);
+      const revealGround = THREE.MathUtils.smoothstep(age, 5.15, 7.2);
+      const wideTarget = this.tempA.copy(fall.echo);
+      wideTarget.y = fall.groundY + 0.8;
+      const desiredTarget = this.tempB.copy(subject ?? fall.launch).lerp(wideTarget, revealGround);
+      const lowPosition = this.tempC.copy(fall.launch).addScaledVector(fall.outward, 6.5)
+        .addScaledVector(fall.side, 5);
+      lowPosition.y = fall.groundY + 1.85;
+      const widePosition = fall.echo.clone().addScaledVector(fall.outward, 13.5)
+        .addScaledVector(fall.side, 4.5);
+      widePosition.y = fall.groundY + 7.2;
+      const desiredPosition = lowPosition.lerp(widePosition, travel);
+      const smoothing = 1 - Math.exp(-delta * 3.4);
+      this.camera.position.lerp(desiredPosition, smoothing);
+      this.target.lerp(desiredTarget, smoothing);
+      this.camera.lookAt(this.target);
+      return;
+    }
+
+    const film = this.interactiveFilm;
+    if (!film || film.region !== this.interactiveFocus) return;
+    film.elapsed += delta;
+    if (film.region.name === 'Billboard') {
+      const shot = sampleBillboardScan(film.elapsed);
+      this.target.copy(film.target)
+        .addScaledVector(film.billboardAxis, film.billboardSpan * shot.across);
+      this.camera.position.copy(film.target)
+        .addScaledVector(film.billboardAxis, film.billboardSpan * shot.cameraAcross)
+        .addScaledVector(film.outward, Math.max(film.minimumDistance, film.distance * shot.distance))
+        .addScaledVector(film.up, film.distance * shot.height);
+      this.camera.position.y = Math.max(this.camera.position.y, film.region.bounds.min.y + 1.3);
+      this.camera.lookAt(this.target);
+      this.camera.rotateZ(shot.tilt);
+      return;
+    }
+    if (film.region.name === 'Data Center') {
+      const shot = sampleDataCenterSweep(film.elapsed);
+      const radius = Math.max(film.minimumDistance, film.horizontalDistance * shot.distance);
+      this.target.copy(film.target)
+        .addScaledVector(film.horizontalRight, film.region.size.x * shot.angle * 0.035);
+      this.camera.position.copy(this.target)
+        .addScaledVector(film.horizontalOutward, Math.cos(shot.angle) * radius)
+        .addScaledVector(film.horizontalRight, Math.sin(shot.angle) * radius);
+      this.camera.position.y += film.verticalOffset + film.distance * shot.height;
+      this.camera.lookAt(this.target);
+      return;
+    }
+    if (film.region.name === 'Money') {
+      const shot = sampleMoneyOrbit(film.elapsed);
+      const radial = Math.max(film.minimumDistance, film.horizontalDistance * shot.distance);
+      this.target.copy(film.target);
+      if (film.region.interestCenter) this.target.lerp(film.region.interestCenter, shot.targetBlend);
+      this.camera.position.copy(this.target)
+        .addScaledVector(film.horizontalOutward, Math.cos(shot.angle) * radial)
+        .addScaledVector(film.horizontalRight, Math.sin(shot.angle) * radial);
+      this.camera.position.y += film.verticalOffset + film.distance * shot.height;
+      this.camera.lookAt(this.target);
+      return;
+    }
+    if (film.region.name === 'Flag') {
+      const shot = sampleInteractiveShot('Flag', film.elapsed);
+      const radius = Math.max(film.minimumDistance, film.horizontalDistance * shot.distance);
+      this.target.copy(film.target);
+      this.camera.position.copy(this.target)
+        .addScaledVector(film.horizontalOutward, radius)
+        .addScaledVector(film.horizontalRight, film.distance * shot.side);
+      this.camera.position.y = Math.max(film.region.bounds.min.y + 1.6,
+        film.target.y + film.verticalOffset + film.distance * shot.height);
+      this.camera.lookAt(this.target);
+      return;
+    }
+    const shot = sampleInteractiveShot(film.region.name, film.elapsed);
+    const distance = Math.max(film.minimumDistance, film.distance * shot.distance);
+    this.camera.position.copy(film.target)
+      .addScaledVector(film.outward, distance)
+      .addScaledVector(film.right, film.distance * shot.side)
+      .addScaledVector(film.up, film.distance * shot.height);
+    this.camera.position.y = Math.max(
+      this.camera.position.y, (film.region.focusBounds ?? film.region.bounds).min.y + 1.3,
+    );
+    this.target.copy(film.target)
+      .addScaledVector(film.right, film.distance * shot.side * 0.16)
+      .addScaledVector(film.up, film.distance * shot.height * 0.16);
+    this.camera.lookAt(this.target);
   }
 
   focusArchivePhoto(mesh) {
@@ -791,6 +930,8 @@ export class CinematicCameraController {
       orbitAngle: this.interactiveOrigin.angle,
     };
     this.interactiveFocus = null;
+    this.interactiveFilm = null;
+    this.archiveDropFilm = null;
     this.elapsed = 0;
     this.setState(EXPERIENCE_STATES.INTERACTIVE_OBJECT_RETURN);
   }
@@ -820,6 +961,8 @@ export class CinematicCameraController {
     this.danceGroup = null;
     this.interactiveFocus = null;
     this.interactiveOrigin = null;
+    this.interactiveFilm = null;
+    this.archiveDropFilm = null;
     this.focusFraming = 'character';
     this.elapsed = 0;
     const offset = this.tempA.subVectors(this.camera.position, this.echoCenter);
@@ -1185,7 +1328,12 @@ export class CinematicCameraController {
       }
       const trackedMember = this.danceGroup.members?.[this.danceHeroIndex];
       if (trackedMember) {
-        trackedMember.getHeadWorldPosition(this.danceAnimatedHead);
+        if (trackedMember.getHeadWorldPosition) {
+          trackedMember.getHeadWorldPosition(this.danceAnimatedHead);
+        } else {
+          this.danceAnimatedHead.copy(trackedMember.root.position);
+          this.danceAnimatedHead.y += trackedMember.height * 0.83;
+        }
         if (!this.danceTrackReady) {
           this.danceTrackedHead.copy(this.danceAnimatedHead);
           this.danceTrackReady = true;
@@ -1243,6 +1391,53 @@ export class CinematicCameraController {
       this.camera.lookAt(this.target);
       if (progress >= 1) {
         const returnState = this.transition.archiveReturnState;
+        if (this.transition.filmEntry && this.interactiveFocus) {
+          const up = new THREE.Vector3(0, 1, 0);
+          const arrivalOutward = this.camera.position.clone().sub(this.interactiveFocus.center)
+            .setY(0).normalize();
+          if (arrivalOutward.lengthSq() < 0.001) arrivalOutward.set(0, 0, 1);
+          const arrivalRight = up.clone().cross(arrivalOutward).normalize();
+          const graphic = this.interactiveFocus.meshes?.[0];
+          graphic?.updateWorldMatrix(true, false);
+          const billboardAxis = graphic
+            ? new THREE.Vector3(1, 0, 0).transformDirection(graphic.matrixWorld).setY(0)
+            : arrivalRight.clone();
+          if (billboardAxis.lengthSq() < 0.001) billboardAxis.copy(arrivalRight);
+          billboardAxis.normalize();
+          if (billboardAxis.dot(arrivalRight) < 0) billboardAxis.negate();
+          const boundsSize = this.interactiveFocus.size;
+          const billboardSpan = boundsSize.x * Math.abs(billboardAxis.x)
+            + boundsSize.z * Math.abs(billboardAxis.z);
+          const billboard = this.interactiveFocus.name === 'Billboard';
+          const filmTarget = this.target.clone();
+          if (billboard) filmTarget.addScaledVector(billboardAxis, billboardSpan * 0.3);
+          const filmOffset = this.camera.position.clone().sub(filmTarget);
+          if (billboard) filmOffset.addScaledVector(billboardAxis, billboardSpan * 0.34);
+          const filmDistance = filmOffset.length();
+          const outward = filmOffset.normalize();
+          const right = up.clone().cross(outward).normalize();
+          const horizontalOutward = outward.clone().setY(0).normalize();
+          if (horizontalOutward.lengthSq() < 0.001) horizontalOutward.set(0, 0, 1);
+          const horizontalRight = up.clone().cross(horizontalOutward).normalize();
+          this.interactiveFilm = {
+            region: this.interactiveFocus,
+            target: filmTarget.clone(),
+            outward,
+            right,
+            up,
+            horizontalOutward,
+            horizontalRight,
+            horizontalDistance: Math.hypot(
+              this.camera.position.x - filmTarget.x, this.camera.position.z - filmTarget.z,
+            ),
+            verticalOffset: this.camera.position.y - filmTarget.y,
+            billboardAxis,
+            billboardSpan,
+            distance: filmDistance,
+            minimumDistance: Math.max(3.5, this.interactiveFocus.radius * 0.9),
+            elapsed: 0,
+          };
+        }
         this.transition = null;
         this.elapsed = 0;
         if (returnState) this.setState(returnState);

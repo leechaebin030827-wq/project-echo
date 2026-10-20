@@ -4,7 +4,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { EXPERIENCE_STATES } from '../config.js';
+import { EXPERIENCE_STATES } from '../../config.js';
 
 const EchoGradeShader = {
   uniforms: {
@@ -152,6 +152,14 @@ export class PostProcessing {
   }
 
   setWorldMode(mode) {
+    if (mode === 'lightcable') {
+      this.gradePass.uniforms.haminaMode.value = 0.28;
+      this.bloomPass.strength = 0.27;
+      this.bloomPass.radius = 0.3;
+      this.bloomPass.threshold = 0.92;
+      this.renderer.toneMappingExposure = 1.02;
+      return;
+    }
     const hamina = mode === 'hamina';
     this.gradePass.uniforms.haminaMode.value = hamina ? 1 : 0;
     this.bloomPass.strength = hamina ? 0.23 : 0.32;

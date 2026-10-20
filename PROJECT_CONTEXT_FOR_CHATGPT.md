@@ -1,6 +1,8 @@
 # PROJECT ECHO: 분산된 데이터들의 현현
 ## Technical Handoff Document for ChatGPT
 
+> 2026-10-11 기준으로 작성된 기록 문서입니다. 현재 세 월드의 파일 위치와 관리 기준은 `README.md`와 `docs/PROJECT_STRUCTURE.md`를 먼저 확인하세요.
+
 - 문서 목적: 프로젝트 원본 소스코드를 직접 열람하지 않는 AI 개발 파트너가 현재 시스템을 이해하고, 새로운 인터랙션·애니메이션·UI·3D 연출을 설계할 수 있도록 하는 기술 인수인계 문서
 - 분석 기준: 2026-10-11 현재 프로젝트 루트의 실제 소스
 - 분석 대상: `src/`, `index.html`, `package.json`, `README.md`, 런타임 에셋 경로
@@ -46,7 +48,7 @@ index.html
 | `src/interaction/PointerInteractionController.js` | 포인터 클릭·롱프레스·드래그 해석 | 기존 마우스/터치 입력 확장 시 핵심 |
 | `src/characters/CharacterManager.js` / `CharacterEntity.js` | 캐릭터 스폰·상태·업데이트·포커스 | 캐릭터 반응/행동 추가 시 확인 |
 | `src/face/FaceCaptureController.js` | 웹캠·얼굴 검출·얼굴 텍스처 적용 | 얼굴 데이터 흐름을 건드릴 때 필수 |
-| `src/world/PostProcessing.js` | 월드 EffectComposer 및 GLSL grade | Nevada/Hamina 화면 효과 추가 시 핵심 |
+| `src/world/shared/PostProcessing.js` | 월드 EffectComposer 및 GLSL grade | Nevada/Hamina 화면 효과 추가 시 핵심 |
 | `src/intro/IntroVisualLayer.js` | 인트로 전용 캔버스·영상·큐브 렌더링 | 인트로 비주얼/영상 합성 추가 시 핵심 |
 
 ### 주요 인터랙션 흐름
@@ -359,42 +361,42 @@ OPENING_IMAGE
 
 - 담당: 인트로용 `DreamShader`, bloom, diffusion, halation, grain, chromatic treatment
 - 핵심: `INTRO_POST_FX`, `createIntroPostProcessing`
-- 수정 상황: 인트로 영상의 optical look을 변경할 때. 월드 효과는 `src/world/PostProcessing.js`를 수정한다.
+- 수정 상황: 인트로 영상의 optical look을 변경할 때. 월드 효과는 `src/world/shared/PostProcessing.js`를 수정한다.
 
 ### 월드와 환경
 
-#### `src/world/NevadaWorld.js` / `src/world/HaminaWorld.js` ★
+#### `src/world/nevada/NevadaWorld.js` / `src/world/hamina/HaminaWorld.js` ★
 
 - 담당: GLB 로딩, root/echo/bounds/walkable roots 설정, lighting, 월드 attach/detach/dispose
 - 핵심: `load`, `addLighting`, `detach`, `dispose`
 - 의존: `GLTFLoader`, `MeshoptDecoder`(Hamina), `TerrainTextureSystem`, 각 월드 config
 - 수정 상황: 월드 모델 교체, 노드 이름 매핑, 조명, 월드별 bounds/echo를 바꿀 때.
 
-#### `src/world/WorldNavigation.js`
+#### `src/world/shared/WorldNavigation.js`
 
 - 담당: walkable mesh와 obstacle box를 분석하고 캐릭터 폐곡선 route 생성, 카메라 바닥/경계 제약
 - 핵심: `configure`, `sampleHeight`, `isClear`, `makeEllipse`, `buildRoutes`, `sampleRoute`, `constrainCamera`
 - 수정 상황: 캐릭터 길, 스폰 위치, 카메라 경계/지형 충돌을 바꿀 때.
 
-#### `src/world/TerrainTextureSystem.js`
+#### `src/world/shared/TerrainTextureSystem.js`
 
 - 담당: 월드 material에 baseColor/normal/roughness 텍스처 적용 및 Hamina triplanar snow shader 적용
 - 핵심: `apply`, `applyTriplanarShader`, `loadTexture`
 - 수정 상황: 지형 재질, texture repeat, snow blend, shader 기반 지형 효과를 추가할 때.
 
-#### `src/world/Atmosphere.js`
+#### `src/world/shared/Atmosphere.js`
 
 - 담당: gradient background, fog, Nevada↔Hamina 분위기 보간
 - 핵심: `drawGradient`, `createGradientBackground`, `setFog`, `transitionTo`, `finishTransition`, `update`, `dispose`
 - 수정 상황: 하늘색, 안개, 월드 전환 색감/환경 효과를 바꿀 때.
 
-#### `src/world/WeatherParticles.js`
+#### `src/world/shared/WeatherParticles.js`
 
 - 담당: dust/snow Points 파티클 생성, 위치 reset, 매 프레임 이동, dispose
 - 핵심: `reset`, `update`, `dispose`
 - 수정 상황: 눈/먼지/새 파티클 시스템을 추가하거나 수량/속도를 조절할 때.
 
-#### `src/world/PostProcessing.js` ★
+#### `src/world/shared/PostProcessing.js` ★
 
 - 담당: 월드 `EffectComposer`와 `EchoGradeShader`, bloom, portrait focus, Hamina 색감
 - 핵심: `setWorldMode`, `setSize`, `render`, `dispose`
@@ -1001,7 +1003,7 @@ Trigger → 허용되는 현재 state → 입력 데이터 → 처리 owner → 
 
 #### 월드 효과
 
-- `src/world/PostProcessing.js`의 `EchoGradeShader` uniform/fragment shader를 확장한다.
+- `src/world/shared/PostProcessing.js`의 `EchoGradeShader` uniform/fragment shader를 확장한다.
 - `render(elapsed, state, delta)`에서 state 기반 uniform 값을 갱신한다.
 - world mode 차이는 `setWorldMode()`에서 처리한다.
 - `setSize()`에서 resolution uniform을 업데이트한다.
