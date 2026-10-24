@@ -49,8 +49,6 @@ export const ASSETS = Object.freeze({
   typing: '/intro/assets/audio/effect_typing.mp3',
   uiHover: '/intro/assets/audio/ui/ui_hover.mp3',
   uiClick: '/intro/assets/audio/ui/ui_click.mp3',
-  nevadaEntry: '/audio/nevada-entry.mp3',
-  haminaEntry: '/audio/hamina-entry.mp3',
 });
 
 export const AUDIO_MIX = Object.freeze({

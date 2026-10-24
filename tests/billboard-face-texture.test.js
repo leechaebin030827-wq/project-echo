@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { BILLBOARD_FACE_SLOTS, visitorFaceCrop } from '../src/world/shared/BillboardFaceTexture.js';
+import {
+  BILLBOARD_FACE_SLOTS, archivedFaceCrop, selectPreviousBillboardPhotos, visitorFaceCrop,
+} from '../src/world/shared/BillboardFaceTexture.js';
 
 test('the four poster faces occupy separate locations inside the artwork', () => {
   assert.equal(BILLBOARD_FACE_SLOTS.length, 4);
@@ -16,6 +18,17 @@ test('the four poster faces occupy separate locations inside the artwork', () =>
       assert.ok(centerDistance > Math.min(slot.width, other.width) * 0.8);
     }
   }
+});
+
+test('the largest slot is the current visitor and the other three use distinct prior captures', () => {
+  const records = Array.from({ length: 5 }, (_, index) => ({ id: index + 1, blob: {} }));
+  assert.equal(BILLBOARD_FACE_SLOTS[0].width * BILLBOARD_FACE_SLOTS[0].height,
+    Math.max(...BILLBOARD_FACE_SLOTS.map((slot) => slot.width * slot.height)));
+  assert.deepEqual(selectPreviousBillboardPhotos(records, 5).map((record) => record.id), [4, 3, 2]);
+  assert.deepEqual(selectPreviousBillboardPhotos(records, 3).map((record) => record.id), [5, 4, 2]);
+  const crop = archivedFaceCrop({ width: 1000, height: 800 });
+  assert.ok(Math.abs(crop.x - 270) < 0.01 && Math.abs(crop.y - 112) < 0.01);
+  assert.ok(Math.abs(crop.width - 460) < 0.01 && Math.abs(crop.height - 576) < 0.01);
 });
 
 test('visitor crop follows detected face landmarks and stays within the photograph', () => {

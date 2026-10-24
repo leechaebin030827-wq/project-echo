@@ -40,6 +40,84 @@ button, video, canvas { font: inherit; }
 
 button { -webkit-tap-highlight-color: transparent; }
 
+.developer-shortcut-toggle {
+  position: absolute;
+  z-index: 2001;
+  top: 1.5cqw;
+  right: 1.5cqw;
+  min-width: 7.2cqw;
+  padding: .7cqw 1cqw;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: .7cqw;
+  background: rgba(5, 8, 14, .66);
+  color: rgba(255, 255, 255, .58);
+  font: 700 1.75cqw/1 "SFMono-Regular", Consolas, monospace;
+  letter-spacing: .08em;
+  cursor: pointer;
+  opacity: .58;
+  transition: opacity 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.developer-shortcut-toggle:hover,
+.developer-shortcut-toggle.active {
+  opacity: 1;
+  color: #fff;
+  background: rgba(5, 8, 14, .9);
+}
+
+.developer-shortcut-panel {
+  position: absolute;
+  z-index: 2000;
+  top: 6.2cqw;
+  right: 1.5cqw;
+  width: min(72cqw, 390px);
+  padding: 2.4cqw;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: 1.4cqw;
+  background: rgba(5, 8, 14, .9);
+  box-shadow: 0 1.5cqw 5cqw rgba(0, 0, 0, .45);
+  color: #f5f7fa;
+  font: 500 2.45cqw/1.35 "SFMono-Regular", Consolas, monospace;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-1cqw);
+  transition: opacity 140ms ease, transform 180ms ease, visibility 140ms ease;
+  pointer-events: none;
+}
+
+.developer-shortcut-panel.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.developer-shortcut-panel header,
+.developer-shortcut-panel dl div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2cqw;
+}
+
+.developer-shortcut-panel header {
+  margin-bottom: 1.7cqw;
+  padding-bottom: 1.4cqw;
+  border-bottom: 1px solid rgba(255, 255, 255, .18);
+  letter-spacing: .06em;
+}
+
+.developer-shortcut-panel header span { color: rgba(255, 255, 255, .48); }
+.developer-shortcut-panel dl { display: grid; gap: 1cqw; margin: 0; }
+.developer-shortcut-panel dt {
+  flex: 0 0 4.6cqw;
+  padding: .25cqw .5cqw;
+  border: 1px solid rgba(255, 255, 255, .32);
+  border-radius: .55cqw;
+  background: rgba(255, 255, 255, .08);
+  text-align: center;
+}
+.developer-shortcut-panel dd { margin: 0; text-align: right; color: rgba(255, 255, 255, .76); }
+
 .app-shell {
   width: 100vw;
   height: 100dvh;
@@ -139,6 +217,19 @@ button { -webkit-tap-highlight-color: transparent; }
   font-size: 3.148148cqw;
   font-weight: 400;
   line-height: 1;
+}
+
+.interaction-cursor[data-mode="data-particle"] {
+  width: auto;
+  height: auto;
+  color: #91f5ef;
+  mix-blend-mode: normal;
+  filter: drop-shadow(0 0 .55em rgba(60, 231, 235, .8));
+}
+
+.interaction-cursor[data-mode="data-particle"] .interaction-cursor__glyph {
+  font: 600 clamp(12px, 2.3cqw, 17px)/1 "SFMono-Regular", monospace;
+  letter-spacing: .08em;
 }
 
 .interaction-cursor[data-mode="clickable"] {
@@ -289,6 +380,71 @@ button { -webkit-tap-highlight-color: transparent; }
 .echo-action-menu.lightcable-menu {
   z-index: 12;
 }
+
+.pacific-view-return {
+  position: absolute;
+  z-index: 13;
+  left: 50%;
+  bottom: 7cqw;
+  transform: translateX(-50%);
+  padding: 1.5cqw 2.3cqw;
+  border: 1px solid rgba(197, 239, 249, .7);
+  background: rgba(3, 24, 39, .68);
+  color: #eefbff;
+  font: 500 clamp(11px, 2.4cqw, 18px)/1.2 "Helvetica Neue", "Apple SD Gothic Neo", Arial, sans-serif;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.pacific-view-return[hidden] { display: none; }
+.pacific-view-return:hover { background: rgba(29, 85, 105, .86); }
+
+.pacific-photo-viewer {
+  position: absolute;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .28s ease, visibility 0s .28s;
+}
+
+.pacific-photo-viewer.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity .28s ease;
+}
+
+.pacific-photo-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(0, 0, 0, .82);
+  cursor: pointer;
+}
+
+.pacific-photo-frame {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 78cqw;
+  max-height: 74%;
+  pointer-events: none;
+}
+
+.pacific-photo-frame img {
+  display: block;
+  max-width: 100%;
+  max-height: 74cqh;
+  object-fit: contain;
+}
+
+.pacific-photo-frame img[hidden] { display: none; }
 
 .echo-action-menu button {
   padding: 1.55cqw 2.25cqw 1.45cqw;
@@ -677,7 +833,7 @@ button { -webkit-tap-highlight-color: transparent; }
   transition: opacity 1s ease, visibility 0s 1s;
 }
 
-.echo-return.visible { opacity: 1; visibility: visible; transition: opacity 1s ease; }
+.echo-return.visible { opacity: 1; visibility: visible; transition: opacity .35s ease; }
 
 .echo-return-track {
   position: absolute;
@@ -713,6 +869,26 @@ button { -webkit-tap-highlight-color: transparent; }
   transition: opacity 1.3s ease;
 }
 
+.echo-return-images {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity .8s ease;
+}
+.echo-return-images.is-fading { opacity: 0; }
+.echo-return-images img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 66.66667cqw;
+  max-height: 90%;
+  height: auto;
+  object-fit: contain;
+  transform: translate(-50%, -50%);
+}
+
 .echo-return-quote {
   position: absolute;
   inset: 0;
@@ -722,9 +898,10 @@ button { -webkit-tap-highlight-color: transparent; }
   align-items: center;
   justify-content: center;
   padding: 8% 13.889%;
-  background: #000;
+  background: transparent;
   color: #fff;
   text-align: center;
+  mix-blend-mode: difference;
   opacity: 0;
   visibility: hidden;
   transition: opacity 1.2s ease, visibility 0s 1.2s;
@@ -734,6 +911,7 @@ button { -webkit-tap-highlight-color: transparent; }
   visibility: visible;
   transition: opacity 1.2s ease;
 }
+.echo-return-quote.is-fading { opacity: 0; transition: opacity .8s ease; }
 .echo-return-quote p { margin: 0; white-space: pre-line; font-family: "SFMono-Regular", monospace; }
 .echo-return-quote .quote-korean {
   font-size: 2.22222cqw;
@@ -794,6 +972,7 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 .world-jump-overlay.visible { opacity: 1; visibility: visible; }
+.world-jump-overlay.visible.snapshot-active { transition: none; }
 .world-jump-overlay.revealing {
   background-color: transparent;
   visibility: visible;
@@ -814,10 +993,13 @@ button { -webkit-tap-highlight-color: transparent; }
 .world-jump-overlay.snapshot-active .world-jump-snapshot {
   opacity: 1;
   visibility: visible;
-  transition-delay: 0s;
+  transition: none;
 }
 
-.world-jump-overlay.snapshot-active.dissolve-active .world-jump-snapshot { opacity: 0; }
+.world-jump-overlay.snapshot-active.dissolve-active .world-jump-snapshot {
+  opacity: 0;
+  transition: opacity 1.35s cubic-bezier(.32, 0, .18, 1);
+}
 
 .world-jump-grid {
   position: absolute;
@@ -852,22 +1034,28 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 .echo-caption.visible { opacity: 1; transform: translate(-50%, 0); }
+.stage.entry-overlay-active .echo-caption { opacity: 0; visibility: hidden; }
+.stage[data-world="lightcable"] .echo-caption {
+  mix-blend-mode: normal;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
 .stage.ritual-cinematic .echo-caption {
   mix-blend-mode: normal;
   text-shadow: 0 2px 8px rgba(0, 0, 0, .9), 0 0 18px rgba(0, 0, 0, .65);
 }
 .echo-caption p { margin: 0; }
 .echo-caption-korean {
-  font-size: 4.62963cqw;
-  font-weight: 600;
-  line-height: 1.5;
+  font-size: 5cqw;
+  font-weight: 800;
+  line-height: 1.3;
   white-space: nowrap;
 }
 .echo-caption-english {
   margin-top: 1.11111cqw !important;
-  font-size: 2.22222cqw;
+  font-size: 2.40741cqw;
   font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.3;
   white-space: nowrap;
 }
 .echo-caption.multiline .echo-caption-korean,
@@ -877,7 +1065,7 @@ button { -webkit-tap-highlight-color: transparent; }
   .world-canvas, .capture-layer, .echo-caption { transition-duration: .25s; }
 }
 
-/* The Data Center keeps photos on the ground while the camera moves in. */
+/* The Data Center shows a photo only during its interaction. */
 .data-archive-photo-viewer {
   position: absolute;
   inset: 0;
@@ -910,4 +1098,13 @@ button { -webkit-tap-highlight-color: transparent; }
   color: white;
   font: 26px/1 Arial, sans-serif;
   cursor: pointer;
+}
+
+/* Object scenes close through Escape or their existing scene interaction. */
+.world-interaction__close,
+.world-interaction__card-close,
+.data-archive-close,
+.data-archive-photo-close,
+.stage:has(.world-interaction.visible) .interaction-cursor[data-mode="blocked"] {
+  display: none;
 }

@@ -1,6 +1,7 @@
 const DATABASE_NAME = 'echo-visitor-photo-archive';
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 const STORE_NAME = 'captures';
+const SCATTER_STORE_NAME = 'scatteredPhotos';
 
 const openDatabase = () => new Promise((resolve, reject) => {
   if (!('indexedDB' in window)) {
@@ -12,6 +13,9 @@ const openDatabase = () => new Promise((resolve, reject) => {
     const database = request.result;
     if (!database.objectStoreNames.contains(STORE_NAME)) {
       database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+    }
+    if (!database.objectStoreNames.contains(SCATTER_STORE_NAME)) {
+      database.createObjectStore(SCATTER_STORE_NAME, { keyPath: 'world' });
     }
   };
   request.onsuccess = () => resolve(request.result);
@@ -56,5 +60,30 @@ export async function loadVisitorPhotos() {
     request.onerror = () => reject(request.error ?? new Error('Archived photos could not be loaded.'));
     transaction.oncomplete = () => database.close();
     transaction.onerror = () => database.close();
+  });
+}
+
+export async function loadScatteredPhotos(world) {
+  const database = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(SCATTER_STORE_NAME, 'readonly');
+    const request = transaction.objectStore(SCATTER_STORE_NAME).get(world);
+    request.onsuccess = () => resolve(request.result ?? null);
+    request.onerror = () => reject(request.error ?? new Error('Scattered photos could not be loaded.'));
+    transaction.oncomplete = () => database.close();
+    transaction.onerror = () => database.close();
+  });
+}
+
+export async function saveScatteredPhotos(snapshot) {
+  const database = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(SCATTER_STORE_NAME, 'readwrite');
+    transaction.objectStore(SCATTER_STORE_NAME).put(snapshot);
+    transaction.oncomplete = () => { database.close(); resolve(); };
+    transaction.onerror = () => {
+      database.close();
+      reject(transaction.error ?? new Error('Scattered photos could not be saved.'));
+    };
   });
 }

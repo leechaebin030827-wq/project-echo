@@ -14,6 +14,8 @@ const EchoGradeShader = {
     portraitFocus: { value: 0 },
     haminaMode: { value: 0 },
     coolerInvert: { value: 0 },
+    pacificMotionBlur: { value: 0 },
+    pacificDepth: { value: 0 },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -29,6 +31,8 @@ const EchoGradeShader = {
     uniform float portraitFocus;
     uniform float haminaMode;
     uniform float coolerInvert;
+    uniform float pacificMotionBlur;
+    uniform float pacificDepth;
     varying vec2 vUv;
 
     float luma(vec3 color) {
@@ -44,6 +48,15 @@ const EchoGradeShader = {
       float edge = smoothstep(0.24, 0.72, distance(vUv, vec2(0.5)));
       vec2 separation = pixel * (0.12 + edge * 0.58) * (1.0 - portraitFocus * 0.85);
       vec3 source = texture2D(tDiffuse, vUv).rgb;
+      if (pacificMotionBlur > 0.001) {
+        vec2 streak = vec2(0.0, pixel.y * 23.0 * pacificMotionBlur);
+        vec3 smeared = texture2D(tDiffuse, clamp(vUv - streak, 0.0, 1.0)).rgb
+          + texture2D(tDiffuse, clamp(vUv - streak * 0.5, 0.0, 1.0)).rgb
+          + source
+          + texture2D(tDiffuse, clamp(vUv + streak * 0.5, 0.0, 1.0)).rgb
+          + texture2D(tDiffuse, clamp(vUv + streak, 0.0, 1.0)).rgb;
+        source = mix(source, smeared * 0.2, pacificMotionBlur);
+      }
       vec3 nearby = (
         texture2D(tDiffuse, vUv + vec2(pixel.x, 0.0)).rgb
         + texture2D(tDiffuse, vUv - vec2(pixel.x, 0.0)).rgb
@@ -98,6 +111,17 @@ const EchoGradeShader = {
       color *= mix(vec3(1.0), phosphor, crtStrength);
       float sweep = 1.0 - smoothstep(0.0, 0.045, abs(vUv.y - fract(time * 0.085)));
       color += vec3(0.010, 0.012, 0.017) * sweep * crtStrength;
+
+      // Water removes warm wavelengths first. A little more absorption toward
+      // the edge and lower frame makes distant seabed and tunnel geometry
+      // recede without requiring another depth render pass.
+      float waterDistance = pacificDepth * (0.58
+        + smoothstep(0.35, 1.0, vUv.y) * 0.18 + edge * 0.24);
+      color.r *= 1.0 - waterDistance * 0.34;
+      color.g *= 1.0 - waterDistance * 0.10;
+      color.b *= 1.0 + waterDistance * 0.055;
+      float waterHaze = waterDistance * (1.0 - smoothstep(0.22, 0.82, luma(color))) * 0.08;
+      color = mix(color, vec3(0.025, 0.16, 0.24), waterHaze);
       gl_FragColor = vec4(max(color, vec3(0.0)), 1.0);
     }
   `,
@@ -152,11 +176,13 @@ export class PostProcessing {
   }
 
   setWorldMode(mode) {
+    this.gradePass.uniforms.pacificMotionBlur.value = 0;
+    this.gradePass.uniforms.pacificDepth.value = 0;
     if (mode === 'lightcable') {
       this.gradePass.uniforms.haminaMode.value = 0.28;
-      this.bloomPass.strength = 0.27;
-      this.bloomPass.radius = 0.3;
-      this.bloomPass.threshold = 0.92;
+      this.bloomPass.strength = 0.52;
+      this.bloomPass.radius = 0.42;
+      this.bloomPass.threshold = 0.9;
       this.renderer.toneMappingExposure = 1.02;
       return;
     }
@@ -166,6 +192,18 @@ export class PostProcessing {
     this.bloomPass.radius = hamina ? 0.30 : 0.32;
     this.bloomPass.threshold = hamina ? 0.91 : 0.86;
     this.renderer.toneMappingExposure = hamina ? 1.035 : 1.1;
+  }
+
+  setPacificSubmersion(amount) {
+    const depth = THREE.MathUtils.clamp(amount, 0, 1);
+    this.gradePass.uniforms.pacificDepth.value = depth;
+    this.bloomPass.strength = 0.52 - depth * 0.17;
+    this.bloomPass.radius = 0.42 - depth * 0.13;
+    this.bloomPass.threshold = 0.9 + depth * 0.02;
+  }
+
+  setPacificMotionBlur(amount) {
+    this.gradePass.uniforms.pacificMotionBlur.value = THREE.MathUtils.clamp(amount, 0, 1);
   }
 
   setCoolerInversion(amount) {

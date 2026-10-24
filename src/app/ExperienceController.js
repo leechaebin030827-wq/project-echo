@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
   WORLD_CONFIG,
+  CAMERA_CONFIG,
   WORLD_JUMP_CONFIG,
   EXPERIENCE_STATES,
   INTERACTION_CONFIG,
@@ -12,10 +13,16 @@ import { HaminaWorld } from '../world/hamina/HaminaWorld.js';
 import { createWorldRoute } from './WorldRoute.js';
 import { WORLD_ENTRY_COPY, WORLD_PRESENTATION } from '../content/WorldPresentation.js';
 import { WORLD_ACTIONS, WORLD_CAPTIONS } from '../content/WorldUiCopy.js';
+import { HAMINA_INTERACTIONS } from '../content/HaminaInteractions.js';
+import {
+  EchoCuePlayer, cueDurationMs, danceCueId, hoverCueId, objectCueIds, ritualCueId,
+} from '../audio/EchoCuePlayer.js';
 import {
   INTERACTIVE_QUESTIONS, DANCE_NARRATION, HAMINA_DANCE_NARRATION,
   CHARACTER_DIALOGUE, HAMINA_CHARACTER_DIALOGUE,
-  PACIFIC_ARRIVAL_NARRATION, PACIFIC_ARRIVAL_CLEAR_MS,
+  PACIFIC_ARRIVAL_NARRATION, PACIFIC_ARRIVAL_CLEAR_MS, PACIFIC_NARRATION_START_MS,
+  PACIFIC_CABLE_SECRET, PACIFIC_FISH_HOVER, PACIFIC_PARTICLE_HOVER,
+  PACIFIC_PARTICLE_PHOTO,
 } from '../content/WorldNarration.js';
 import { LightCableWorld } from '../world/pacific/LightCableWorld.js';
 import { WorldNavigation } from '../world/shared/WorldNavigation.js';
@@ -33,7 +40,8 @@ import { WorldInteractionExperience } from '../interaction/WorldInteractionExper
 import { EchoTravelAnimator } from '../world/shared/EchoTravelAnimator.js';
 import { WorldBackdropBlend } from '../world/shared/WorldBackdropBlend.js';
 import { FaceCaptureController } from '../face/FaceCaptureController.js';
-import { archiveVisitorPhoto } from '../face/VisitorPhotoArchive.js';
+import { archiveVisitorPhoto, loadVisitorPhotos } from '../face/VisitorPhotoArchive.js';
+import { selectPreviousBillboardPhotos } from '../world/shared/BillboardFaceTexture.js';
 import { resolveFaceQaTarget } from '../face/FaceQaTarget.js';
 import {
   VisitorFaceReconstruction,
@@ -49,13 +57,7 @@ import { NEVADA_INTERACTIONS, captionDurationSeconds } from '../content/NevadaIn
 export class ExperienceController {
   constructor(stage) {
     this.stage = stage;
-    const routeParams = new URLSearchParams(window.location.search);
-    const legacyQa = import.meta.env.DEV && ['worldQa', 'orbitQa', 'jumpQa', 'lightCableQa',
-      'moneyQa', 'dataCenterQa', 'interactiveQa', 'nevadaNpcWalkQa', 'nevadaInteractionQa']
-      .some((key) => routeParams.has(key));
-    this.worldOrder = legacyQa && !routeParams.has('worldOrder')
-      ? ['nevada', 'hamina', 'lightcable']
-      : createWorldRoute(window.location.search, Math.random, import.meta.env.DEV);
+    this.worldOrder = createWorldRoute(window.location.search, Math.random, import.meta.env.DEV);
     this.visitIndex = 0;
     this.firstLandWorld = this.worldOrder.find((id) => id !== 'lightcable');
     this.faceQaTarget = resolveFaceQaTarget(window.location.search, import.meta.env.DEV);
@@ -73,9 +75,12 @@ export class ExperienceController {
     this.worldEntryDesign = this.worldEntryOverlay?.querySelector('.world-entry-design');
     this.haminaEntryOverlay = stage.querySelector('#hamina-entry-overlay');
     this.haminaEntryDesign = this.haminaEntryOverlay?.querySelector('.world-entry-design');
+    this.haminaEntryOverlayHoldTimer = null;
+    this.entryCaptionResumeTimer = null;
     this.worldJumpOverlay = stage.querySelector('#world-jump-overlay');
     this.worldJumpSnapshot = this.worldJumpOverlay?.querySelector('.world-jump-snapshot');
     this.pendingSplitCapture = null;
+    this.pendingWorldJumpCapture = null;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(WORLD_CONFIG.background);
     this.camera = new THREE.PerspectiveCamera(52, 9 / 16, 0.08, 900);
@@ -114,9 +119,12 @@ export class ExperienceController {
         this.world.echo.visible = true;
         this.caption.clearOverride();
         this.characterManager.releaseEchoRitual();
+        this.cuePlayer.stop();
       }
       this.hideWorldEntryOverlay();
-      this.hideHaminaEntryOverlay();
+      if (state !== EXPERIENCE_STATES.ECHO_ORBIT || !this.haminaEntryOverlayHoldTimer) {
+        this.hideHaminaEntryOverlay();
+      }
     };
     this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
     this.vertexSnap = new Ps1VertexSnap();
@@ -142,15 +150,19 @@ export class ExperienceController {
     this.portraitRight = new THREE.Vector3();
     this.ui = new CaptureUI(stage);
     this.face = new FaceCaptureController({ video: this.ui.video, status: this.ui.status });
+    this.cuePlayer = new EchoCuePlayer(stage);
+    this.echoReturn.cuePlayer = this.cuePlayer;
     this.caption = new EchoProximityCaption(
       stage.querySelector('#echo-caption'),
       this.camera,
       this.cameraController,
+      { onDefaultShow: () => this.cuePlayer.play('K03') },
     );
     this.worldInteraction = new WorldInteractionExperience({
       stage,
       camera: this.camera,
       caption: this.caption,
+      cuePlayer: this.cuePlayer,
       postProcessing: this.postProcessing,
       getOriginalPhoto: () => this.face.session?.frame ?? null,
       getVisitorSession: () => this.face.session ?? null,
@@ -159,6 +171,17 @@ export class ExperienceController {
         && !this.cameraController.transition,
       onNarrationStart: (active) => {
         if (active.isHamina) this.showInteractiveTitle(active.content.label, 1100);
+      },
+      onPhraseStart: (active, index) => {
+        if ((active.region.name === 'Flag' || active.region.name === 'Finland') && index === 1) {
+          const landmarks = active.region.name === 'Finland'
+            ? ['Data Center', 'Ocean', 'Cooler']
+            : ['Data Center', 'Cooler', 'Billboard'];
+          const targets = [this.world.echoCenter, ...landmarks.map((name) =>
+            this.world.interactiveRegions.find((region) => region.name === name)?.center)
+            .filter(Boolean)];
+          this.cameraController.startFlagWorldSweep(targets);
+        }
       },
       onNarrationEnd: (active) => {
         if (active.isHamina) this.hideInteractiveTitle();
@@ -205,14 +228,12 @@ export class ExperienceController {
     this.danceNarrationFinished = false;
     this.ritualReturnPending = false;
     this.ritualSpeakingMember = null;
-    this.onNevadaEnter = () => {};
     this.onReturnTypingStart = () => {};
     this.onReturnTypingEnd = () => {};
     this.characterDialogueTimer = null;
     this.dataCenterOpenTimer = null;
     this.pendingDataCenterArchiveRegion = null;
     this.currentArchiveId = null;
-    this.onHaminaEnter = () => {};
     this.onWorldHover = () => {};
     this.onWorldClick = () => {};
     this.worldHoverTarget = null;
@@ -246,6 +267,36 @@ export class ExperienceController {
     this.echoActionMenu.addEventListener('pointerenter', () => this.cancelEchoMenuHide());
     this.echoActionMenu.addEventListener('pointerleave', () => this.scheduleEchoMenuHide());
     this.stage.append(this.echoActionMenu);
+    this.pacificViewReturn = document.createElement('button');
+    this.pacificViewReturn.type = 'button';
+    this.pacificViewReturn.className = 'pacific-view-return';
+    this.pacificViewReturn.textContent = '케이블 시점으로 돌아가기';
+    this.pacificViewReturn.hidden = true;
+    this.pacificViewReturn.addEventListener('click', () => this.leavePacificCreatureView());
+    this.stage.append(this.pacificViewReturn);
+    this.pacificSecretShown = false;
+    this.pacificHoveredParticle = null;
+    this.pacificPhotoGeneration = 0;
+    this.pacificPhotoUrl = null;
+    this.lastPacificPhotoId = null;
+    this.pacificPhotoViewer = document.createElement('section');
+    this.pacificPhotoViewer.className = 'pacific-photo-viewer';
+    this.pacificPhotoViewer.setAttribute('aria-hidden', 'true');
+    this.pacificPhotoViewer.innerHTML = `
+      <button class="pacific-photo-backdrop" type="button" aria-label="사진 닫기"></button>
+      <div class="pacific-photo-frame">
+        <img alt="이전 관람자가 촬영한 사진" hidden>
+      </div>`;
+    this.pacificPhotoViewer.querySelectorAll('button').forEach((button) => {
+      button.addEventListener('click', () => this.closePacificParticlePhoto());
+    });
+    this.stage.append(this.pacificPhotoViewer);
+    this.onPacificPhotoEscape = (event) => {
+      if (event.key === 'Escape' && this.pacificPhotoViewer.classList.contains('visible')) {
+        this.closePacificParticlePhoto();
+      }
+    };
+    window.addEventListener('keydown', this.onPacificPhotoEscape);
     this.interactiveTitle = document.createElement('div');
     this.interactiveTitle.className = 'interactive-object-title';
     this.interactiveTitle.setAttribute('aria-hidden', 'true');
@@ -260,7 +311,6 @@ export class ExperienceController {
         navigation: this.navigation,
         onOpen: () => this.startDataCenterNarration(),
         onClose: () => this.stopDataCenterNarration(),
-        onFallComplete: () => this.returnFromInteractiveObject(),
         onPhotoOpen: (card) => {
           this.stopDataCenterNarration();
           this.caption.hideOverride();
@@ -274,9 +324,20 @@ export class ExperienceController {
           this.onWorldClick();
           this.returnFromInteractiveObject();
         },
+        onFallComplete: () => {
+          if (this.dataCenterArchive.visible && !this.dataCenterArchive.selected) {
+            this.dataCenterOpenTimer = window.setTimeout(() => {
+              this.dataCenterOpenTimer = null;
+              if (this.dataCenterArchive.visible && !this.dataCenterArchive.selected) {
+                this.returnFromInteractiveObject();
+              }
+            }, 500);
+          }
+        },
         onHover: () => this.onWorldHover(),
         getCurrentRecordId: () => this.currentArchiveId,
         getCurrentPhoto: () => this.face.session?.frame,
+        getReturnViewPosition: () => this.cameraController.interactiveOrigin?.position ?? null,
       },
     );
     this.echoRaycaster = new THREE.Raycaster();
@@ -310,6 +371,7 @@ export class ExperienceController {
     this.handleCanvasPointerLeave = () => {
       this.scheduleEchoMenuHide();
       this.lightCableWorld?.clearPointerLook();
+      this.lightCableWorld?.dataParticles?.setHover();
     };
   }
 
@@ -348,8 +410,12 @@ export class ExperienceController {
         await this.startLightCableJourney({ first: true });
         this.playFirstEntryOnce();
       } else {
+        if (qaParams.has('billboardQa') && this.currentWorld === 'nevada') {
+          await this.previewArchivedBillboard();
+        }
         this.showWorldEntryOverlay();
         this.cameraController.startIntro(this.world.echo);
+        this.playFirstEntryOnce();
       }
       if (qaParams.has('orbitQa') || qaParams.get('nevadaNpcWalkQa') === '1'
         || qaParams.get('nevadaInteractionQa') === '1') {
@@ -427,8 +493,8 @@ export class ExperienceController {
     world.addLighting();
     this.vertexSnap.install(world.root);
     this.navigation.configure(world);
-    this.dataCenterArchive.restore(world);
     this.cameraController.configure(world);
+    this.dataCenterArchive.restore(world);
     this.atmosphere = new Atmosphere(this.scene, world, this.firstLandWorld);
     this.weather = new WeatherParticles(this.scene, world, WORLD_PRESENTATION[this.firstLandWorld].weather);
     this.stage.dataset.world = this.currentWorld;
@@ -465,16 +531,23 @@ export class ExperienceController {
       interactivePicker: this.interactivePicker,
       getEchoHitDistance: (x, y) => this.getEchoHitDistance(x, y),
       isEchoOnly: () => this.currentWorld === 'lightcable',
+      pickPacificCreature: (x, y) => this.lightCableWorld?.pickCreature(
+        x, y, this.canvas.getBoundingClientRect()) ?? null,
+      pickPacificParticle: (x, y) => this.pickPacificParticle(x, y),
+      onPacificCreature: (creature) => this.enterPacificCreatureView(creature),
+      onPacificParticle: () => this.openPacificParticlePhoto(),
+      onPacificBackground: () => this.leavePacificCreatureView(),
       onCharacter: (character) => this.handleCharacterPick(character),
       onEcho: () => this.handleEchoPick(),
       onInteractiveObject: (region) => this.handleInteractiveObjectPick(region),
       pickArchivePhoto: (x, y) => this.dataCenterArchive.pick(x, y),
       onArchivePhoto: (card) => this.dataCenterArchive.select(card),
-      onPointerPosition: (clientX) => {
+      onPointerPosition: (clientX, clientY) => {
         if (this.currentWorld !== 'lightcable' || !this.lightCableWorld) return;
         const rect = this.canvas.getBoundingClientRect();
-        if (rect.width > 0) this.lightCableWorld.setPointerLook(
+        if (rect.width > 0 && rect.height > 0) this.lightCableWorld.setPointerLook(
           ((clientX - rect.left) / rect.width) * 2 - 1,
+          1 - ((clientY - rect.top) / rect.height) * 2,
         );
       },
       onInteractiveBackground: () => {
@@ -683,23 +756,13 @@ export class ExperienceController {
       this.face.status('촬영한 사진으로 월드에 들어가는 중입니다');
       this.ui.showLoading(true);
       await this.readyPromise;
-      await this.face.applyToCharacters(this.characterManager.entities);
-      this.world.applyVisitorFaceToBillboard?.(this.face.session);
+      await this.prepareVisitorIdentity();
       this.face.stop();
-      this.worldRenderingEnabled = true;
-      this.stage.classList.add('world-visible');
       this.stage.dataset.devShortcut = 'photo';
       this.ui.showLoading(false);
       this.ui.leave();
-      if (this.currentWorld === 'lightcable') await this.startLightCableJourney({ first: true });
-      else {
-        this.showWorldEntryOverlay();
-        this.cameraController.startIntro(this.world.echo);
-      }
+      await this.startWorldRendering({ showEntryOverlay: true });
       this.playFirstEntryOnce();
-      this.scheduleFaceQaTargetFocus();
-      this.currentArchiveId = await archiveVisitorPhoto(this.face.session.frame)
-        .catch((error) => { console.warn('[Photo Archive] capture not stored', error); return null; });
       this.developerCaptureActive = false;
       this.onDeveloperWorldEntered?.();
     } catch (error) {
@@ -725,21 +788,11 @@ export class ExperienceController {
     if (!this.assetsReady) this.ui.showLoading(true);
     try {
       await this.readyPromise;
-      await this.face.applyToCharacters(this.characterManager.entities);
-      this.world.applyVisitorFaceToBillboard?.(this.face.session);
-      this.worldRenderingEnabled = true;
-      this.stage.classList.add('world-visible');
+      await this.prepareVisitorIdentity();
       this.ui.showLoading(false);
       this.ui.leave();
-      if (this.currentWorld === 'lightcable') await this.startLightCableJourney({ first: true });
-      else {
-        this.showWorldEntryOverlay();
-        this.cameraController.startIntro(this.world.echo);
-      }
+      await this.startWorldRendering({ showEntryOverlay: true });
       this.playFirstEntryOnce();
-      this.scheduleFaceQaTargetFocus();
-      this.currentArchiveId = await archiveVisitorPhoto(this.face.session.frame)
-        .catch((error) => { console.warn('[Photo Archive] capture not stored', error); return null; });
     } catch (error) {
       console.error('[ECHO] world entry failed', error);
       this.ui.showLoading(false);
@@ -762,47 +815,108 @@ export class ExperienceController {
   async enterWorldFromIntro({ applyFace = true } = {}) {
     if (applyFace && !this.face.session) throw new Error('촬영된 얼굴 정보가 없습니다.');
     await this.readyPromise;
-    if (applyFace) {
-      await this.face.applyToCharacters(this.characterManager.entities);
-      this.world.applyVisitorFaceToBillboard?.(this.face.session);
-    }
+    if (applyFace) await this.prepareVisitorIdentity();
+    await this.startWorldRendering();
+    return this.world;
+  }
+
+  async prepareVisitorIdentity() {
+    await this.face.applyToCharacters(this.characterManager.entities);
+    this.currentArchiveId = await archiveVisitorPhoto(this.face.session.frame)
+      .catch((error) => { console.warn('[Photo Archive] capture not stored', error); return null; });
+    await this.refreshNevadaBillboard();
+  }
+
+  async startWorldRendering({ showEntryOverlay = false } = {}) {
     this.worldRenderingEnabled = true;
     this.stage.classList.add('world-visible');
     if (this.currentWorld === 'lightcable') await this.startLightCableJourney({ first: true });
-    else this.cameraController.startIntro(this.world.echo);
+    else {
+      if (showEntryOverlay) this.showWorldEntryOverlay();
+      this.cameraController.startIntro(this.world.echo);
+    }
     this.scheduleFaceQaTargetFocus();
-    if (applyFace) this.currentArchiveId = await archiveVisitorPhoto(this.face.session.frame)
-      .catch((error) => { console.warn('[Photo Archive] capture not stored', error); return null; });
-    return this.world;
+  }
+
+  async refreshNevadaBillboard(world = this.world) {
+    if (typeof world?.applyVisitorFaceToBillboard !== 'function') return;
+    const session = this.face.session;
+    if (!session?.frame || !session?.points) return;
+    let records = [];
+    try {
+      records = (await loadVisitorPhotos()).filter((record) =>
+        record.blob && record.id !== this.currentArchiveId);
+    } catch (error) {
+      console.warn('[Billboard] previous visitor photos unavailable', error);
+    }
+    const previous = selectPreviousBillboardPhotos(records, this.currentArchiveId);
+    const decoded = await Promise.allSettled(previous.map((record) => createImageBitmap(record.blob)));
+    const faces = decoded.flatMap((result) => result.status === 'fulfilled' ? [result.value] : []);
+    try {
+      return world.applyVisitorFaceToBillboard(session, faces);
+    } catch (error) {
+      console.warn('[Billboard] face composite unavailable', error);
+      return false;
+    } finally {
+      faces.forEach((face) => face.close());
+    }
+  }
+
+  async previewArchivedBillboard() {
+    try {
+      const records = (await loadVisitorPhotos()).filter((record) => record.blob);
+      if (!records.length) return;
+      const current = records.at(-1);
+      const previous = selectPreviousBillboardPhotos(records, current.id);
+      const decoded = await Promise.allSettled([current, ...previous]
+        .map((record) => createImageBitmap(record.blob)));
+      const faces = decoded.map((result) => result.status === 'fulfilled' ? result.value : null);
+      try {
+        if (faces[0]) this.world.applyVisitorFaceToBillboard?.({ frame: faces[0] }, faces.slice(1).filter(Boolean));
+      } finally {
+        faces.forEach((face) => face?.close());
+      }
+    } catch (error) {
+      console.warn('[Billboard QA] archive preview unavailable', error);
+    }
   }
 
   startDataCenterNarration() {
     this.interactiveHoverCaptionActive = false;
     this.stopDataCenterNarration();
-    const cues = NEVADA_INTERACTIONS['Data Center'].phrases;
+    const cues = (this.currentWorld === 'hamina'
+      ? HAMINA_INTERACTIONS : NEVADA_INTERACTIONS)['Data Center'].phrases;
+    const ids = objectCueIds(this.currentWorld, 'Data Center');
     let at = 0;
     cues.forEach((text, index) => {
       const show = () => {
         this.caption.showOverride(...text);
+        this.cuePlayer.play(ids[index]);
         if (index !== cues.length - 1) return;
         const center = this.dataCenterArchive.releaseCopies();
         if (center) this.cameraController.focusArchiveDrop(center);
-        else this.dataCenterNarrationTimers.push(window.setTimeout(() => {
-          if (this.dataCenterArchive.visible) this.returnFromInteractiveObject();
-        }, captionDurationSeconds(text[0]) * 1000));
       };
       if (index === 0) show();
       else this.dataCenterNarrationTimers.push(window.setTimeout(show, at));
-      at += (captionDurationSeconds(text[0]) + 0.15) * 1000;
+      at += cueDurationMs(ids[index]) + 150;
     });
     this.dataCenterNarrationTimers.push(window.setTimeout(() => {
       this.caption.hideOverride();
     }, at));
+    this.dataCenterNarrationTimers.push(window.setTimeout(() => {
+      if (this.dataCenterArchive.visible && !this.dataCenterArchive.selected
+        && !this.dataCenterArchive.hasReleasedCopies) {
+        this.returnFromInteractiveObject();
+      }
+    }, at + 350));
   }
 
   stopDataCenterNarration() {
     for (const timer of this.dataCenterNarrationTimers) window.clearTimeout(timer);
     this.dataCenterNarrationTimers = [];
+    if (objectCueIds(this.currentWorld, 'Data Center').includes(this.cuePlayer.currentId)) {
+      this.cuePlayer.stop();
+    }
     this.caption.clearOverride();
   }
 
@@ -851,6 +965,7 @@ export class ExperienceController {
 
   showWorldEntryOverlay() {
     if (!this.worldEntryOverlay) return;
+    this.suspendCaptionForEntry();
     this.setEntryLocation(this.worldEntryOverlay, this.currentWorld);
     this.worldEntryOverlay.classList.add('visible');
     this.worldEntryOverlay.setAttribute('aria-hidden', 'false');
@@ -859,10 +974,10 @@ export class ExperienceController {
   playEntryAudioOnce(mode) {
     if (mode === 'nevada' && !this.nevadaEntryAudioPlayed) {
       this.nevadaEntryAudioPlayed = true;
-      this.onNevadaEnter();
+      this.cuePlayer.playSequence(['K01', 'K02']);
     } else if (mode === 'hamina' && !this.haminaEntryAudioPlayed) {
       this.haminaEntryAudioPlayed = true;
-      this.onHaminaEnter();
+      this.cuePlayer.playSequence(['K01', 'K02']);
     }
   }
 
@@ -874,21 +989,53 @@ export class ExperienceController {
 
   hideWorldEntryOverlay() {
     if (!this.worldEntryOverlay) return;
+    const wasVisible = this.worldEntryOverlay.classList.contains('visible');
     this.worldEntryOverlay.classList.remove('visible');
     this.worldEntryOverlay.setAttribute('aria-hidden', 'true');
+    if (wasVisible) this.resumeCaptionAfterEntry();
   }
 
   showHaminaEntryOverlay() {
     if (!this.haminaEntryOverlay || this.currentWorld === 'lightcable') return;
+    this.suspendCaptionForEntry();
     this.setEntryLocation(this.haminaEntryOverlay, this.currentWorld);
     this.haminaEntryOverlay.classList.add('visible');
     this.haminaEntryOverlay.setAttribute('aria-hidden', 'false');
+    if (this.haminaEntryOverlayHoldTimer) window.clearTimeout(this.haminaEntryOverlayHoldTimer);
+    this.haminaEntryOverlayHoldTimer = window.setTimeout(() => {
+      this.haminaEntryOverlayHoldTimer = null;
+      this.hideHaminaEntryOverlay();
+    }, CAMERA_CONFIG.introOrbitDuration * 1000);
   }
 
   hideHaminaEntryOverlay() {
     if (!this.haminaEntryOverlay) return;
+    if (this.haminaEntryOverlayHoldTimer) window.clearTimeout(this.haminaEntryOverlayHoldTimer);
+    this.haminaEntryOverlayHoldTimer = null;
+    const wasVisible = this.haminaEntryOverlay.classList.contains('visible');
     this.haminaEntryOverlay.classList.remove('visible');
     this.haminaEntryOverlay.setAttribute('aria-hidden', 'true');
+    if (wasVisible) this.resumeCaptionAfterEntry();
+  }
+
+  suspendCaptionForEntry() {
+    if (this.entryCaptionResumeTimer) window.clearTimeout(this.entryCaptionResumeTimer);
+    this.entryCaptionResumeTimer = null;
+    this.stage.classList.add('entry-overlay-active');
+    this.caption.hideOverride();
+  }
+
+  resumeCaptionAfterEntry() {
+    if (this.worldEntryOverlay?.classList.contains('visible')
+      || this.haminaEntryOverlay?.classList.contains('visible')) return;
+    if (this.entryCaptionResumeTimer) window.clearTimeout(this.entryCaptionResumeTimer);
+    this.entryCaptionResumeTimer = window.setTimeout(() => {
+      this.entryCaptionResumeTimer = null;
+      this.stage.classList.remove('entry-overlay-active');
+      if (!this.disposed && !this.worldTransitioning && this.currentWorld !== 'lightcable') {
+        this.caption.clearOverride();
+      }
+    }, 400);
   }
 
   handleWorldDoubleClick(event) {
@@ -914,7 +1061,9 @@ export class ExperienceController {
     this.camera.updateMatrixWorld();
     this.echoRaycaster.setFromCamera(this.echoPointer, this.camera);
     if (pacific) {
+      if (this.lightCableWorld?.creatureView) return Infinity;
       this.lightCableWorld.echoTraveler.getWorldPosition(this.echoHitSphere.center);
+      this.echoHitSphere.radius = 2.6;
       const hit = this.echoRaycaster.ray.intersectSphere(this.echoHitSphere, this.echoHitPoint);
       return hit ? this.echoRaycaster.ray.origin.distanceTo(hit) : Infinity;
     }
@@ -924,14 +1073,14 @@ export class ExperienceController {
       const height = max.y - min.y;
       const depth = max.z - min.z;
       this.echoHitBox.min.set(
-        min.x + width * 0.1,
-        min.y + height * 0.32,
-        min.z + depth * 0.1,
+        min.x - width * 0.04,
+        min.y - height * 0.06,
+        min.z - depth * 0.04,
       );
       this.echoHitBox.max.set(
-        max.x - width * 0.1,
-        min.y + height * 0.94,
-        max.z - depth * 0.1,
+        max.x + width * 0.04,
+        max.y + height * 0.04,
+        max.z + depth * 0.04,
       );
       this.echoHitWorld = this.world;
     }
@@ -970,8 +1119,44 @@ export class ExperienceController {
       return 'blocked';
     }
     if (this.currentWorld === 'lightcable') {
+      if (this.lightCableWorld?.creatureView) {
+        this.lightCableWorld.setCreatureHover();
+        this.lightCableWorld.dataParticles.setHover();
+        this.pacificHoveredParticle = null;
+        this.setWorldHoverTarget(null);
+        return 'blocked';
+      }
+      const particle = this.lightCableWorld?.dataParticles?.pick(
+        clientX, clientY, this.canvas.getBoundingClientRect(), this.camera);
+      if (particle) {
+        this.lightCableWorld.setCreatureHover();
+        this.lightCableWorld.dataParticles.setHover(particle.index);
+        this.pacificHoveredParticle = {
+          ...particle, x: clientX, y: clientY, at: performance.now(),
+        };
+        this.setWorldHoverTarget('data-particle');
+        return 'data-particle';
+      }
+      const held = this.pacificHoveredParticle;
+      if (held && performance.now() - held.at < 60000
+        && Math.hypot(clientX - held.x, clientY - held.y) < 36) {
+        this.lightCableWorld.setCreatureHover();
+        this.lightCableWorld.dataParticles.setHover(held.index);
+        this.setWorldHoverTarget('data-particle');
+        return 'data-particle';
+      }
+      this.lightCableWorld?.dataParticles?.setHover();
+      const creature = this.lightCableWorld?.pickCreature(
+        clientX, clientY, this.canvas.getBoundingClientRect());
+      this.lightCableWorld?.setCreatureHover(creature);
+      if (creature) {
+        const label = creature.kind === 'fish' ? '뻐끔뻐끔' : '해저 식물 시점';
+        this.setWorldHoverTarget(`creature:${creature.kind}`, label);
+        return 'interactive-object';
+      }
       const echoDistance = this.getEchoHitDistance(clientX, clientY);
-      this.setWorldHoverTarget(Number.isFinite(echoDistance) ? 'echo' : null);
+      if (Number.isFinite(echoDistance)) this.setWorldHoverTarget('echo');
+      else if (!this.keepEchoMenuWhileCrossing()) this.setWorldHoverTarget(null);
       return Number.isFinite(echoDistance) ? 'echo' : 'blocked';
     }
     const state = this.cameraController.state;
@@ -1054,11 +1239,19 @@ export class ExperienceController {
       this.setWorldHoverTarget('echo', '', this.world.echoCenter);
       return 'echo';
     }
-    this.setWorldHoverTarget(null);
+    if (!this.keepEchoMenuWhileCrossing()) this.setWorldHoverTarget(null);
     return this.pointCompassAtNearestInteraction(clientX, clientY) ? 'compass' : 'blocked';
   }
 
+  keepEchoMenuWhileCrossing() {
+    if (this.worldHoverTarget !== 'echo'
+      || !this.echoActionMenu.classList.contains('visible')) return false;
+    this.scheduleEchoMenuHide();
+    return true;
+  }
+
   setWorldHoverTarget(target, label = '', cameraTarget = null) {
+    if (target) this.cancelEchoMenuHide();
     if (target === this.worldHoverTarget && cameraTarget === this.worldHoverCameraTarget) return;
     const selected = (target?.startsWith('character:')
       && this.cameraController.focused?.id === target.slice(10))
@@ -1075,6 +1268,10 @@ export class ExperienceController {
     this.characterManager.setRitualHovered(target === 'ritual-group');
     this.setEchoActionMenuVisible(target === 'echo');
     const interactiveName = target?.startsWith('interactive:') ? target.slice(12) : null;
+    const pacificQuestion = target === 'creature:fish'
+      ? { korean: PACIFIC_FISH_HOVER, id: 'KH-P01' }
+      : target === 'data-particle'
+        ? { korean: PACIFIC_PARTICLE_HOVER, id: 'KH-P02' } : null;
     this.world?.setForestHovered?.(interactiveName === 'Forest' && !selected);
     const hoverMeshes = interactiveName === 'Forest' && this.world?.forestInstances?.length
       ? this.world.forestInstances
@@ -1106,19 +1303,23 @@ export class ExperienceController {
         });
       }
     }
-    const question = interactiveName
+    const question = pacificQuestion ?? (interactiveName && !selected
       ? cameraTarget?.content?.hover
         ? { korean: cameraTarget.content.hover[0], local: cameraTarget.content.hover[1] }
         : INTERACTIVE_QUESTIONS[interactiveName]
       : target?.startsWith('dance:') && !selected
         ? { korean: WORLD_CAPTIONS.danceHover[0], english: WORLD_CAPTIONS.danceHover[1] }
-        : null;
+        : null);
     if (question) {
       this.interactiveHoverCaptionActive = true;
-      this.caption.showOverride(question.korean, question.local ?? question.english);
+      this.caption.showOverride(question.korean);
+      const id = pacificQuestion?.id ?? (interactiveName
+        ? hoverCueId(this.currentWorld, interactiveName) : 'KH-D01');
+      if (id) this.cuePlayer.play(id);
     } else if (this.interactiveHoverCaptionActive) {
       this.interactiveHoverCaptionActive = false;
       this.caption.clearOverride();
+      this.cuePlayer.stopHover();
     }
     if (target) this.onWorldHover(target);
   }
@@ -1136,7 +1337,8 @@ export class ExperienceController {
   }
 
   setEchoActionMenuVisible(visible) {
-    this.echoNextButton.hidden = this.visitIndex >= this.worldOrder.length - 1;
+    const hasNextWorld = this.visitIndex < this.worldOrder.length - 1;
+    this.echoNextButton.hidden = !hasNextWorld && this.currentWorld !== 'hamina';
     if (this.echoActionMenu.classList.contains('visible') === visible) return;
     this.echoActionMenu.classList.toggle('visible', visible);
     this.echoActionMenu.setAttribute('aria-hidden', String(!visible));
@@ -1151,8 +1353,8 @@ export class ExperienceController {
     this.cancelEchoMenuHide();
     this.echoMenuHideTimer = window.setTimeout(() => {
       this.echoMenuHideTimer = null;
-      this.setWorldHoverTarget(null);
-    }, 180);
+      if (this.worldHoverTarget === 'echo') this.setWorldHoverTarget(null);
+    }, 550);
   }
 
   handleEchoPick() {
@@ -1162,6 +1364,88 @@ export class ExperienceController {
     this.setWorldHoverTarget('echo', '', this.currentWorld === 'lightcable'
       ? this.lightCableWorld?.echoTraveler : this.world.echoCenter);
     this.setEchoActionMenuVisible(true);
+  }
+
+  enterPacificCreatureView(creature) {
+    if (this.currentWorld !== 'lightcable'
+      || !this.lightCableWorld?.enterCreatureView(creature)) return;
+    this.onWorldClick();
+    this.setWorldHoverTarget(null);
+    this.setEchoActionMenuVisible(false);
+    this.pacificViewReturn.hidden = false;
+    this.lightCableWorld.dataParticles.setHover();
+    this.pacificHoveredParticle = null;
+    this.onPacificCreatureAudioChange?.(true);
+  }
+
+  pickPacificParticle(clientX, clientY) {
+    if (this.currentWorld !== 'lightcable' || this.lightCableWorld?.creatureView) return null;
+    const hovered = this.pacificHoveredParticle;
+    if (hovered && (this.cursor?.currentMode === 'data-particle'
+      || performance.now() - hovered.at < 60000)
+      && Math.hypot(clientX - hovered.x, clientY - hovered.y) < 48) {
+      return { index: hovered.index };
+    }
+    return this.lightCableWorld?.dataParticles?.pick(
+      clientX, clientY, this.canvas.getBoundingClientRect(), this.camera) ?? null;
+  }
+
+  leavePacificCreatureView() {
+    if (!this.lightCableWorld?.creatureView) return;
+    this.lightCableWorld.leaveCreatureView();
+    this.pacificViewReturn.hidden = true;
+    this.onPacificCreatureAudioChange?.(false);
+  }
+
+  async openPacificParticlePhoto() {
+    if (this.currentWorld !== 'lightcable' || this.worldTransitioning) return;
+    this.lightCableWorld?.dataParticles?.setHover();
+    this.pacificHoveredParticle = null;
+    this.setWorldHoverTarget(null);
+    this.setEchoActionMenuVisible(false);
+    const token = ++this.pacificPhotoGeneration;
+    const image = this.pacificPhotoViewer.querySelector('img');
+    image.hidden = true;
+    this.pacificPhotoViewer.classList.add('visible');
+    this.pacificPhotoViewer.setAttribute('aria-hidden', 'false');
+    try {
+      const records = (await loadVisitorPhotos()).filter((record) =>
+        record.blob && record.id !== this.currentArchiveId);
+      if (token !== this.pacificPhotoGeneration) return;
+      if (!records.length) {
+        this.closePacificParticlePhoto();
+        return;
+      }
+      const alternatives = records.filter((record) => record.id !== this.lastPacificPhotoId);
+      const choices = alternatives.length ? alternatives : records;
+      const chosen = choices[Math.floor(Math.random() * choices.length)];
+      this.lastPacificPhotoId = chosen.id;
+      if (this.pacificPhotoUrl) URL.revokeObjectURL(this.pacificPhotoUrl);
+      this.pacificPhotoUrl = URL.createObjectURL(chosen.blob);
+      image.src = this.pacificPhotoUrl;
+      image.hidden = false;
+      this.caption.showOverride(PACIFIC_PARTICLE_PHOTO);
+      this.cuePlayer.play('K16');
+      this.lightCableNarrationTimers.push(window.setTimeout(() => {
+        if (token === this.pacificPhotoGeneration) this.caption.clearOverride();
+      }, cueDurationMs('K16') + 180));
+    } catch (error) {
+      if (token === this.pacificPhotoGeneration) {
+        this.closePacificParticlePhoto();
+        console.warn('[Pacific data particle] photo could not be loaded', error);
+      }
+    }
+  }
+
+  closePacificParticlePhoto() {
+    this.pacificPhotoGeneration += 1;
+    this.pacificPhotoViewer.classList.remove('visible');
+    this.pacificPhotoViewer.setAttribute('aria-hidden', 'true');
+    const image = this.pacificPhotoViewer.querySelector('img');
+    image.hidden = true;
+    image.removeAttribute('src');
+    if (this.pacificPhotoUrl) URL.revokeObjectURL(this.pacificPhotoUrl);
+    this.pacificPhotoUrl = null;
   }
 
   updateEchoActionMenuPosition() {
@@ -1216,7 +1500,11 @@ export class ExperienceController {
 
   startNextWorld() {
     const destination = this.worldOrder[this.visitIndex + 1];
-    if (!destination || this.worldTransitioning) return;
+    if (this.worldTransitioning) return;
+    if (!destination) {
+      if (this.currentWorld === 'hamina') this.startEchoReturn();
+      return;
+    }
     if (destination === 'lightcable') this.startLightCableJourney();
     else if (this.currentWorld === 'lightcable') this.leaveLightCableForLand(destination);
     else this.startWorldJump(destination);
@@ -1241,11 +1529,13 @@ export class ExperienceController {
     this.echoActionMenu.classList.remove('visible');
     this.echoActionMenu.setAttribute('aria-hidden', 'true');
     this.cancelDanceNarration();
+    this.cuePlayer.stop();
     this.worldInteraction.cancel();
     this.dataCenterArchive.close();
     this.characterManager.stopDances();
     this.characterManager.setFocused(null);
     this.echoReturn ??= new EchoReturnSequence(this.stage, this.renderer);
+    this.echoReturn.cuePlayer = this.cuePlayer;
     try {
       await this.echoReturn.play({
         onTypingStart: this.onReturnTypingStart,
@@ -1276,6 +1566,7 @@ export class ExperienceController {
     const destinationLoading = this.preloadLandWorld(destination);
     const echoLoading = this.echoTravel.preload();
     this.caption.showOverride(...WORLD_CAPTIONS.nextCoordinate);
+    this.cuePlayer.playSequence(['K04', 'K05']);
 
     try {
       // Begin the motion immediately while the already-started background load
@@ -1351,14 +1642,50 @@ export class ExperienceController {
     if (this.worldTransitioning || (!first && !qa && this.worldOrder[this.visitIndex + 1] !== 'lightcable')) return;
     this.worldTransitioning = true;
     this.cancelDanceNarration();
+    this.cuePlayer.stop();
     this.worldInteraction.cancel();
     this.dataCenterArchive.close();
     this.setWorldHoverTarget(null);
     this.setEchoActionMenuVisible(false);
     this.caption.clearOverride();
+    if (!first && !qa) {
+      this.caption.showOverride(...WORLD_CAPTIONS.nextCoordinate);
+      this.cuePlayer.playSequence(['K04', 'K05']);
+      this.lightCableNarrationTimers.push(window.setTimeout(() => {
+        if (!this.disposed) this.caption.clearOverride();
+      }, cueDurationMs('K04') + cueDurationMs('K05') + 180));
+    }
+    const lightCable = new LightCableWorld(this.scene, this.camera);
     try {
-      const lightCable = new LightCableWorld(this.scene, this.camera);
-      await lightCable.load(this.world.echo);
+      // Prepare the ocean while ECHO visibly takes off from the current world.
+      // Capture a load error until the departure shot finishes so it cannot
+      // reject in the background before this transition awaits it.
+      const oceanLoading = lightCable.load(this.world.echo).then(() => null, (error) => error);
+      if (!first && !qa) {
+        const flightReady = this.echoTravel.preload();
+        this.cameraController.startWorldJumpFocus(WORLD_JUMP_CONFIG.focusDuration);
+        await Promise.all([flightReady, this.wait(WORLD_JUMP_CONFIG.focusDuration)]);
+        this.echoTravel.attach(this.world);
+        this.echoTravel.start('crouch', WORLD_JUMP_CONFIG.crouchDuration);
+        await this.wait(WORLD_JUMP_CONFIG.crouchDuration);
+        const lift = Math.max(80, this.world.bounds.max.y - this.world.echoCenter.y + 55);
+        this.echoTravel.start('launch', WORLD_JUMP_CONFIG.launchDuration, lift);
+        this.cameraController.startWorldJumpAscent(WORLD_JUMP_CONFIG.launchDuration, lift);
+        await this.wait(WORLD_JUMP_CONFIG.launchDuration);
+        this.cameraController.holdWorldLoading();
+        // Match the authored land-to-land transfer: ECHO keeps turning in the
+        // sky while the destination finishes loading instead of freezing.
+        const spinPeriod = WORLD_JUMP_CONFIG.spinDuration;
+        const spinStartedAt = performance.now();
+        this.echoTravel.start('loading-spin', spinPeriod, lift);
+        const oceanError = await oceanLoading;
+        if (oceanError) throw oceanError;
+        await this.wait(Math.max(.35, spinPeriod - (performance.now() - spinStartedAt) / 1000));
+        await this.captureWorldJumpFrame();
+      } else {
+        const oceanError = await oceanLoading;
+        if (oceanError) throw oceanError;
+      }
       if (this.disposed) {
         lightCable.dispose();
         return;
@@ -1379,8 +1706,22 @@ export class ExperienceController {
       if (!first && !qa) this.visitIndex += 1;
       this.stage.dataset.world = 'lightcable';
       this.stage.dataset.weather = WORLD_PRESENTATION.lightcable.weather;
+      this.caption.setWorldMode('lightcable');
+      this.caption.clearOverride();
       this.postProcessing.setWorldMode('lightcable');
       lightCable.activate();
+      if (!first && !qa) {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          if (this.disposed) return;
+          this.worldJumpOverlay.classList.add('dissolve-active');
+          window.setTimeout(() => {
+            this.worldJumpOverlay.classList.remove('visible', 'snapshot-active', 'dissolve-active');
+            this.worldJumpOverlay.setAttribute('aria-hidden', 'true');
+          }, 1450);
+        }));
+      }
+      this.pacificSecretShown = false;
+      this.pacificViewReturn.hidden = true;
       this.cameraController.startEchoOrbit();
       this.echoActionMenu.classList.add('lightcable-menu');
       this.worldTransitioning = false;
@@ -1391,6 +1732,10 @@ export class ExperienceController {
       if (!first) this.playLightCableNarrationOnce();
     } catch (error) {
       console.error('[LightCable] journey failed', error);
+      this.worldJumpOverlay.classList.remove('visible', 'snapshot-active', 'dissolve-active');
+      this.worldJumpOverlay.setAttribute('aria-hidden', 'true');
+      this.echoTravel.detach();
+      this.cameraController.startEchoOrbit();
       this.worldTransitioning = false;
       this.caption.showOverride(...WORLD_CAPTIONS.nextCoordinateError);
     }
@@ -1400,33 +1745,49 @@ export class ExperienceController {
     if (this.lightCableNarrationPlayed || this.currentWorld !== 'lightcable') return;
     this.lightCableNarrationPlayed = true;
     const [firstCue, ...laterCues] = PACIFIC_ARRIVAL_NARRATION;
-    this.caption.showOverride(firstCue.korean, firstCue.local);
-    for (const cue of laterCues) {
+    // Let the location title fade completely before showing the first caption.
+    const narrationStartMs = PACIFIC_NARRATION_START_MS;
+    this.lightCableNarrationTimers.push(window.setTimeout(() => {
+      if (this.disposed || this.currentWorld !== 'lightcable') return;
+      this.caption.showOverride(firstCue.korean, firstCue.local);
+      this.cuePlayer.play('K06');
+    }, narrationStartMs));
+    for (const [index, cue] of laterCues.entries()) {
       this.lightCableNarrationTimers.push(window.setTimeout(() => {
         if (this.disposed || this.currentWorld !== 'lightcable') return;
         this.caption.showOverride(cue.korean, cue.local);
-      }, cue.atMs));
+        this.cuePlayer.play(`K0${index + 7}`);
+      }, narrationStartMs + cue.atMs));
     }
     this.lightCableNarrationTimers.push(window.setTimeout(() => {
       if (this.disposed || this.currentWorld !== 'lightcable') return;
       this.caption.clearOverride();
-    }, PACIFIC_ARRIVAL_CLEAR_MS));
+    }, narrationStartMs + PACIFIC_ARRIVAL_CLEAR_MS));
   }
 
   async leaveLightCableForLand(mode) {
     if (this.worldTransitioning || this.currentWorld !== 'lightcable'
       || this.worldOrder[this.visitIndex + 1] !== mode) return;
     this.worldTransitioning = true;
+    this.leavePacificCreatureView();
+    this.pacificHoveredParticle = null;
+    this.closePacificParticlePhoto();
     this.setEchoActionMenuVisible(false);
     this.caption.clearOverride();
+    this.cuePlayer.stop();
+    this.caption.showOverride(...WORLD_CAPTIONS.nextCoordinate);
+    this.cuePlayer.playSequence(['K04', 'K05']);
     try {
       const departureDuration = this.lightCableWorld.startExitSuction();
+      const narrationDuration = (cueDurationMs('K04') + cueDurationMs('K05')) / 1000 + .15;
       const [destinationWorld] = await Promise.all([
         this.preloadLandWorld(mode),
         this.echoTravel.preload(),
-        this.wait(departureDuration),
+        this.wait(Math.max(departureDuration, narrationDuration)),
       ]);
       if (this.disposed) return;
+      this.caption.clearOverride();
+      this.cuePlayer.stop();
       for (const timer of this.lightCableNarrationTimers) window.clearTimeout(timer);
       this.lightCableNarrationTimers = [];
       this.lightCableWorld?.dispose();
@@ -1440,6 +1801,7 @@ export class ExperienceController {
       }
       this.world = destinationWorld;
       this.currentWorld = mode;
+      if (mode === 'nevada') void this.refreshNevadaBillboard(destinationWorld);
       this.visitIndex += 1;
       this.echoActionMenu.classList.remove('lightcable-menu');
       this.echoTravel.attach(destinationWorld);
@@ -1453,7 +1815,7 @@ export class ExperienceController {
         ? this.cameraController.haminaArrivalAngle
         : Number.isFinite(this.cameraController.nevadaIntroAngle)
           ? this.cameraController.nevadaIntroAngle : -Math.PI * .15;
-      const entryRadius = Math.max(this.cameraController.nearRadius * 1.65, 20);
+      const entryRadius = this.cameraController.farRadius;
       this.camera.position.set(
         center.x + Math.cos(angle) * entryRadius,
         center.y + height * .83,
@@ -1486,7 +1848,7 @@ export class ExperienceController {
     this.navigation.configure(world);
     this.dataCenterArchive.clearCards();
     this.dataCenterArchive.setWorldVisible(true);
-    void this.dataCenterArchive.restore(world);
+    this.dataCenterArchive.restore(world);
     this.characterManager.relocate(this.navigation, { preserveNevadaNpcs: true });
     this.characterManager.setWorldMode(mode);
     this.cameraController.configure(world);
@@ -1510,6 +1872,7 @@ export class ExperienceController {
     destinationWorld.root.visible = true;
     this.world = destinationWorld;
     this.currentWorld = mode;
+    if (mode === 'nevada') void this.refreshNevadaBillboard(destinationWorld);
     this.visitIndex += 1;
     this.echoNextButton.hidden = false;
     const landingHeight = this.echoTravel.lift;
@@ -1601,22 +1964,30 @@ export class ExperienceController {
     });
   }
 
+  captureWorldJumpFrame() {
+    if (!this.worldJumpSnapshot) return Promise.resolve();
+    return new Promise((resolve) => { this.pendingWorldJumpCapture = resolve; });
+  }
+
   showDanceNarration() {
     this.cancelDanceNarration();
     const narration = this.currentWorld === 'hamina'
       ? HAMINA_DANCE_NARRATION : DANCE_NARRATION;
     const cues = [narration[0], narration[0], narration[1]];
+    const cueIds = [danceCueId(this.currentWorld, 0), danceCueId(this.currentWorld, 0),
+      danceCueId(this.currentWorld, 1)];
     const showCue = (index) => {
       this.danceNarrationTimer = null;
       if (this.disposed
         || this.cameraController.state !== EXPERIENCE_STATES.GROUP_DANCE_FOCUS) return;
       this.caption.showOverride(...cues[index]);
+      this.cuePlayer.play(cueIds[index]);
       if (index < cues.length - 1) {
         this.danceNarrationTimer = window.setTimeout(
           () => {
             this.caption.hideOverride();
             this.danceNarrationTimer = window.setTimeout(() => showCue(index + 1), 620);
-          }, captionDurationSeconds(cues[index][0]) * 1000,
+          }, cueDurationMs(cueIds[index]) + 180,
         );
       } else {
         this.danceNarrationTimer = window.setTimeout(
@@ -1625,7 +1996,7 @@ export class ExperienceController {
             this.caption.hideOverride();
             this.danceNarrationFinished = true;
           },
-          (captionDurationSeconds(cues[index][0]) + 0.3) * 1000,
+          cueDurationMs(cueIds[index]) + 300,
         );
       }
     };
@@ -1636,6 +2007,7 @@ export class ExperienceController {
     if (this.danceNarrationTimer !== null) window.clearTimeout(this.danceNarrationTimer);
     this.danceNarrationTimer = null;
     this.pendingDanceNarrationGroup = null;
+    if (this.cuePlayer.currentId?.includes('-D0')) this.cuePlayer.stop();
   }
 
   queueDanceNarration(group) {
@@ -1654,7 +2026,10 @@ export class ExperienceController {
     this.stage.classList.add('ritual-cinematic');
     this.onWorldClick();
     this.setWorldHoverTarget(null);
-    this.caption.showOverride(...WORLD_CAPTIONS.ritualRecognition[0]);
+    const cues = this.currentWorld === 'hamina'
+      ? WORLD_CAPTIONS.ritualRecognitionFinnish : WORLD_CAPTIONS.ritualRecognition;
+    this.caption.showOverride(...cues[0]);
+    this.cuePlayer.play(ritualCueId(this.currentWorld, 0));
   }
 
   updateRitualSpeech() {
@@ -1664,7 +2039,11 @@ export class ExperienceController {
       Math.floor(this.cameraController.elapsed / spin.shotDuration));
     const speaker = spin.shots[index];
     if (speaker === this.ritualSpeakingMember) return;
-    this.caption.showOverride(...WORLD_CAPTIONS.ritualRecognition[index]);
+    const cues = this.currentWorld === 'hamina'
+      ? WORLD_CAPTIONS.ritualRecognitionFinnish : WORLD_CAPTIONS.ritualRecognition;
+    this.caption.showOverride(...cues[index]);
+    const id = ritualCueId(this.currentWorld, index);
+    if (this.cuePlayer.currentId !== id) this.cuePlayer.play(id);
     this.ritualSpeakingMember?.stopSpeaking();
     this.ritualSpeakingMember = speaker;
     speaker.speakFor(spin.shotDuration, { ritual: true });
@@ -1980,6 +2359,13 @@ export class ExperienceController {
     if (!this.worldRenderingEnabled) return;
     if (this.currentWorld === 'lightcable' && this.lightCableWorld) {
       this.lightCableWorld.update(delta);
+      if (!this.pacificSecretShown && this.lightCableWorld.cableIntroReady) {
+        this.pacificSecretShown = true;
+        this.caption.showOverride(PACIFIC_CABLE_SECRET);
+        this.cuePlayer.play('K15');
+      }
+      this.postProcessing.setPacificSubmersion(this.lightCableWorld.submersion);
+      this.postProcessing.setPacificMotionBlur(this.lightCableWorld.motionBlur);
       this.updateEchoActionMenuPosition();
       this.postProcessing.render(elapsed, EXPERIENCE_STATES.ECHO_ORBIT, delta);
       return;
@@ -2029,9 +2415,9 @@ export class ExperienceController {
         this.returnFromDanceGroup();
       }
       this.cameraController.applyInteractiveMotion(delta);
-      this.worldInteraction.applyCoolerCameraMotion(this.cameraController.target);
       this.dataCenterArchive.update(delta);
       this.cameraController.applyInteractiveFilm(delta, this.dataCenterArchive);
+      this.worldInteraction.applyCoolerCameraMotion(this.cameraController.target);
       if (!this.worldBlend) this.world.updateFixtureLights?.(this.camera);
       this.updateEchoActionMenuPosition();
       this.updateFocusLighting(delta);
@@ -2046,16 +2432,26 @@ export class ExperienceController {
     }
     const qaRenderStart = this.npcWalkQaEnabled ? performance.now() : 0;
     this.postProcessing.render(elapsed, this.cameraController.state, delta, this.worldBlend);
+    if (this.pendingWorldJumpCapture && this.worldJumpSnapshot) {
+      this.worldJumpSnapshot.width = this.canvas.width;
+      this.worldJumpSnapshot.height = this.canvas.height;
+      this.worldJumpSnapshot.getContext('2d').drawImage(this.canvas, 0, 0);
+      this.worldJumpOverlay.classList.add('visible', 'snapshot-active');
+      this.worldJumpOverlay.classList.remove('dissolve-active');
+      this.worldJumpOverlay.setAttribute('aria-hidden', 'false');
+      const resolve = this.pendingWorldJumpCapture;
+      this.pendingWorldJumpCapture = null;
+      resolve();
+    }
     if (this.npcWalkQaEnabled) {
       this.npcWalkQaDrawCalls = this.renderer.info.render.calls;
       this.renderer.info.reset();
       this.npcWalkQaUpdateMs += (qaRenderStart - qaFrameStart - this.npcWalkQaUpdateMs) * 0.05;
       this.npcWalkQaRenderMs += (performance.now() - qaRenderStart - this.npcWalkQaRenderMs) * 0.05;
     }
-    if (['nevada', 'hamina'].includes(this.currentWorld)
-      && !this.worldTransitioning && this.assetsReady) {
+    if (!this.worldTransitioning && this.assetsReady) {
       this.echoReturn.recordFrame(this.camera, this.cameraController,
-        this.characterManager.entities);
+        this.characterManager.entities, this.currentWorld);
     }
   }
 
@@ -2249,8 +2645,11 @@ export class ExperienceController {
     if (this.disposed) return;
     this.disposed = true;
     if (this.faceQaFocusTimer) window.clearTimeout(this.faceQaFocusTimer);
+    if (this.entryCaptionResumeTimer) window.clearTimeout(this.entryCaptionResumeTimer);
+    if (this.haminaEntryOverlayHoldTimer) window.clearTimeout(this.haminaEntryOverlayHoldTimer);
     if (this.haminaPreloadTimer) window.clearTimeout(this.haminaPreloadTimer);
     this.cancelDanceNarration();
+    this.cuePlayer.dispose();
     if (this.characterDialogueTimer !== null) window.clearTimeout(this.characterDialogueTimer);
     this.cancelEchoMenuHide();
     if (this.dataCenterOpenTimer) window.clearTimeout(this.dataCenterOpenTimer);
@@ -2270,6 +2669,10 @@ export class ExperienceController {
     this.echoNextButton.removeEventListener('pointerenter', this.handleEchoMenuHover);
     this.echoExitButton.removeEventListener('pointerenter', this.handleEchoMenuHover);
     this.echoActionMenu.remove();
+    this.pacificViewReturn.remove();
+    this.closePacificParticlePhoto();
+    this.pacificPhotoViewer.remove();
+    window.removeEventListener('keydown', this.onPacificPhotoEscape);
     this.dataCenterArchive.dispose();
     this.renderer.setAnimationLoop(null);
     this.resizeObserver?.disconnect();

@@ -18,6 +18,13 @@ export const WORLD_CAPTIONS = Object.freeze({
     ['우리는 이렇게 환영합니다.', 'so this is how we welcome you.'],
     ['어머니 그리고 아버지!', 'Mother and father!'],
   ]),
+  ritualRecognitionFinnish: Object.freeze([
+    ['어머니 같은 분이 오셨기에,', 'Äidin kaltainen ihminen on tullut,'],
+    ['우리는 이렇게 환영합니다.', 'siksi toivotamme sinut tervetulleeksi näin.'],
+    ['아버지 같은 분이 오셨기에,', 'Isän kaltainen ihminen on tullut,'],
+    ['우리는 이렇게 환영합니다.', 'siksi toivotamme sinut tervetulleeksi näin.'],
+    ['어머니 그리고 아버지!', 'Äiti ja isä!'],
+  ]),
   danceHover: ['그들은 기쁨의 춤을 춥니다.', 'They dance with joy.'],
   characterQuestion: Object.freeze({
     korean: '당신은 누구예요?',

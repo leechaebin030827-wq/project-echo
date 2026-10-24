@@ -2,10 +2,11 @@ import { EXPERIENCE_STATES } from '../config.js';
 import { WORLD_PRESENTATION } from '../content/WorldPresentation.js';
 
 export class EchoProximityCaption {
-  constructor(element, camera, cameraController) {
+  constructor(element, camera, cameraController, { onDefaultShow = () => {} } = {}) {
     this.element = element;
     this.camera = camera;
     this.cameraController = cameraController;
+    this.onDefaultShow = onDefaultShow;
     this.visible = false;
     this.override = false;
     this.proximityActive = false;
@@ -65,7 +66,10 @@ export class EchoProximityCaption {
     if (this.override) return;
     if (next === this.visible) return;
     this.visible = next;
-    if (next && !this.proximityActive) this.proximityActive = true;
+    if (next && !this.proximityActive) {
+      this.proximityActive = true;
+      this.onDefaultShow();
+    }
     this.element.classList.toggle('visible', next);
     this.element.setAttribute('aria-hidden', String(!next));
   }

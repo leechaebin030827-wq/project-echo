@@ -101,36 +101,25 @@ export class CinematicCameraController {
     // Nevada and Hamina now finish their entry on the same ECHO-relative
     // distance and elevation. World-specific azimuths remain intact so each
     // world's authored landmarks retain their requested left/right framing.
-    this.nearRadius = (world.root?.name === 'NevadaWorld'
-      ? this.config.nevadaNearOrbitRadius : this.config.nearOrbitRadius) ?? Math.max(
+    const matchedLandEntry = world.root?.name === 'NevadaWorld'
+      || world.root?.name === 'HaminaWorld';
+    this.nearRadius = (matchedLandEntry
+      ? this.config.landNearOrbitRadius : this.config.nearOrbitRadius) ?? Math.max(
       world.echoSphere.radius * this.config.nearOrbitRadiusFromEcho,
       this.config.nearOrbitMinimumRadius,
     );
     this.orbitTargetHeightRatio = world.root?.name === 'NevadaWorld'
       ? this.config.nevadaOrbitTargetHeightRatio : 0.08;
-    if (world.root?.name === 'HaminaWorld') {
-      this.farRadius = Math.max(
-        this.nearRadius * 1.85,
-        world.echoSphere.radius * 6.8,
-        18,
-      );
-      this.farHeight = this.echoCenter.y + Math.max(
-        world.echoSize.y * 2.5,
-        world.echoSphere.radius * 3.9,
-        23,
-      );
-    }
     this.nearHeight = this.echoCenter.y + Math.max(
       world.echoSphere.radius * this.config.nearOrbitHeightFromEcho,
       4,
-    ) + (world.root?.name === 'NevadaWorld'
-      ? this.config.nevadaNearOrbitHeightOffset : this.config.nearOrbitHeightOffset);
-    if (world.root?.name === 'NevadaWorld') {
-      // The world bounds include distant scenery and tall structures. Keep
-      // the opening orbit near ECHO so people remain readable from the start.
-      this.farRadius = this.config.nevadaIntroRadius;
+    ) + (matchedLandEntry
+      ? this.config.landNearOrbitHeightOffset : this.config.nearOrbitHeightOffset);
+    if (matchedLandEntry) {
+      // Both land worlds use the same entry distance from ECHO.
+      this.farRadius = this.config.landIntroRadius;
       this.farHeight = this.echoCenter.y
-        + (this.nearHeight - this.echoCenter.y) * this.config.nevadaIntroHeightFromNear;
+        + (this.nearHeight - this.echoCenter.y) * this.config.landIntroHeightFromNear;
     }
     this.nevadaIntroAngle = null;
     this.nevadaIntroTarget = null;
@@ -574,7 +563,7 @@ export class CinematicCameraController {
 
     const settledFocus = (this.state === EXPERIENCE_STATES.CHARACTER_FOCUS
       || this.state === EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS)
-      && !this.transition && !this.archivePhotoOrigin;
+      && !this.transition && !this.archivePhotoOrigin && !this.archiveDropFilm;
     this.focusBreath = THREE.MathUtils.damp(
       this.focusBreath,
       settledFocus ? 1 : 0,
@@ -645,6 +634,8 @@ export class CinematicCameraController {
       viewDirection.subVectors(this.echoCenter, focusCenter);
       viewDirection.y = 0.13;
       viewDirection.normalize();
+    } else if (region.cameraMode === 'timer' && region.focusDirection) {
+      viewDirection.copy(region.focusDirection).setY(0.08).normalize();
     } else if (!flagFocus && !coolerFocus && region.radius > 10) {
       // Approach the facade from ECHO's side, with enough lateral offset to
       // keep the ECHO out of the building's center frame.
@@ -660,10 +651,12 @@ export class CinematicCameraController {
         ? Math.max(9, Math.min((region.focusRadius ?? region.radius) * 1.45, 18))
       : region.name === 'Data Center'
       ? (region.focusDistance ?? region.radius * 1.55)
+      : region.cameraMode === 'timer'
+        ? region.focusDistance
       : region.name === 'Cooler'
         ? region.focusRadius
-          ? Math.max(16, Math.min(region.focusRadius * 2.6, 42))
-          : Math.max(7.5, Math.min(region.radius * 2.5, 14))
+          ? Math.max(8, Math.min(region.focusRadius * 1.5, 24))
+          : Math.max(5.5, Math.min(region.radius * 1.7, 11))
         : region.name === 'Money'
           ? Math.max(9.5, Math.min(region.radius * 2.8, 38))
         : Math.max(7.5, Math.min(region.radius * 2.2, 34));
@@ -671,6 +664,7 @@ export class CinematicCameraController {
     if (flagFocus) destination.y = Math.max(focusBounds.min.y + 3.5,
       focusCenter.y - Math.max(1.4, focusSize.y * 0.18));
     else if (coolerFocus) destination.y = focusCenter.y + Math.max(5, focusSize.y * 0.65);
+    else if (region.cameraMode === 'timer') destination.y = focusCenter.y + 0.65;
     else destination.y = Math.max(destination.y, focusBounds.min.y + focusSize.y * 0.72);
     const destinationTarget = focusCenter.clone();
     if (!flagFocus) destinationTarget.y += focusSize.y * (coolerFocus ? 0.1 : 0.06);
@@ -740,22 +734,59 @@ export class CinematicCameraController {
     this.elapsed = 0;
   }
 
-  focusArchiveDrop({ launch, echo, groundY, outward }) {
+  startFlagWorldSweep(overviewTargets) {
+    const film = this.interactiveFilm;
+    if (film?.region.cameraMode !== 'flag' && film?.region.name !== 'Flag') return;
+    const targets = (Array.isArray(overviewTargets) ? overviewTargets : [overviewTargets])
+      .filter(Boolean);
+    if (!targets.length) return;
+    const flagCenter = film.region.focusTarget ?? film.region.center;
+    const worldCenter = targets[0].clone().add(new THREE.Vector3(0, 3.5, 0));
+    const away = this.camera.position.clone().sub(worldCenter).setY(0);
+    if (away.lengthSq() < 0.001) away.copy(film.horizontalOutward);
+    away.normalize();
+    const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), away).normalize();
+    const retreatDistance = THREE.MathUtils.clamp(
+      this.camera.position.distanceTo(worldCenter) * 0.16, 4.5, 8.5);
+    const panoramaSpan = THREE.MathUtils.clamp(
+      Math.max(this.worldSize.x, this.worldSize.z) * 0.055, 3.5, 5);
+    const lateralTravel = THREE.MathUtils.clamp(panoramaSpan * 0.3, 1.8, 2.8);
+    const rear = this.camera.position.clone().addScaledVector(away, retreatDistance);
+    rear.y += 3;
+    const leftPosition = rear.clone().addScaledVector(right, -lateralTravel);
+    const rightPosition = rear.clone().addScaledVector(right, lateralTravel);
+    const panoramaCenter = worldCenter.clone().lerp(flagCenter, 0.82);
+    const leftTarget = panoramaCenter.clone().addScaledVector(right, -panoramaSpan);
+    const rightTarget = panoramaCenter.clone().addScaledVector(right, panoramaSpan);
+    film.flagSweep = {
+      startedAt: film.elapsed,
+      fromPosition: this.camera.position.clone(),
+      fromTarget: this.target.clone(),
+      leftPosition, rightPosition, leftTarget, rightTarget,
+    };
+  }
+
+  focusArchiveDrop({ launch, echo, groundY, outward, sky }) {
     if (!launch || !echo || this.state !== EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS) return;
     const viewOutward = outward?.clone() ?? this.tempA.subVectors(this.camera.position, launch).setY(0).normalize();
     if (viewOutward.lengthSq() < 0.001) viewOutward.set(0, 0, 1);
     const side = new THREE.Vector3(0, 1, 0).cross(viewOutward).normalize();
     if (side.dot(this.camera.position.clone().sub(launch)) < 0) side.negate();
-    this.archiveDropFilm = {
-      launch: launch.clone(), echo: echo.clone(), outward: viewOutward,
-      side,
-      groundY,
-    };
     const destination = launch.clone().addScaledVector(viewOutward, 6.5)
       .addScaledVector(side, 5);
     destination.y = groundY + 1.85;
     const destinationTarget = launch.clone();
     destinationTarget.y += 12;
+    const widePosition = echo.clone().addScaledVector(viewOutward, 13.5)
+      .addScaledVector(side, 4.5);
+    widePosition.y = groundY + 7.2;
+    const wideTarget = echo.clone();
+    wideTarget.y = groundY + 0.8;
+    this.archiveDropFilm = {
+      lowPosition: destination.clone(), lowTarget: destinationTarget.clone(),
+      skyTarget: sky?.clone() ?? destinationTarget.clone(),
+      widePosition, wideTarget,
+    };
     this.transition = {
       fromPosition: this.camera.position.clone(),
       fromTarget: this.target.clone(),
@@ -771,25 +802,15 @@ export class CinematicCameraController {
       || !this.interactiveFocus || this.transition || this.archivePhotoOrigin) return;
     if (this.interactiveFocus.name === 'Cooler') return;
 
-    if (this.archiveDropFilm && archive?.dropActive) {
+    if (this.archiveDropFilm && (archive?.dropActive || archive?.settledHold)) {
       const fall = this.archiveDropFilm;
       const age = archive.dropElapsed;
-      const subject = archive.getFallingCameraSubject();
-      const travel = THREE.MathUtils.smoothstep(age, 1.55, 6.4);
-      const revealGround = THREE.MathUtils.smoothstep(age, 5.15, 7.2);
-      const wideTarget = this.tempA.copy(fall.echo);
-      wideTarget.y = fall.groundY + 0.8;
-      const desiredTarget = this.tempB.copy(subject ?? fall.launch).lerp(wideTarget, revealGround);
-      const lowPosition = this.tempC.copy(fall.launch).addScaledVector(fall.outward, 6.5)
-        .addScaledVector(fall.side, 5);
-      lowPosition.y = fall.groundY + 1.85;
-      const widePosition = fall.echo.clone().addScaledVector(fall.outward, 13.5)
-        .addScaledVector(fall.side, 4.5);
-      widePosition.y = fall.groundY + 7.2;
-      const desiredPosition = lowPosition.lerp(widePosition, travel);
-      const smoothing = 1 - Math.exp(-delta * 3.4);
-      this.camera.position.lerp(desiredPosition, smoothing);
-      this.target.lerp(desiredTarget, smoothing);
+      const rise = THREE.MathUtils.smootherstep(age, 1.05, 4.2);
+      const settle = THREE.MathUtils.smootherstep(age, 4.2, 8.2);
+      const dolly = THREE.MathUtils.smootherstep(age, 1.05, 7.8);
+      this.camera.position.lerpVectors(fall.lowPosition, fall.widePosition, dolly);
+      this.target.lerpVectors(fall.lowTarget, fall.skyTarget, rise)
+        .lerp(fall.wideTarget, settle);
       this.camera.lookAt(this.target);
       return;
     }
@@ -834,7 +855,20 @@ export class CinematicCameraController {
       this.camera.lookAt(this.target);
       return;
     }
-    if (film.region.name === 'Flag') {
+    if (film.region.cameraMode === 'flag' || film.region.name === 'Flag') {
+      if (film.flagSweep) {
+        const sweep = film.flagSweep;
+        const age = film.elapsed - sweep.startedAt;
+        const retreat = THREE.MathUtils.smootherstep(age, 0, 1.5);
+        const scanAge = Math.max(0, age - 1.5);
+        const scan = (1 - Math.cos(scanAge * Math.PI * 2 / 6.4)) * 0.5;
+        this.camera.position.lerpVectors(sweep.fromPosition, sweep.leftPosition, retreat)
+          .lerp(sweep.rightPosition, scan);
+        this.target.lerpVectors(sweep.fromTarget, sweep.leftTarget, retreat)
+          .lerp(sweep.rightTarget, scan);
+        this.camera.lookAt(this.target);
+        return;
+      }
       const shot = sampleInteractiveShot('Flag', film.elapsed);
       const radius = Math.max(film.minimumDistance, film.horizontalDistance * shot.distance);
       this.target.copy(film.target);
@@ -976,6 +1010,11 @@ export class CinematicCameraController {
       ),
       arcHeight: Math.min(1.8, travelDistance * 0.06),
       orbitAngle: this.angle,
+      returnObstacles: this.world?.root?.name === 'HaminaWorld'
+        ? this.world.interactiveRegions
+          .filter((region) => ['Data Center', 'Cooler'].includes(region.name))
+          .map((region) => region.bounds.clone().expandByScalar(2.5))
+        : [],
     };
     this.setState(EXPERIENCE_STATES.RETURN_TO_ECHO);
   }
@@ -1140,11 +1179,11 @@ export class CinematicCameraController {
         const settle = THREE.MathUtils.smootherstep(progress, 0.58, 1);
         const lift = this.transition.landingHeight * (1 - descent);
         const trackedRadius = THREE.MathUtils.lerp(
-          Math.max(this.nearRadius * 1.45, 13), this.nearRadius, smoothStep(progress),
+          this.farRadius, this.nearRadius, smoothStep(progress),
         );
         this.tempA.copy(this.echoCenter).addScaledVector(this.transition.direction, trackedRadius);
         this.tempA.y = this.echoCenter.y + Math.max(
-          lift * 0.55,
+          lift * 0.8,
           this.nearHeight - this.echoCenter.y,
         );
         this.tempB.copy(this.echoCenter);
@@ -1473,6 +1512,16 @@ export class CinematicCameraController {
       const destinationTarget = this.tempB.copy(this.echoCenter).add(this.tempC.set(0, this.echoSize.y * 0.08, 0));
       this.camera.position.lerpVectors(this.transition.fromPosition, destination, eased);
       this.camera.position.y += Math.sin(Math.PI * eased) * this.transition.arcHeight;
+      for (const bounds of this.transition.returnObstacles) {
+        const dx = Math.max(bounds.min.x - this.camera.position.x, 0,
+          this.camera.position.x - bounds.max.x);
+        const dz = Math.max(bounds.min.z - this.camera.position.z, 0,
+          this.camera.position.z - bounds.max.z);
+        const distance = Math.hypot(dx, dz);
+        const influence = 1 - THREE.MathUtils.smoothstep(distance, 0, 6);
+        const safeHeight = bounds.max.y + 1.5;
+        this.camera.position.y += Math.max(0, safeHeight - this.camera.position.y) * influence;
+      }
       this.target.lerpVectors(this.transition.fromTarget, destinationTarget, eased);
       this.camera.lookAt(this.target);
       if (progress >= 1) this.startEchoOrbit();

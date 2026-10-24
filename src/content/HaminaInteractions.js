@@ -1,8 +1,17 @@
 import { NEVADA_INTERACTIONS } from './NevadaInteractions.js';
 
-// Hamina object copy and exhibit pacing. The shared archive uses Nevada's copy.
+// Hamina object copy and exhibit pacing. The archive interaction is shared,
+// but its spoken captions use Finnish.
 export const HAMINA_INTERACTIONS = Object.freeze({
-  'Data Center': NEVADA_INTERACTIONS['Data Center'],
+  'Data Center': {
+    ...NEVADA_INTERACTIONS['Data Center'],
+    phrases: [
+      ['걱정마요. 당신이 클라우드에 전송한 사진은', 'Älä huoli. Pilveen lähettämäsi valokuva'],
+      ['잘 보관되고 있어요.', 'on hyvässä tallessa.'],
+      ['방금 복사본이 또 만들어졌어요.', 'Siitä tehtiin juuri taas uusi kopio.'],
+      ['이거 봤죠?', 'Näitkö sen?'],
+    ],
+  },
   Cooler: {
     label: 'JÄÄHDYTYS',
     hover: ['무슨 소리가 들리지 않아요?', 'Kuuletko tuon äänen?'],

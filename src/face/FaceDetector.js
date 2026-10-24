@@ -1,9 +1,8 @@
-import { FaceLandmarker, ImageSegmenter, FilesetResolver } from '@mediapipe/tasks-vision';
-
 export class FaceDetector {
   async initialize() {
     if (this.landmarker) return;
     this.loading ??= (async () => {
+      const { FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
       this.files = await FilesetResolver.forVisionTasks('/vendor/mediapipe');
       this.landmarker = await FaceLandmarker.createFromOptions(this.files, {
         baseOptions: { modelAssetPath: '/vendor/mediapipe/face_landmarker.task', delegate: 'CPU' },
@@ -13,7 +12,12 @@ export class FaceDetector {
         minFacePresenceConfidence: 0.5,
       });
     })();
-    await this.loading;
+    try {
+      await this.loading;
+    } catch (error) {
+      this.loading = null;
+      throw error;
+    }
   }
 
   detect(image) {
@@ -27,12 +31,15 @@ export class FaceDetector {
 
   async segment(image) {
     await this.initialize();
-    this.segmenter ??= await ImageSegmenter.createFromOptions(this.files, {
-      baseOptions: { modelAssetPath: '/vendor/mediapipe/selfie_multiclass.tflite', delegate: 'CPU' },
-      runningMode: 'IMAGE',
-      outputCategoryMask: true,
-      outputConfidenceMasks: false,
-    });
+    if (!this.segmenter) {
+      const { ImageSegmenter } = await import('@mediapipe/tasks-vision');
+      this.segmenter = await ImageSegmenter.createFromOptions(this.files, {
+        baseOptions: { modelAssetPath: '/vendor/mediapipe/selfie_multiclass.tflite', delegate: 'CPU' },
+        runningMode: 'IMAGE',
+        outputCategoryMask: true,
+        outputConfidenceMasks: false,
+      });
+    }
     const result = this.segmenter.segment(image);
     const mask = {
       data: result.categoryMask.getAsUint8Array().slice(),
@@ -48,5 +55,6 @@ export class FaceDetector {
     this.segmenter?.close();
     this.landmarker = null;
     this.segmenter = null;
+    this.loading = null;
   }
 }

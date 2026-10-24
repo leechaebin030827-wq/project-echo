@@ -223,6 +223,16 @@ export class HaminaWorld {
         region.focusSize = pickBounds.getSize(new THREE.Vector3());
         region.focusRadius = pickBounds.getBoundingSphere(new THREE.Sphere()).radius;
       }
+      if (name === 'Timer') {
+        // The display mesh faces local +Z. Aim at that face rather than using
+        // the current orbit direction, which can show only its snowy roof.
+        region.cameraMode = 'timer';
+        region.focusTarget = this.timerCenter.clone();
+        region.focusDirection = new THREE.Vector3(0, 0, 1)
+          .applyQuaternion(timerObject.getWorldQuaternion(new THREE.Quaternion()))
+          .setY(0).normalize();
+        region.focusDistance = Math.max(7.5, Math.min(size.x * 1.8, 12));
+      }
       this.interactiveRegions.push(region);
       marker.removeFromParent();
     }

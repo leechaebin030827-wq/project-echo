@@ -14,6 +14,7 @@ export class AudioController {
     this.activeMusic = null;
     this.fadeJobs = new Map();
     this.musicToken = 0;
+    this.underwaterAudio = null;
     this.audio.introBgm.addEventListener('ended', () => this.restoreDefaultMusic());
   }
 
@@ -66,25 +67,12 @@ export class AudioController {
     typing.muted = true;
     typing.volume = 0.44;
     typing.play().catch(() => {});
-    for (const name of ['nevadaEntry', 'haminaEntry']) {
-      const entryVoice = this.audio[name];
-      entryVoice.muted = true;
-      entryVoice.play().then(() => {
-        entryVoice.pause();
-        entryVoice.currentTime = 0;
-        entryVoice.muted = false;
-      }).catch(() => {
-        entryVoice.muted = false;
-      });
-    }
     return this.playMusic('defaultBgm', { duration: 1400 });
   }
 
   previewIntroMusic() { return this.playMusic('introBgm', { restart: true, duration: 420 }); }
   stopIntroMusicPreview() { return this.playMusic('defaultBgm', { duration: 420 }); }
   playUi(name) { return this.safePlay(name, { restart: true, volume: 0.72 }); }
-  playNevadaEntry() { return this.safePlay('nevadaEntry', { restart: true, volume: 1 }); }
-  playHaminaEntry() { return this.safePlay('haminaEntry', { restart: true, volume: 1 }); }
   restoreDefaultMusic(duration = AUDIO_MIX.musicFadeDuration) {
     return this.playMusic('defaultBgm', { duration });
   }
@@ -100,6 +88,33 @@ export class AudioController {
       duration,
       targetVolume: AUDIO_MIX.worldBgm,
     });
+  }
+
+  setUnderwaterMusic(active) {
+    if (!this.underwaterAudio) {
+      try {
+        const Context = window.AudioContext || window.webkitAudioContext;
+        if (!Context) return;
+        const context = new Context();
+        const source = context.createMediaElementSource(this.audio.defaultBgm);
+        const filter = context.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 18000;
+        filter.Q.value = 0.7;
+        source.connect(filter);
+        filter.connect(context.destination);
+        this.underwaterAudio = { context, source, filter };
+      } catch (error) {
+        console.warn('[World audio] underwater filter unavailable', error);
+        return;
+      }
+    }
+    const { context, filter } = this.underwaterAudio;
+    if (active && context.state === 'suspended') context.resume().catch(() => {});
+    const now = context.currentTime;
+    filter.frequency.cancelScheduledValues(now);
+    filter.frequency.setValueAtTime(Math.max(400, filter.frequency.value), now);
+    filter.frequency.exponentialRampToValueAtTime(active ? 520 : 18000, now + (active ? .42 : .62));
   }
 
   async startNarration1AndMusic() {
@@ -160,5 +175,7 @@ export class AudioController {
       track.removeAttribute('src');
       track.load();
     });
+    this.underwaterAudio?.context.close().catch(() => {});
+    this.underwaterAudio = null;
   }
 }

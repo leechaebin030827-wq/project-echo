@@ -19,6 +19,8 @@ export class InteractionCursor {
     this.lastCanvasPickAt = -Infinity;
     this.lastTargetWasCanvas = false;
     this.currentMode = 'blocked';
+    this.identificationTimer = null;
+    this.identificationStep = 0;
 
     this.onPointerMove = this.handlePointerMove.bind(this);
     this.flushPointerMove = this.flushPointerMove.bind(this);
@@ -27,6 +29,7 @@ export class InteractionCursor {
     this.onPointerLeave = () => {
       this.lastTargetWasCanvas = false;
       this.element.classList.remove('is-visible');
+      if (this.currentMode === 'data-particle') this.setMode('blocked');
     };
     window.addEventListener('pointermove', this.onPointerMove, { passive: true });
     window.addEventListener('pointerdown', this.onPointerDown, { passive: true });
@@ -62,7 +65,8 @@ export class InteractionCursor {
     this.element.classList.add('is-visible');
     const onCanvas = event.target instanceof Element && Boolean(event.target.closest('#world-canvas'));
     const now = performance.now();
-    const reuseCanvasMode = onCanvas && this.lastTargetWasCanvas && now - this.lastCanvasPickAt < 32;
+    const reuseCanvasMode = onCanvas && this.lastTargetWasCanvas
+      && this.currentMode !== 'data-particle' && now - this.lastCanvasPickAt < 32;
     const mode = reuseCanvasMode ? this.currentMode : this.getMode(event);
     if (onCanvas && !reuseCanvasMode) this.lastCanvasPickAt = now;
     this.lastTargetWasCanvas = onCanvas;
@@ -94,10 +98,15 @@ export class InteractionCursor {
   setMode(mode) {
     const label = mode === 'interactive-object' ? this.stage.dataset.worldHoverLabel || 'OBJECT' : '';
     if (mode === this.currentMode && label === this.currentLabel) return;
+    if (mode !== 'data-particle' && this.identificationTimer) {
+      window.clearInterval(this.identificationTimer);
+      this.identificationTimer = null;
+    }
     this.currentMode = mode;
     this.currentLabel = label;
     this.element.dataset.mode = mode;
-    this.glyph.textContent = mode === 'button' ? '↗'
+    this.glyph.textContent = mode === 'data-particle' ? this.nextIdentification()
+      : mode === 'button' ? '↗'
       : mode === 'echo' ? CURSOR_LABELS.echo
         : mode === 'character' ? CURSOR_LABELS.character
           : mode === 'dance-group' ? CURSOR_LABELS.danceGroup
@@ -106,6 +115,17 @@ export class InteractionCursor {
             : mode === 'compass' ? '↑'
             : mode === 'camera-guide' ? '↗'
         : mode === 'blocked' ? '×' : '';
+    if (mode === 'data-particle' && !this.identificationTimer) {
+      this.identificationTimer = window.setInterval(() => {
+        this.glyph.textContent = this.nextIdentification();
+      }, 55);
+    }
+  }
+
+  nextIdentification() {
+    this.identificationStep = (this.identificationStep + 1) % 16;
+    const hex = () => Math.floor(Math.random() * 256).toString(16).toUpperCase().padStart(2, '0');
+    return `${'◴◷◶◵'[this.identificationStep % 4]} ${hex()}:${hex()}/${hex()}`;
   }
 
   pointAtCameraShutter(event) {
@@ -119,6 +139,7 @@ export class InteractionCursor {
   }
 
   dispose() {
+    if (this.identificationTimer) window.clearInterval(this.identificationTimer);
     if (this.pointerFrame) window.cancelAnimationFrame(this.pointerFrame);
     window.removeEventListener('pointermove', this.onPointerMove);
     window.removeEventListener('pointerdown', this.onPointerDown);

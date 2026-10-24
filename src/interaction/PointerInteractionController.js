@@ -8,6 +8,11 @@ export class PointerInteractionController {
     interactivePicker,
     getEchoHitDistance = () => Infinity,
     isEchoOnly = () => false,
+    pickPacificCreature = () => null,
+    pickPacificParticle = () => null,
+    onPacificCreature = () => {},
+    onPacificParticle = () => {},
+    onPacificBackground = () => {},
     onCharacter,
     onEcho = () => {},
     onInteractiveObject,
@@ -24,6 +29,11 @@ export class PointerInteractionController {
     this.interactivePicker = interactivePicker;
     this.getEchoHitDistance = getEchoHitDistance;
     this.isEchoOnly = isEchoOnly;
+    this.pickPacificCreature = pickPacificCreature;
+    this.pickPacificParticle = pickPacificParticle;
+    this.onPacificCreature = onPacificCreature;
+    this.onPacificParticle = onPacificParticle;
+    this.onPacificBackground = onPacificBackground;
     this.onInteractiveObject = onInteractiveObject;
     this.pickArchivePhoto = pickArchivePhoto;
     this.onArchivePhoto = onArchivePhoto;
@@ -51,12 +61,21 @@ export class PointerInteractionController {
       EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS,
     ].includes(state)) return;
     if (this.isEchoOnly()) {
+      const pacificParticle = this.pickPacificParticle?.(event.clientX, event.clientY) ?? null;
+      const pacificCreature = pacificParticle ? null
+        : this.pickPacificCreature?.(event.clientX, event.clientY) ?? null;
       const echoDistance = this.getEchoHitDistance(event.clientX, event.clientY);
       this.active = {
         id: event.pointerId, startX: event.clientX, startY: event.clientY,
         lastX: event.clientX, lastY: event.clientY, state,
-        echo: Number.isFinite(echoDistance), longPressed: false,
+        pacificParticle, pacificCreature,
+        echo: !pacificParticle && !pacificCreature && Number.isFinite(echoDistance), longPressed: false,
       };
+      try {
+        this.canvas.setPointerCapture(event.pointerId);
+      } catch {
+        // Synthetic QA pointers and older embedded browsers may not expose capture.
+      }
       return;
     }
     const archivePhoto = [EXPERIENCE_STATES.ECHO_ORBIT, EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS]
@@ -142,7 +161,10 @@ export class PointerInteractionController {
     const moved = Math.hypot(event.clientX - active.startX, event.clientY - active.startY);
     if (this.cameraController.state !== active.state) return;
     if (moved <= INTERACTION_CONFIG.clickMoveTolerance) {
-      if (active.archivePhoto) this.onArchivePhoto(active.archivePhoto);
+      if (active.pacificParticle) this.onPacificParticle(active.pacificParticle);
+      else if (active.pacificCreature) this.onPacificCreature(active.pacificCreature);
+      else if (this.isEchoOnly() && !active.echo) this.onPacificBackground();
+      else if (active.archivePhoto) this.onArchivePhoto(active.archivePhoto);
       else if (active.interactiveObject) this.onInteractiveObject(active.interactiveObject);
       else if (active.character) this.onCharacter(active.character);
       else if (active.echo) this.onEcho();

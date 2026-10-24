@@ -11,17 +11,6 @@ function roundedRect(context, x, y, width, height, radius) {
   context.roundRect(x, y, width, height, radius);
 }
 
-function drawCondensedText(context, text, x, y, maxWidth, fontSize) {
-  context.save();
-  context.translate(x, y);
-  context.scale(0.76, 1);
-  context.font = `900 ${fontSize}px Impact, "Arial Narrow", sans-serif`;
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(text, 0, 0, maxWidth / 0.76);
-  context.restore();
-}
-
 export class HaminaCountdownDisplay {
   constructor(timerRoot) {
     this.timerRoot = timerRoot;
@@ -37,7 +26,7 @@ export class HaminaCountdownDisplay {
     this.texture.magFilter = THREE.LinearFilter;
     this.texture.anisotropy = 4;
     this.materials = [];
-    this.lastSecond = -1;
+    this.lastTick = -1;
     this.randomMarks = this.createWeatheringMarks();
     this.installMaterial();
     this.update(true);
@@ -79,12 +68,14 @@ export class HaminaCountdownDisplay {
   }
 
   getTimeParts(now = Date.now()) {
-    const secondsRemaining = Math.max(0, Math.floor((TARGET_DATE.getTime() - now) / 1000));
+    const remaining = Math.max(0, TARGET_DATE.getTime() - now);
+    const secondsRemaining = Math.floor(remaining / 1000);
     return {
       days: Math.floor(secondsRemaining / 86400),
       hours: Math.floor(secondsRemaining / 3600) % 24,
       minutes: Math.floor(secondsRemaining / 60) % 60,
       seconds: secondsRemaining % 60,
+      milliseconds: remaining % 1000,
     };
   }
 
@@ -112,7 +103,7 @@ export class HaminaCountdownDisplay {
       context.fillRect(x, y, sx * 5, sy * 52);
     }
 
-    context.font = '600 23px "SFMono-Regular", Menlo, monospace';
+    context.font = '600 30px "SFMono-Regular", Menlo, monospace';
     context.textAlign = 'left';
     context.fillStyle = 'rgba(255, 154, 66, .76)';
     context.fillText('PROJECT ECHO / HAMINA', 72, 85);
@@ -133,12 +124,20 @@ export class HaminaCountdownDisplay {
 
     context.strokeStyle = 'rgba(255, 166, 83, .16)';
     context.lineWidth = 1;
-    for (let y = 150; y < 580; y += 44) {
+    const columnWidth = (WIDTH - 110) / 5;
+    for (let index = 1; index < 5; index += 1) {
       context.beginPath();
-      context.moveTo(55, y + 0.5);
-      context.lineTo(WIDTH - 55, y + 0.5);
+      const x = 55 + index * columnWidth + 0.5;
+      context.moveTo(x, 176);
+      context.lineTo(x, 620);
       context.stroke();
     }
+    context.beginPath();
+    context.moveTo(55, 176.5);
+    context.lineTo(WIDTH - 55, 176.5);
+    context.moveTo(55, 620.5);
+    context.lineTo(WIDTH - 55, 620.5);
+    context.stroke();
     context.fillStyle = '#d6d0c9';
     for (const mark of this.randomMarks) {
       context.globalAlpha = mark.alpha;
@@ -149,52 +148,39 @@ export class HaminaCountdownDisplay {
 
   drawCountdown(parts) {
     const context = this.context;
-    const values = [String(parts.days), String(parts.hours).padStart(2, '0'),
-      String(parts.minutes).padStart(2, '0'), String(parts.seconds).padStart(2, '0')];
-    const labels = ['DAYS', 'HOURS', 'MINUTES', 'SECONDS'];
-    const centers = [288, 815, 1280, 1745];
-    const widths = [450, 290, 330, 300];
-
-    context.save();
-    context.shadowColor = '#ff6819';
-    context.shadowBlur = 34;
-    context.fillStyle = PALE_ORANGE;
-    for (let index = 0; index < values.length; index += 1) {
-      drawCondensedText(context, values[index], centers[index], 342, widths[index], 250);
-    }
-    context.restore();
-
-    context.fillStyle = ORANGE;
-    context.font = '900 112px Impact, "Arial Narrow", sans-serif';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    for (const x of [548, 1065, 1532]) context.fillText(':', x, 335);
-
-    context.fillStyle = 'rgba(225, 218, 211, .82)';
-    context.font = '700 40px "Arial Narrow", "Helvetica Neue", sans-serif';
-    context.textAlign = 'center';
-    context.textBaseline = 'alphabetic';
-    labels.forEach((label, index) => context.fillText(label, centers[index], 535));
-
-    context.fillStyle = 'rgba(255, 122, 34, .72)';
-    for (let index = 0; index < 25; index += 1) {
-      context.globalAlpha = index < 18 ? 0.88 : 0.13;
-      roundedRect(context, 100 + index * 58, 594, 42, 13, 3);
-      context.fill();
-    }
-    context.globalAlpha = 1;
-    context.fillStyle = 'rgba(255, 185, 116, .68)';
-    context.font = '500 20px "SFMono-Regular", Menlo, monospace';
-    context.textAlign = 'right';
-    context.fillText('LIVE / LOCAL TIME', WIDTH - 78, 628);
+    const columns = [
+      ['DAYS', String(parts.days)],
+      ['HOURS', String(parts.hours).padStart(2, '0')],
+      ['MINUTES', String(parts.minutes).padStart(2, '0')],
+      ['SECONDS', String(parts.seconds).padStart(2, '0')],
+      ['MILLISECONDS', String(parts.milliseconds).padStart(3, '0')],
+    ];
+    const columnWidth = (WIDTH - 110) / columns.length;
+    columns.forEach(([label, value], index) => {
+      const x = 55 + columnWidth * (index + 0.5);
+      context.fillStyle = 'rgba(225, 218, 211, .82)';
+      context.font = '700 42px "Arial Narrow", "Helvetica Neue", sans-serif';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(label, x, 267, columnWidth - 24);
+      context.save();
+      context.shadowColor = '#ff6819';
+      context.shadowBlur = index === 4 ? 18 : 26;
+      context.fillStyle = PALE_ORANGE;
+      context.font = `900 ${index === 0 ? 136 : index === 4 ? 122 : 148}px Impact, "Arial Narrow", sans-serif`;
+      context.textAlign = 'center';
+      context.fillText(value, x, 424, columnWidth - 24);
+      context.restore();
+    });
   }
 
   update(force = false) {
-    const second = Math.floor(Date.now() / 1000);
-    if (!force && second === this.lastSecond) return;
-    this.lastSecond = second;
+    const now = Date.now();
+    const tick = Math.floor(now / 40);
+    if (!force && tick === this.lastTick) return;
+    this.lastTick = tick;
     this.drawFrame();
-    this.drawCountdown(this.getTimeParts(second * 1000));
+    this.drawCountdown(this.getTimeParts(now));
     this.texture.needsUpdate = true;
   }
 

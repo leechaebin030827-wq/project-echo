@@ -36,7 +36,67 @@ experience.initialize({ introMode: !worldQa }).catch((error) => {
 
 let intro = null;
 let worldAudio = null;
+experience.onPacificCreatureAudioChange = (active) => worldAudio?.setUnderwaterMusic(active);
 let developerShortcutRunning = false;
+let developerShortcutPanel = null;
+let developerShortcutToggle = null;
+const developerShortcuts = [
+  ['`', '도움말 열기/닫기'],
+  ["'", '사진 촬영 후 월드 진입'],
+  ['1', 'Nevada 즉시 진입'],
+  ['2', 'Hamina 즉시 진입'],
+  ['3', 'Pacific 즉시 진입'],
+  ['O', '현재 육지 월드 오비트'],
+  ['J', '다음 월드로 이동'],
+  ['D', 'Data Center 상호작용'],
+  ['M', 'Nevada Money 상호작용'],
+  ['F', 'Nevada A01 얼굴 포커스'],
+];
+
+const isEditableShortcutTarget = (target) => target instanceof HTMLInputElement
+  || target instanceof HTMLTextAreaElement || target?.isContentEditable;
+
+const showDeveloperShortcutPanel = (visible) => {
+  if (!developerShortcutPanel) {
+    developerShortcutToggle = document.createElement('button');
+    developerShortcutToggle.type = 'button';
+    developerShortcutToggle.className = 'developer-shortcut-toggle';
+    developerShortcutToggle.textContent = 'DEV';
+    developerShortcutToggle.setAttribute('aria-label', '개발자 단축키 열기');
+    developerShortcutToggle.setAttribute('aria-expanded', 'false');
+    developerShortcutToggle.addEventListener('click', () => {
+      showDeveloperShortcutPanel(!developerShortcutPanel.classList.contains('visible'));
+    });
+    developerShortcutPanel = document.createElement('aside');
+    developerShortcutPanel.className = 'developer-shortcut-panel';
+    developerShortcutPanel.setAttribute('aria-label', '개발자 단축키');
+    developerShortcutPanel.innerHTML = `
+      <header><strong>DEV SHORTCUTS</strong><span>ESC / \`</span></header>
+      <dl>${developerShortcuts.map(([key, label]) => `<div><dt>${key}</dt><dd>${label}</dd></div>`).join('')}</dl>`;
+    document.querySelector('#stage').append(developerShortcutToggle, developerShortcutPanel);
+  }
+  developerShortcutPanel.classList.toggle('visible', visible);
+  developerShortcutPanel.setAttribute('aria-hidden', String(!visible));
+  developerShortcutToggle.classList.toggle('active', visible);
+  developerShortcutToggle.setAttribute('aria-expanded', String(visible));
+  developerShortcutToggle.setAttribute('aria-label', `개발자 단축키 ${visible ? '닫기' : '열기'}`);
+};
+
+const openDeveloperPreset = (preset) => {
+  const next = new URL(window.location.href);
+  next.search = '';
+  next.searchParams.set('worldQa', '1');
+  const orders = {
+    nevada: 'nevada,lightcable,hamina',
+    hamina: 'hamina,lightcable,nevada',
+    pacific: 'nevada,lightcable,hamina',
+  };
+  next.searchParams.set('worldOrder', orders[preset.world] ?? orders.nevada);
+  for (const [key, value] of Object.entries(preset.params ?? {})) {
+    next.searchParams.set(key, value);
+  }
+  window.location.assign(next);
+};
 const restoreWorldMusicOnGesture = () => {
   if (!experience.worldRenderingEnabled || (intro && !intro.destroyed)) return;
   if (worldAudio?.audio.defaultBgm.paused) worldAudio.handoffToWorld();
@@ -61,8 +121,6 @@ if (worldQa) {
   worldAudio = intro.controller.audio;
   experience.onWorldHover = () => worldAudio?.playUi('uiHover');
   experience.onWorldClick = () => worldAudio?.playUi('uiClick');
-  experience.onNevadaEnter = () => worldAudio?.playNevadaEntry();
-  experience.onHaminaEnter = () => worldAudio?.playHaminaEntry();
   experience.onReturnTypingStart = () => worldAudio?.playTyping();
   experience.onReturnTypingEnd = () => worldAudio?.stopTyping();
   if (introHandoffQa) {
@@ -82,19 +140,49 @@ if (worldQa) {
 
 const handleDeveloperWorldShortcut = async (event) => {
   if (!import.meta.env.DEV
-    || event.code !== 'Quote'
     || event.repeat
     || event.metaKey
     || event.ctrlKey
     || event.altKey
+    || isEditableShortcutTarget(event.target)) return;
+
+  if (event.code === 'Backquote') {
+    event.preventDefault();
+    showDeveloperShortcutPanel(!developerShortcutPanel?.classList.contains('visible'));
+    return;
+  }
+  if (event.code === 'Escape' && developerShortcutPanel?.classList.contains('visible')) {
+    showDeveloperShortcutPanel(false);
+    return;
+  }
+
+  const preset = {
+    Digit1: { world: 'nevada', params: { orbitQa: '1' } },
+    Digit2: { world: 'hamina', params: { orbitQa: '1' } },
+    Digit3: { world: 'pacific', params: { lightCableQa: '1' } },
+    KeyO: { world: experience.currentWorld === 'hamina' ? 'hamina' : 'nevada', params: { orbitQa: '1' } },
+    KeyD: { world: experience.currentWorld === 'hamina' ? 'hamina' : 'nevada', params: { dataCenterQa: '1' } },
+    KeyM: { world: 'nevada', params: { moneyQa: '1' } },
+    KeyF: { world: 'nevada', params: { orbitQa: '1', focusQa: 'A01' } },
+  }[event.code];
+  if (preset) {
+    event.preventDefault();
+    openDeveloperPreset(preset);
+    return;
+  }
+
+  if (event.code === 'KeyJ' && experience.worldRenderingEnabled) {
+    event.preventDefault();
+    if (!experience.worldTransitioning) void experience.startNextWorld();
+    return;
+  }
+
+  if (event.code !== 'Quote'
     || event.shiftKey
     || worldQa
     || experience.worldRenderingEnabled
     || developerShortcutRunning
-    || experience.developerCaptureActive
-    || event.target instanceof HTMLInputElement
-    || event.target instanceof HTMLTextAreaElement
-    || event.target?.isContentEditable) return;
+    || experience.developerCaptureActive) return;
 
   event.preventDefault();
   developerShortcutRunning = true;
@@ -112,7 +200,10 @@ const handleDeveloperWorldShortcut = async (event) => {
   }
 };
 
-if (import.meta.env.DEV) window.addEventListener('keydown', handleDeveloperWorldShortcut);
+if (import.meta.env.DEV) {
+  showDeveloperShortcutPanel(false);
+  window.addEventListener('keydown', handleDeveloperWorldShortcut);
+}
 
 window.addEventListener('pagehide', () => {
   window.removeEventListener('keydown', handleDeveloperWorldShortcut);

@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-기본 로컬 주소는 `http://127.0.0.1:5176/`입니다. 배포용 검사는 `npm run build`, 코드 검사는 `node --test tests/*.test.js`로 실행합니다. 웹캠 사용에는 `localhost` 또는 HTTPS가 필요합니다.
+기본 로컬 주소는 `http://127.0.0.1:5176/`입니다. 배포용 검사는 `npm run build`, 전체 테스트는 `npm test`로 실행합니다. 웹캠 사용에는 `localhost` 또는 HTTPS가 필요합니다.
 
 ## 코드 위치
 
@@ -29,7 +29,14 @@ npm run dev
 | 관람객·얼굴 | `src/characters/`, `src/face/` | 캐릭터와 얼굴 합성·브라우저 사진 보관 |
 | 입력·오브젝트 대사 | `src/interaction/` | 포인터 입력과 월드 상호작용 |
 | 인트로·음악·화면 | `src/intro/`, `src/audio/`, `src/ui/` | 월드 진입 전 연출, 오디오, DOM UI |
+| 월드 나레이션 음원 | `public/audio/echo/`, `src/content/echoAudioCueMap.js`, `src/audio/EchoCuePlayer.js` | 91개 대사별 MP3와 장면별 재생 |
 
 새 월드 전용 구현은 해당 월드 폴더에, 둘 이상에서 실제로 쓰는 3D 기능은 `src/world/shared/`에 둡니다. 월드 문구는 `src/content/`에서 관리하고, 카메라 타이밍이나 전환 순서는 `ExperienceController.js`와 `src/camera/`에서 관리합니다. 오프닝 문구는 `src/intro/config.js`에 둡니다. 상세 파일 지도는 [프로젝트 구조](docs/PROJECT_STRUCTURE.md)에 있습니다.
 
 관람객 사진은 이 브라우저의 IndexedDB에 저장됩니다. 촬영·합성 처리는 브라우저에서 실행됩니다.
+
+월드 나레이션 큐와 자막의 대응은 `npm run test:audio`로 확인합니다. 녹음 언어와 대사별 ID는 [나레이션 녹음 목록](docs/NARRATION_RECORDING_LANGUAGE_LIST.md)에 정리되어 있습니다.
+
+## 개발자 단축키
+
+개발 서버에서 백틱(`) 키로 단축키 안내를 열 수 있습니다. `'`는 촬영 진입, `1`/`2`/`3`은 Nevada/Hamina/Pacific 즉시 진입, `O`는 오비트, `J`는 다음 월드, `D`는 Data Center, `M`은 Nevada Money, `F`는 Nevada A01 얼굴 포커스입니다. 상세 단축키는 개발 모드에서만 작동합니다.

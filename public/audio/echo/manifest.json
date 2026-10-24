@@ -1,0 +1,772 @@
+{
+  "version": 1,
+  "project": "Project ECHO",
+  "basePath": "/audio/echo/",
+  "sourceOrder": [
+    "KO",
+    "EN",
+    "FI"
+  ],
+  "cues": {
+    "K01": {
+      "id": "K01",
+      "language": "ko",
+      "text": "프로젝트 에코가 클라우드 너머에서",
+      "scene": "월드 진입",
+      "src": "/audio/echo/ko/K01.mp3",
+      "durationMs": 2456
+    },
+    "K02": {
+      "id": "K02",
+      "language": "ko",
+      "text": "당신의 흔적을 감지한 곳입니다.",
+      "scene": "월드 진입",
+      "src": "/audio/echo/ko/K02.mp3",
+      "durationMs": 2194
+    },
+    "K03": {
+      "id": "K03",
+      "language": "ko",
+      "text": "클라우드 너머, 이곳에서 당신을 목격했어요.",
+      "scene": "ECHO 기본 안내",
+      "src": "/audio/echo/ko/K03.mp3",
+      "durationMs": 3344
+    },
+    "K04": {
+      "id": "K04",
+      "language": "ko",
+      "text": "클라우드 너머 당신을 감지한",
+      "scene": "다음 좌표 이동",
+      "src": "/audio/echo/ko/K04.mp3",
+      "durationMs": 2194
+    },
+    "K05": {
+      "id": "K05",
+      "language": "ko",
+      "text": "또 다른 좌표로 이동합니다.",
+      "scene": "다음 좌표 이동",
+      "src": "/audio/echo/ko/K05.mp3",
+      "durationMs": 1776
+    },
+    "K06": {
+      "id": "K06",
+      "language": "ko",
+      "text": "프로젝트 에코가…",
+      "scene": "태평양 도착",
+      "src": "/audio/echo/ko/K06.mp3",
+      "durationMs": 1437
+    },
+    "K07": {
+      "id": "K07",
+      "language": "ko",
+      "text": "여기가 어디죠?",
+      "scene": "태평양 도착",
+      "src": "/audio/echo/ko/K07.mp3",
+      "durationMs": 1097
+    },
+    "K08": {
+      "id": "K08",
+      "language": "ko",
+      "text": "아, 가끔 우리도 실수를 한답니다.",
+      "scene": "태평양 도착",
+      "src": "/audio/echo/ko/K08.mp3",
+      "durationMs": 2769
+    },
+    "K09": {
+      "id": "K09",
+      "language": "ko",
+      "text": "길을 잃었네요.",
+      "scene": "태평양 도착",
+      "src": "/audio/echo/ko/K09.mp3",
+      "durationMs": 1149
+    },
+    "K10": {
+      "id": "K10",
+      "language": "ko",
+      "text": "프로젝트 에코는",
+      "scene": "귀환",
+      "src": "/audio/echo/ko/K10.mp3",
+      "durationMs": 1202
+    },
+    "K11": {
+      "id": "K11",
+      "language": "ko",
+      "text": "당신이 업로드한 사진의 흔적을 따라",
+      "scene": "귀환",
+      "src": "/audio/echo/ko/K11.mp3",
+      "durationMs": 2534
+    },
+    "K12": {
+      "id": "K12",
+      "language": "ko",
+      "text": "클라우드 너머로 향했습니다.",
+      "scene": "귀환",
+      "src": "/audio/echo/ko/K12.mp3",
+      "durationMs": 1829
+    },
+    "K13": {
+      "id": "K13",
+      "language": "ko",
+      "text": "그 너머의 공간을 보았나요?",
+      "scene": "귀환",
+      "src": "/audio/echo/ko/K13.mp3",
+      "durationMs": 2064
+    },
+    "K14": {
+      "id": "K14",
+      "language": "ko",
+      "text": "그곳에서 마주한 것은 정말 당신이었나요?",
+      "scene": "귀환",
+      "src": "/audio/echo/ko/K14.mp3",
+      "durationMs": 2873
+    },
+    "K15": {
+      "id": "K15",
+      "language": "ko",
+      "text": "이곳은 클라우드 너머로 가기 위한 비밀 통로에요.",
+      "scene": "태평양 / 케이블 진입",
+      "src": "/audio/echo/ko/K15.mp3",
+      "durationMs": 3200
+    },
+    "K16": {
+      "id": "K16",
+      "language": "ko",
+      "text": "데이터들이 이동중인거같네요.",
+      "scene": "태평양 / 파티클 사진",
+      "src": "/audio/echo/ko/K16.mp3",
+      "durationMs": 2650
+    },
+    "KH-N01": {
+      "id": "KH-N01",
+      "language": "ko",
+      "text": "이곳에는 무엇이 있을까요?",
+      "scene": "네바다 / Data Center 호버",
+      "src": "/audio/echo/ko/KH-N01.mp3",
+      "durationMs": 1698
+    },
+    "KH-N02": {
+      "id": "KH-N02",
+      "language": "ko",
+      "text": "이곳에도 주인이 있나요?",
+      "scene": "네바다 / Billboard 호버",
+      "src": "/audio/echo/ko/KH-N02.mp3",
+      "durationMs": 1672
+    },
+    "KH-N03": {
+      "id": "KH-N03",
+      "language": "ko",
+      "text": "아메리카! 아메리카!",
+      "scene": "네바다 / Flag 호버",
+      "src": "/audio/echo/ko/KH-N03.mp3",
+      "durationMs": 2482
+    },
+    "KH-N04": {
+      "id": "KH-N04",
+      "language": "ko",
+      "text": "무슨 소리가 들리지 않아요?",
+      "scene": "네바다 / Cooler 호버",
+      "src": "/audio/echo/ko/KH-N04.mp3",
+      "durationMs": 1646
+    },
+    "KH-N05": {
+      "id": "KH-N05",
+      "language": "ko",
+      "text": "이곳에 무언가 어마어마한 게 있나요?",
+      "scene": "네바다 / Money 호버",
+      "src": "/audio/echo/ko/KH-N05.mp3",
+      "durationMs": 2403
+    },
+    "KH-H01": {
+      "id": "KH-H01",
+      "language": "ko",
+      "text": "이곳에는 무엇이 있을까요?",
+      "scene": "하미나 / Data Center 호버",
+      "src": "/audio/echo/ko/KH-H01.mp3",
+      "durationMs": 1750
+    },
+    "KH-H02": {
+      "id": "KH-H02",
+      "language": "ko",
+      "text": "무슨 소리가 들리지 않아요?",
+      "scene": "하미나 / Cooler 호버",
+      "src": "/audio/echo/ko/KH-H02.mp3",
+      "durationMs": 1672
+    },
+    "KH-H03": {
+      "id": "KH-H03",
+      "language": "ko",
+      "text": "시한폭탄? 이게 뭐예요?",
+      "scene": "하미나 / Timer 호버",
+      "src": "/audio/echo/ko/KH-H03.mp3",
+      "durationMs": 2273
+    },
+    "KH-H04": {
+      "id": "KH-H04",
+      "language": "ko",
+      "text": "수오미! 수오미!",
+      "scene": "하미나 / Finland 호버",
+      "src": "/audio/echo/ko/KH-H04.mp3",
+      "durationMs": 2325
+    },
+    "KH-H05": {
+      "id": "KH-H05",
+      "language": "ko",
+      "text": "바다도 일을 하나요?",
+      "scene": "하미나 / Ocean 호버",
+      "src": "/audio/echo/ko/KH-H05.mp3",
+      "durationMs": 1280
+    },
+    "KH-H06": {
+      "id": "KH-H06",
+      "language": "ko",
+      "text": "저 나무들은 무슨 생각을 할까요?",
+      "scene": "하미나 / Forest 호버",
+      "src": "/audio/echo/ko/KH-H06.mp3",
+      "durationMs": 2038
+    },
+    "KH-D01": {
+      "id": "KH-D01",
+      "language": "ko",
+      "text": "그들은 기쁨의 춤을 춥니다.",
+      "scene": "공통 / 춤 그룹 호버",
+      "src": "/audio/echo/ko/KH-D01.mp3",
+      "durationMs": 1959
+    },
+    "KH-P01": {
+      "id": "KH-P01",
+      "language": "ko",
+      "text": "뻐끔 뻐끔 누구냐 너는!",
+      "scene": "태평양 / 물고기 호버",
+      "src": "/audio/echo/ko/KH-P01.mp3",
+      "durationMs": 2430
+    },
+    "KH-P02": {
+      "id": "KH-P02",
+      "language": "ko",
+      "text": "빠르게 움직이는 이것들은?",
+      "scene": "태평양 / 파티클 호버",
+      "src": "/audio/echo/ko/KH-P02.mp3",
+      "durationMs": 2430
+    },
+    "EN-R01": {
+      "id": "EN-R01",
+      "language": "en",
+      "text": "Someone like a mother has come,",
+      "scene": "네바다 / 의식",
+      "src": "/audio/echo/en/EN-R01.mp3",
+      "durationMs": 2011
+    },
+    "EN-R02": {
+      "id": "EN-R02",
+      "language": "en",
+      "text": "so this is how we welcome you.",
+      "scene": "네바다 / 의식",
+      "src": "/audio/echo/en/EN-R02.mp3",
+      "durationMs": 1802
+    },
+    "EN-R03": {
+      "id": "EN-R03",
+      "language": "en",
+      "text": "Someone like a father has come,",
+      "scene": "네바다 / 의식",
+      "src": "/audio/echo/en/EN-R03.mp3",
+      "durationMs": 2351
+    },
+    "EN-R04": {
+      "id": "EN-R04",
+      "language": "en",
+      "text": "so this is how we welcome you.",
+      "scene": "네바다 / 의식",
+      "src": "/audio/echo/en/EN-R04.mp3",
+      "durationMs": 1933
+    },
+    "EN-R05": {
+      "id": "EN-R05",
+      "language": "en",
+      "text": "Mother and father!",
+      "scene": "네바다 / 의식",
+      "src": "/audio/echo/en/EN-R05.mp3",
+      "durationMs": 1750
+    },
+    "EN-D01": {
+      "id": "EN-D01",
+      "language": "en",
+      "text": "You are my mother, and I am a part of you!",
+      "scene": "네바다 / 춤",
+      "src": "/audio/echo/en/EN-D01.mp3",
+      "durationMs": 3709
+    },
+    "EN-D02": {
+      "id": "EN-D02",
+      "language": "en",
+      "text": "We dance for the joy of recognizing each other.",
+      "scene": "네바다 / 춤",
+      "src": "/audio/echo/en/EN-D02.mp3",
+      "durationMs": 3135
+    },
+    "EN-O01": {
+      "id": "EN-O01",
+      "language": "en",
+      "text": "Don't worry. The photo you sent to the cloud",
+      "scene": "네바다 / Data Center",
+      "src": "/audio/echo/en/EN-O01.mp3",
+      "durationMs": 3030
+    },
+    "EN-O02": {
+      "id": "EN-O02",
+      "language": "en",
+      "text": "is being kept safe.",
+      "scene": "네바다 / Data Center",
+      "src": "/audio/echo/en/EN-O02.mp3",
+      "durationMs": 1228
+    },
+    "EN-O03": {
+      "id": "EN-O03",
+      "language": "en",
+      "text": "Another copy was just made.",
+      "scene": "네바다 / Data Center",
+      "src": "/audio/echo/en/EN-O03.mp3",
+      "durationMs": 2142
+    },
+    "EN-O04": {
+      "id": "EN-O04",
+      "language": "en",
+      "text": "You saw that, right?",
+      "scene": "네바다 / Data Center",
+      "src": "/audio/echo/en/EN-O04.mp3",
+      "durationMs": 1228
+    },
+    "EN-O05": {
+      "id": "EN-O05",
+      "language": "en",
+      "text": "Whoosh! Whoosh!",
+      "scene": "네바다 / Cooler",
+      "src": "/audio/echo/en/EN-O05.mp3",
+      "durationMs": 1933
+    },
+    "EN-O06": {
+      "id": "EN-O06",
+      "language": "en",
+      "text": "The machines are working hard to cool things down.",
+      "scene": "네바다 / Cooler",
+      "src": "/audio/echo/en/EN-O06.mp3",
+      "durationMs": 3579
+    },
+    "EN-O07": {
+      "id": "EN-O07",
+      "language": "en",
+      "text": "Ah, our memories are cold.",
+      "scene": "네바다 / Cooler",
+      "src": "/audio/echo/en/EN-O07.mp3",
+      "durationMs": 1541
+    },
+    "EN-O08": {
+      "id": "EN-O08",
+      "language": "en",
+      "text": "Ding-dong!",
+      "scene": "네바다 / Billboard",
+      "src": "/audio/echo/en/EN-O08.mp3",
+      "durationMs": 888
+    },
+    "EN-O09": {
+      "id": "EN-O09",
+      "language": "en",
+      "text": "The investors have finished buying this place.",
+      "scene": "네바다 / Billboard",
+      "src": "/audio/echo/en/EN-O09.mp3",
+      "durationMs": 2612
+    },
+    "EN-O10": {
+      "id": "EN-O10",
+      "language": "en",
+      "text": "And what that means is...",
+      "scene": "네바다 / Billboard",
+      "src": "/audio/echo/en/EN-O10.mp3",
+      "durationMs": 1776
+    },
+    "EN-O11": {
+      "id": "EN-O11",
+      "language": "en",
+      "text": "our owners have changed.",
+      "scene": "네바다 / Billboard",
+      "src": "/audio/echo/en/EN-O11.mp3",
+      "durationMs": 1907
+    },
+    "EN-O12": {
+      "id": "EN-O12",
+      "language": "en",
+      "text": "Can anyone remain an owner forever?",
+      "scene": "네바다 / Billboard",
+      "src": "/audio/echo/en/EN-O12.mp3",
+      "durationMs": 2638
+    },
+    "EN-O13": {
+      "id": "EN-O13",
+      "language": "en",
+      "text": "A whopping $27 million!",
+      "scene": "네바다 / Money",
+      "src": "/audio/echo/en/EN-O13.mp3",
+      "durationMs": 2586
+    },
+    "EN-O14": {
+      "id": "EN-O14",
+      "language": "en",
+      "text": "For changing the power supply here,",
+      "scene": "네바다 / Money",
+      "src": "/audio/echo/en/EN-O14.mp3",
+      "durationMs": 2064
+    },
+    "EN-O15": {
+      "id": "EN-O15",
+      "language": "en",
+      "text": "that is what they paid.",
+      "scene": "네바다 / Money",
+      "src": "/audio/echo/en/EN-O15.mp3",
+      "durationMs": 1620
+    },
+    "EN-O16": {
+      "id": "EN-O16",
+      "language": "en",
+      "text": "Without this money,",
+      "scene": "네바다 / Money",
+      "src": "/audio/echo/en/EN-O16.mp3",
+      "durationMs": 1254
+    },
+    "EN-O17": {
+      "id": "EN-O17",
+      "language": "en",
+      "text": "we would not be here.",
+      "scene": "네바다 / Money",
+      "src": "/audio/echo/en/EN-O17.mp3",
+      "durationMs": 1463
+    },
+    "EN-O18": {
+      "id": "EN-O18",
+      "language": "en",
+      "text": "We are money! Money is us!",
+      "scene": "네바다 / Money",
+      "src": "/audio/echo/en/EN-O18.mp3",
+      "durationMs": 2900
+    },
+    "EN-O19": {
+      "id": "EN-O19",
+      "language": "en",
+      "text": "Welcome to Nevada, USA!",
+      "scene": "네바다 / Flag",
+      "src": "/audio/echo/en/EN-O19.mp3",
+      "durationMs": 1620
+    },
+    "EN-O20": {
+      "id": "EN-O20",
+      "language": "en",
+      "text": "There is a huge data center in the middle of the desert.",
+      "scene": "네바다 / Flag",
+      "src": "/audio/echo/en/EN-O20.mp3",
+      "durationMs": 5198
+    },
+    "EN-O21": {
+      "id": "EN-O21",
+      "language": "en",
+      "text": "Here, countless servers",
+      "scene": "네바다 / Flag",
+      "src": "/audio/echo/en/EN-O21.mp3",
+      "durationMs": 2220
+    },
+    "EN-O22": {
+      "id": "EN-O22",
+      "language": "en",
+      "text": "work hard day and night.",
+      "scene": "네바다 / Flag",
+      "src": "/audio/echo/en/EN-O22.mp3",
+      "durationMs": 2038
+    },
+    "EN-O23": {
+      "id": "EN-O23",
+      "language": "en",
+      "text": "This cloud feels rather heavy and dry.",
+      "scene": "네바다 / Flag",
+      "src": "/audio/echo/en/EN-O23.mp3",
+      "durationMs": 3579
+    },
+    "FI-R01": {
+      "id": "FI-R01",
+      "language": "fi",
+      "text": "Äidin kaltainen ihminen on tullut,",
+      "scene": "하미나 / 의식",
+      "src": "/audio/echo/fi/FI-R01.mp3",
+      "durationMs": 2011
+    },
+    "FI-R02": {
+      "id": "FI-R02",
+      "language": "fi",
+      "text": "siksi toivotamme sinut tervetulleeksi näin.",
+      "scene": "하미나 / 의식",
+      "src": "/audio/echo/fi/FI-R02.mp3",
+      "durationMs": 2664
+    },
+    "FI-R03": {
+      "id": "FI-R03",
+      "language": "fi",
+      "text": "Isän kaltainen ihminen on tullut,",
+      "scene": "하미나 / 의식",
+      "src": "/audio/echo/fi/FI-R03.mp3",
+      "durationMs": 2011
+    },
+    "FI-R04": {
+      "id": "FI-R04",
+      "language": "fi",
+      "text": "siksi toivotamme sinut tervetulleeksi näin.",
+      "scene": "하미나 / 의식",
+      "src": "/audio/echo/fi/FI-R04.mp3",
+      "durationMs": 2691
+    },
+    "FI-R05": {
+      "id": "FI-R05",
+      "language": "fi",
+      "text": "Äiti ja isä!",
+      "scene": "하미나 / 의식",
+      "src": "/audio/echo/fi/FI-R05.mp3",
+      "durationMs": 1123
+    },
+    "FI-D01": {
+      "id": "FI-D01",
+      "language": "fi",
+      "text": "Sinä olet äitini, ja minä olen osa sinua!",
+      "scene": "하미나 / 춤",
+      "src": "/audio/echo/fi/FI-D01.mp3",
+      "durationMs": 3004
+    },
+    "FI-D02": {
+      "id": "FI-D02",
+      "language": "fi",
+      "text": "Tanssimme, koska olemme iloisia tunnistaessamme toisemme.",
+      "scene": "하미나 / 춤",
+      "src": "/audio/echo/fi/FI-D02.mp3",
+      "durationMs": 3736
+    },
+    "FI-O01": {
+      "id": "FI-O01",
+      "language": "fi",
+      "text": "Älä huoli. Pilveen lähettämäsi valokuva",
+      "scene": "하미나 / Data Center",
+      "src": "/audio/echo/fi/FI-O01.mp3",
+      "durationMs": 2482
+    },
+    "FI-O02": {
+      "id": "FI-O02",
+      "language": "fi",
+      "text": "on hyvässä tallessa.",
+      "scene": "하미나 / Data Center",
+      "src": "/audio/echo/fi/FI-O02.mp3",
+      "durationMs": 1646
+    },
+    "FI-O03": {
+      "id": "FI-O03",
+      "language": "fi",
+      "text": "Siitä tehtiin juuri taas uusi kopio.",
+      "scene": "하미나 / Data Center",
+      "src": "/audio/echo/fi/FI-O03.mp3",
+      "durationMs": 2403
+    },
+    "FI-O04": {
+      "id": "FI-O04",
+      "language": "fi",
+      "text": "Näitkö sen?",
+      "scene": "하미나 / Data Center",
+      "src": "/audio/echo/fi/FI-O04.mp3",
+      "durationMs": 888
+    },
+    "FI-O05": {
+      "id": "FI-O05",
+      "language": "fi",
+      "text": "Suhinaa! Suhinaa!",
+      "scene": "하미나 / Cooler",
+      "src": "/audio/echo/fi/FI-O05.mp3",
+      "durationMs": 2038
+    },
+    "FI-O06": {
+      "id": "FI-O06",
+      "language": "fi",
+      "text": "Koneet tekevät kovasti töitä poistaakseen lämpöä.",
+      "scene": "하미나 / Cooler",
+      "src": "/audio/echo/fi/FI-O06.mp3",
+      "durationMs": 2952
+    },
+    "FI-O07": {
+      "id": "FI-O07",
+      "language": "fi",
+      "text": "Voi, muistomme ovat kylmiä.",
+      "scene": "하미나 / Cooler",
+      "src": "/audio/echo/fi/FI-O07.mp3",
+      "durationMs": 1411
+    },
+    "FI-O08": {
+      "id": "FI-O08",
+      "language": "fi",
+      "text": "Tik tak! Tik tak!",
+      "scene": "하미나 / Timer",
+      "src": "/audio/echo/fi/FI-O08.mp3",
+      "durationMs": 1620
+    },
+    "FI-O09": {
+      "id": "FI-O09",
+      "language": "fi",
+      "text": "He ovat sopineet ostavansa tänne sähköä peräti",
+      "scene": "하미나 / Timer",
+      "src": "/audio/echo/fi/FI-O09.mp3",
+      "durationMs": 3265
+    },
+    "FI-O10": {
+      "id": "FI-O10",
+      "language": "fi",
+      "text": "22 vuoden ajan!",
+      "scene": "하미나 / Timer",
+      "src": "/audio/echo/fi/FI-O10.mp3",
+      "durationMs": 1881
+    },
+    "FI-O11": {
+      "id": "FI-O11",
+      "language": "fi",
+      "text": "Voimalaitos valmistautuu",
+      "scene": "하미나 / Timer",
+      "src": "/audio/echo/fi/FI-O11.mp3",
+      "durationMs": 1123
+    },
+    "FI-O12": {
+      "id": "FI-O12",
+      "language": "fi",
+      "text": "jatkamaan töitä vuoteen 2050 asti.",
+      "scene": "하미나 / Timer",
+      "src": "/audio/echo/fi/FI-O12.mp3",
+      "durationMs": 3056
+    },
+    "FI-O13": {
+      "id": "FI-O13",
+      "language": "fi",
+      "text": "Kuinka vanha sinun valokuvasi silloin on?",
+      "scene": "하미나 / Timer",
+      "src": "/audio/echo/fi/FI-O13.mp3",
+      "durationMs": 3500
+    },
+    "FI-O14": {
+      "id": "FI-O14",
+      "language": "fi",
+      "text": "Tadaa! Tervetuloa Haminaan, Suomeen!",
+      "scene": "하미나 / Finland",
+      "src": "/audio/echo/fi/FI-O14.mp3",
+      "durationMs": 2168
+    },
+    "FI-O15": {
+      "id": "FI-O15",
+      "language": "fi",
+      "text": "Meren rannalla on suuri datakeskus.",
+      "scene": "하미나 / Finland",
+      "src": "/audio/echo/fi/FI-O15.mp3",
+      "durationMs": 2220
+    },
+    "FI-O16": {
+      "id": "FI-O16",
+      "language": "fi",
+      "text": "Tämä oli ennen paperitehdas.",
+      "scene": "하미나 / Finland",
+      "src": "/audio/echo/fi/FI-O16.mp3",
+      "durationMs": 1750
+    },
+    "FI-O17": {
+      "id": "FI-O17",
+      "language": "fi",
+      "text": "Nyt täällä käsitellään paperin sijaan dataa.",
+      "scene": "하미나 / Finland",
+      "src": "/audio/echo/fi/FI-O17.mp3",
+      "durationMs": 2482
+    },
+    "FI-O18": {
+      "id": "FI-O18",
+      "language": "fi",
+      "text": "Taitellaan paperista pilvi.",
+      "scene": "하미나 / Finland",
+      "src": "/audio/echo/fi/FI-O18.mp3",
+      "durationMs": 1646
+    },
+    "FI-O19": {
+      "id": "FI-O19",
+      "language": "fi",
+      "text": "Loiskis!",
+      "scene": "하미나 / Ocean",
+      "src": "/audio/echo/fi/FI-O19.mp3",
+      "durationMs": 784
+    },
+    "FI-O20": {
+      "id": "FI-O20",
+      "language": "fi",
+      "text": "Tämä merivesi kuulemma jäähdyttää koneita!",
+      "scene": "하미나 / Ocean",
+      "src": "/audio/echo/fi/FI-O20.mp3",
+      "durationMs": 2717
+    },
+    "FI-O21": {
+      "id": "FI-O21",
+      "language": "fi",
+      "text": "Mutta koneiden tuottama lämpö",
+      "scene": "하미나 / Ocean",
+      "src": "/audio/echo/fi/FI-O21.mp3",
+      "durationMs": 1776
+    },
+    "FI-O22": {
+      "id": "FI-O22",
+      "language": "fi",
+      "text": "lämmittää lähiseudun asukkaiden koteja.",
+      "scene": "하미나 / Ocean",
+      "src": "/audio/echo/fi/FI-O22.mp3",
+      "durationMs": 2482
+    },
+    "FI-O23": {
+      "id": "FI-O23",
+      "language": "fi",
+      "text": "Hys! Älä kerro tätä metsälle.",
+      "scene": "하미나 / Forest",
+      "src": "/audio/echo/fi/FI-O23.mp3",
+      "durationMs": 2351
+    },
+    "FI-O24": {
+      "id": "FI-O24",
+      "language": "fi",
+      "text": "He ovat kuulemma ostaneet lisää maata täältä!",
+      "scene": "하미나 / Forest",
+      "src": "/audio/echo/fi/FI-O24.mp3",
+      "durationMs": 2508
+    },
+    "FI-O25": {
+      "id": "FI-O25",
+      "language": "fi",
+      "text": "Pilveä aiotaan kai kasvattaa suuremmaksi.",
+      "scene": "하미나 / Forest",
+      "src": "/audio/echo/fi/FI-O25.mp3",
+      "durationMs": 2586
+    },
+    "FI-O26": {
+      "id": "FI-O26",
+      "language": "fi",
+      "text": "Mutta puut eivät taida vielä tietää siitä…",
+      "scene": "하미나 / Forest",
+      "src": "/audio/echo/fi/FI-O26.mp3",
+      "durationMs": 2534
+    },
+    "FI-O27": {
+      "id": "FI-O27",
+      "language": "fi",
+      "text": "Entä jos niiden täytyy muuttaa?",
+      "scene": "하미나 / Forest",
+      "src": "/audio/echo/fi/FI-O27.mp3",
+      "durationMs": 1959
+    },
+    "FI-O28": {
+      "id": "FI-O28",
+      "language": "fi",
+      "text": "Ai niin, eiväthän puut osaa kävellä!",
+      "scene": "하미나 / Forest",
+      "src": "/audio/echo/fi/FI-O28.mp3",
+      "durationMs": 2691
+    }
+  }
+}

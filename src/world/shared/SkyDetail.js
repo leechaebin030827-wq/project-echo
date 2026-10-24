@@ -58,16 +58,16 @@ export function createCloudTexture(mode) {
     const v = y / (height - 1);
     for (let x = 0; x < width; x += 1) {
       const u = x / width;
-      const broad = noise(u, v, pacific ? 9 : 7, pacific ? 8 : hamina ? 9 : 13, pacific ? 137 : hamina ? 71 : 23);
-      const medium = noise(u, v, pacific ? 26 : hamina ? 19 : 17, pacific ? 24 : hamina ? 23 : 34, pacific ? 149 : hamina ? 83 : 31);
-      const detail = noise(u, v, pacific ? 59 : hamina ? 48 : 43, pacific ? 64 : hamina ? 55 : 72, pacific ? 163 : hamina ? 97 : 47);
-      const wisps = noise(u, v, pacific ? 91 : hamina ? 83 : 69, pacific ? 96 : hamina ? 87 : 108, pacific ? 179 : hamina ? 109 : 59);
+      const broad = noise(u, v, pacific ? 15 : 7, pacific ? 12 : hamina ? 9 : 13, pacific ? 137 : hamina ? 71 : 23);
+      const medium = noise(u, v, pacific ? 43 : hamina ? 19 : 17, pacific ? 36 : hamina ? 23 : 34, pacific ? 149 : hamina ? 83 : 31);
+      const detail = noise(u, v, pacific ? 98 : hamina ? 48 : 43, pacific ? 82 : hamina ? 55 : 72, pacific ? 163 : hamina ? 97 : 47);
+      const wisps = noise(u, v, pacific ? 128 : hamina ? 83 : 69, pacific ? 112 : hamina ? 87 : 108, pacific ? 179 : hamina ? 109 : 59);
       const shape = broad * 0.46 + medium * 0.35 + detail * 0.19;
-      const body = pacific ? smoothstep(0.475, 0.67, shape) * 0.77
+      const body = pacific ? smoothstep(0.57, 0.72, shape) * 0.48
         : hamina ? smoothstep(0.435, 0.655, shape) * 0.83
           : smoothstep(0.58, 0.72, shape) * 0.57;
       const fibers = pacific
-        ? smoothstep(0.55, 0.74, medium * 0.5 + wisps * 0.5) * 0.11
+        ? smoothstep(0.59, 0.76, medium * 0.5 + wisps * 0.5) * 0.08
         : hamina ? smoothstep(0.56, 0.76, medium * 0.58 + wisps * 0.42) * 0.14
           : smoothstep(0.61, 0.78, medium * 0.38 + wisps * 0.62) * 0.18;
       const latitude = 1 - v * 2;

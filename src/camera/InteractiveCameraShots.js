@@ -64,7 +64,16 @@ function sampleSmoothKeys(shots, elapsed) {
 }
 
 export function sampleInteractiveShot(name, elapsed) {
-  const [distance, side, height] = sampleKeys(SHOTS[name] ?? SHOTS.default, elapsed);
+  const shots = SHOTS[name] ?? SHOTS.default;
+  const [distance, side, height] = sampleKeys(shots, elapsed);
+  const timeAfter = Math.max(0, elapsed - shots.at(-1)[0]);
+  if (timeAfter > 0) {
+    return {
+      distance: distance - 0.035 * (1 - Math.cos(timeAfter * 0.42)),
+      side: side + 0.075 * Math.sin(timeAfter * 0.48),
+      height: height + 0.028 * Math.sin(timeAfter * 0.34),
+    };
+  }
   return { distance, side, height };
 }
 

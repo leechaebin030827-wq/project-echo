@@ -76,6 +76,19 @@ export function visitorFaceCutout(frame, points, crop = visitorFaceCrop(frame, p
   return face;
 }
 
+export function archivedFaceCrop(image) {
+  const width = image?.width || image?.naturalWidth;
+  const height = image?.height || image?.naturalHeight;
+  if (!width || !height) return null;
+  // Captures are framed around one face. Older archive entries have no landmarks.
+  return { x: width * 0.27, y: height * 0.14, width: width * 0.46, height: height * 0.72 };
+}
+
+export function selectPreviousBillboardPhotos(records, currentId) {
+  return records.filter((record) => record.blob && record.id !== currentId)
+    .slice(-3).reverse();
+}
+
 function traceFace(context, slot) {
   context.beginPath();
   FACE_OUTLINE.forEach(([x, y], index) => {
@@ -146,20 +159,27 @@ export class BillboardFaceTexture {
     this.texture.anisotropy = 8;
   }
 
-  applyVisitorFace(session) {
+  applyVisitorFace(session, previousFaces = []) {
     const crop = visitorFaceCrop(session?.frame, session?.points);
-    if (!crop) return false;
-    const face = visitorFaceCutout(session.frame, session.points, crop);
+    const face = crop ? visitorFaceCutout(session.frame, session.points, crop) : session?.frame;
+    if (!face && !previousFaces.length) return false;
     const { context } = this;
     context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     context.drawImage(this.image, 0, 0);
 
     BILLBOARD_FACE_SLOTS.forEach((slot, index) => {
+      const source = index === 0 ? face : previousFaces[(index - 1) % previousFaces.length];
+      if (!source) return;
       context.save();
       traceFace(context, slot);
       context.clip();
       context.filter = 'sepia(0.28) saturate(0.78) contrast(1.12)';
-      context.drawImage(face, slot.x, slot.y, slot.width, slot.height);
+      if (index === 0 && crop) context.drawImage(source, slot.x, slot.y, slot.width, slot.height);
+      else {
+        const sourceCrop = archivedFaceCrop(source);
+        if (sourceCrop) context.drawImage(source, sourceCrop.x, sourceCrop.y,
+          sourceCrop.width, sourceCrop.height, slot.x, slot.y, slot.width, slot.height);
+      }
       context.filter = 'none';
       context.fillStyle = '#e9ae76';
       context.globalAlpha = 0.1;

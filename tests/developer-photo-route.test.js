@@ -27,6 +27,11 @@ function createPhotoRoute(captureResult) {
     },
     readyPromise: Promise.resolve(),
     characterManager: { entities: [] },
+    prepareVisitorIdentity: ExperienceController.prototype.prepareVisitorIdentity,
+    startWorldRendering: ExperienceController.prototype.startWorldRendering,
+    refreshNevadaBillboard: async function refreshNevadaBillboard() {
+      this.world.applyVisitorFaceToBillboard(this.face.session);
+    },
     showWorldEntryOverlay: () => calls.push('entry-overlay'),
     playFirstEntryOnce: () => calls.push('first-entry-audio'),
     cameraController: { startIntro: () => calls.push('world-camera') },

@@ -72,6 +72,7 @@ export const HAMINA_CHARACTER_DIALOGUE = Object.freeze([
 ]);
 
 // Caption text is separate from the timed transition in ExperienceController.
+export const PACIFIC_NARRATION_START_MS = 4100;
 export const PACIFIC_ARRIVAL_NARRATION = Object.freeze([
   Object.freeze({ atMs: 0, korean: '프로젝트 에코가…', local: 'Project ECHO is…' }),
   Object.freeze({ atMs: 2600, korean: '여기가 어디죠?', local: 'Where are we?' }),
@@ -79,5 +80,9 @@ export const PACIFIC_ARRIVAL_NARRATION = Object.freeze([
   Object.freeze({ atMs: 8600, korean: '길을 잃었네요.', local: 'We are lost.' }),
 ]);
 
-export const PACIFIC_ARRIVAL_CLEAR_MS = 12600;
+export const PACIFIC_ARRIVAL_CLEAR_MS = 9950;
+export const PACIFIC_CABLE_SECRET = '이곳은 클라우드 너머로 가기 위한 비밀 통로에요.';
+export const PACIFIC_FISH_HOVER = '뻐끔 뻐끔 누구냐 너는!';
+export const PACIFIC_PARTICLE_HOVER = '빠르게 움직이는 이것들은?';
+export const PACIFIC_PARTICLE_PHOTO = '데이터들이 이동중인거같네요.';
 

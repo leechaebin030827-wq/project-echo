@@ -364,8 +364,8 @@ export class NevadaWorld {
     this.lights?.forEach((light) => light.removeFromParent());
   }
 
-  applyVisitorFaceToBillboard(session) {
-    return this.billboardFaceTexture?.applyVisitorFace(session) ?? false;
+  applyVisitorFaceToBillboard(session, previousFaces = []) {
+    return this.billboardFaceTexture?.applyVisitorFace(session, previousFaces) ?? false;
   }
 
   detach() {

@@ -50,9 +50,9 @@
 }
 .world-interaction__copy-tile {
   position: absolute; left: calc(var(--column) * 20%);
-  bottom: -28%; width: 20%; height: 24%;
+  top: -28%; width: 20%; height: 24%;
   padding: .5cqw; box-sizing: border-box;
-  animation: echo-copy-flow 7.5s linear forwards;
+  animation: echo-copy-flow 5.8s cubic-bezier(.28, .06, .74, .92) forwards;
 }
 .world-interaction__copy-tile img {
   width: 100%; height: 100%; object-fit: cover;
@@ -60,7 +60,12 @@
   filter: hue-rotate(var(--hue)) contrast(var(--contrast)) saturate(1.2);
   transform: scaleX(var(--scale-x)) skewX(var(--skew));
 }
-@keyframes echo-copy-flow { to { transform: translateY(-550%); } }
+@keyframes echo-copy-flow {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-8deg) scale(.82); }
+  12% { opacity: .88; }
+  80% { opacity: .8; }
+  100% { opacity: 0; transform: translate3d(var(--drift, 0px), 620%, 0) rotate(15deg) scale(1.08); }
+}
 .world-interaction__money-burst {
   position: absolute; top: 50%; left: 50%; transform: translateY(var(--money-offset, 0px));
 }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { NEVADA_INTERACTIONS, captionDurationSeconds } from '../content/NevadaInteractions.js';
+import { cueDurationMs, objectCueIds } from '../audio/EchoCuePlayer.js';
 import { RESEARCH_UI } from '../content/WorldUiCopy.js';
 import {
   buildHaminaForestPaperStrips,
@@ -13,17 +14,19 @@ const smooth = (value) => {
 };
 
 export class WorldInteractionExperience {
-  constructor({ stage, camera, caption, postProcessing, getOriginalPhoto, getVisitorSession = () => null,
-    isFocusSettled = () => true, onNarrationStart = () => {},
+  constructor({ stage, camera, caption, cuePlayer, postProcessing, getOriginalPhoto, getVisitorSession = () => null,
+    isFocusSettled = () => true, onNarrationStart = () => {}, onPhraseStart = () => {},
     onNarrationEnd = () => {}, onClose }) {
     this.stage = stage;
     this.camera = camera;
     this.caption = caption;
+    this.cuePlayer = cuePlayer;
     this.postProcessing = postProcessing;
     this.getOriginalPhoto = getOriginalPhoto;
     this.getVisitorSession = getVisitorSession;
     this.isFocusSettled = isFocusSettled;
     this.onNarrationStart = onNarrationStart;
+    this.onPhraseStart = onPhraseStart;
     this.onNarrationEnd = onNarrationEnd;
     this.onClose = onClose;
     this.active = null;
@@ -71,11 +74,15 @@ export class WorldInteractionExperience {
   start(region) {
     const content = region?.content ?? NEVADA_INTERACTIONS[region?.name];
     if (!content || this.active) return false;
-    const phraseTimes = content.phrases.map(([korean]) => captionDurationSeconds(korean) + 0.12);
+    const isHamina = Boolean(region.content);
+    const cueIds = objectCueIds(isHamina ? 'hamina' : 'nevada', region.name);
+    const phraseTimes = content.phrases.map(([korean], index) =>
+      (cueDurationMs(cueIds[index]) / 1000 || captionDurationSeconds(korean) * 0.55)
+      + (index === content.phrases.length - 1 ? 0 : 0.12));
     const narrationDuration = phraseTimes.reduce((sum, value) => sum + value, 0);
     this.active = {
-      region, content, elapsed: 0, phraseIndex: -1, phraseTimes,
-      isHamina: Boolean(region.content),
+      region, content, elapsed: 0, phraseIndex: -1, phraseTimes, cueIds,
+      isHamina,
       narrationDuration, effectDuration: Math.max(content.effectDuration, narrationDuration + 0.45),
       visualStarted: false, visualEnded: false,
       photoUrl: null, idleAfterNarration: 0,
@@ -88,6 +95,7 @@ export class WorldInteractionExperience {
     this.root.setAttribute('aria-hidden', 'false');
     this.stage.classList.add('interaction-caption-active');
     this.caption.hideOverride();
+    this.cuePlayer.stopHover();
     this.researchButton.hidden = true;
     this.card.hidden = true;
     this.visual.replaceChildren();
@@ -184,6 +192,7 @@ export class WorldInteractionExperience {
         tile.style.setProperty('--contrast', `${0.78 + (index % 7) * 0.12}`);
         tile.style.setProperty('--scale-x', `${0.86 + (index % 4) * 0.11}`);
         tile.style.setProperty('--skew', `${(index % 5 - 2) * 2}deg`);
+        tile.style.setProperty('--drift', `${(index % 7 - 3) * 1.8}cqw`);
         const image = document.createElement('img');
         image.src = active.photoUrl;
         image.alt = '';
@@ -238,8 +247,10 @@ export class WorldInteractionExperience {
           active.forestPaper?.classList.add('is-leaving');
         }
         if (previousIndex < 0) this.onNarrationStart(active);
+        this.onPhraseStart(active, nextIndex);
         const [korean, local] = content.phrases[nextIndex];
         this.caption.showOverride(korean, local);
+        this.cuePlayer.play(active.cueIds[nextIndex]);
       } else {
         this.onNarrationEnd(active);
         this.caption.hideOverride();
@@ -248,20 +259,9 @@ export class WorldInteractionExperience {
         if (active.region.name === 'Money') active.moneyClosingAt = elapsed;
       }
     }
-    if (nextIndex === content.phrases.length && this.card.hidden) {
+    if (nextIndex === content.phrases.length) {
       active.idleAfterNarration += delta;
-      if (!active.isHamina && active.region.name === 'Money'
-        && active.moneyClosingAt !== null
-        && elapsed - active.moneyClosingAt >= 0.95) {
-        this.close();
-        return;
-      }
-      if (active.region.name === 'Cooler' && active.visualEnded
-        && active.idleAfterNarration > 0.5) {
-        this.close();
-        return;
-      }
-      if (active.idleAfterNarration > 12) this.close();
+      if (active.idleAfterNarration >= 0.5) this.close();
     }
   }
 
@@ -280,7 +280,9 @@ export class WorldInteractionExperience {
   applyCoolerCameraMotion(target) {
     const active = this.active;
     if (active?.region.name !== 'Cooler' || !active.visualStarted) return;
-    const envelope = active.visualEnded ? 0 : active.coolerEnvelope ?? 0;
+    // Keep a restrained camera drift after the short cooler effect has ended,
+    // until the longer spoken interaction actually finishes.
+    const envelope = active.visualEnded ? 0.16 : Math.max(0.16, active.coolerEnvelope ?? 0);
     const time = active.elapsed;
     const distance = this.coolerBasePosition.distanceTo(target);
     this.camera.position.copy(this.coolerBasePosition);
@@ -291,13 +293,14 @@ export class WorldInteractionExperience {
     this.camera.position
       .addScaledVector(this.coolerRight, Math.sin(time * 5.1) * distance * 0.055 * envelope)
       .addScaledVector(this.coolerUp, Math.sin(time * 3.8 + 0.8) * distance * 0.035 * envelope)
-      .addScaledVector(this.coolerForward, Math.sin(time * 8.4) * distance * 0.045 * envelope);
+      .addScaledVector(this.coolerForward, Math.max(0, distance - 4.5) * 0.48 * envelope
+        + Math.sin(time * 8.4) * distance * 0.025 * envelope);
     this.coolerLookTarget.copy(target)
       .addScaledVector(this.coolerRight, Math.sin(time * 4.3 + 1.1) * distance * 0.018 * envelope)
       .addScaledVector(this.coolerUp, Math.sin(time * 5.7) * distance * 0.012 * envelope);
     this.camera.lookAt(this.coolerLookTarget);
     this.camera.rotateZ((Math.sin(time * 3.5) * 0.105 + Math.sin(time * 7.1) * 0.035) * envelope);
-    const zoom = active.coolerBaseZoom * (1 + envelope * (
+    const zoom = active.coolerBaseZoom * (1 + envelope * (0.28 +
       Math.sin(time * 6.8) * 0.17 + Math.sin(time * 2.6 + 1.2) * 0.09
     ));
     if (Math.abs(this.camera.zoom - zoom) > 0.0001) {
@@ -349,6 +352,7 @@ export class WorldInteractionExperience {
     this.visual.classList.remove('is-running', 'is-ending');
     this.visual.style.removeProperty('--money-offset');
     this.caption.clearOverride();
+    this.cuePlayer.stop();
     this.card.hidden = true;
     this.researchButton.hidden = true;
     this.root.classList.remove('visible');

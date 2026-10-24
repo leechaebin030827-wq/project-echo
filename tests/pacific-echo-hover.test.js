@@ -44,3 +44,49 @@ test('Pacific click selects ECHO without querying hidden land characters or prop
   pointer.handlePointerUp(event);
   assert.equal(selected, 1);
 });
+
+test('Pacific creature click takes priority over the nearby ECHO hit area', () => {
+  let selected = null;
+  const pointer = Object.create(PointerInteractionController.prototype);
+  pointer.cameraController = { state: EXPERIENCE_STATES.ECHO_ORBIT };
+  pointer.canvas = { hasPointerCapture: () => false };
+  pointer.isEchoOnly = () => true;
+  pointer.pickPacificCreature = () => ({ kind: 'plant', groupIndex: 0, index: 2 });
+  pointer.getEchoHitDistance = () => 4;
+  pointer.onPacificCreature = (creature) => { selected = creature; };
+  pointer.onEcho = () => { throw new Error('ECHO selected instead of the plant'); };
+  const event = { button: 0, isPrimary: true, pointerId: 2, clientX: 70, clientY: 40 };
+  pointer.handlePointerDown(event);
+  pointer.handlePointerUp(event);
+  assert.deepEqual(selected, { kind: 'plant', groupIndex: 0, index: 2 });
+});
+
+test('Pacific data particle click takes priority over creatures and ECHO', () => {
+  let opened = 0;
+  const pointer = Object.create(PointerInteractionController.prototype);
+  pointer.cameraController = { state: EXPERIENCE_STATES.ECHO_ORBIT };
+  pointer.canvas = { hasPointerCapture: () => false };
+  pointer.isEchoOnly = () => true;
+  pointer.pickPacificParticle = () => ({ index: 3 });
+  pointer.pickPacificCreature = () => { throw new Error('creature picker used'); };
+  pointer.getEchoHitDistance = () => 4;
+  pointer.onPacificParticle = () => { opened += 1; };
+  pointer.onEcho = () => { throw new Error('ECHO selected instead of particle'); };
+  const event = { button: 0, isPrimary: true, pointerId: 3, clientX: 80, clientY: 60 };
+  pointer.handlePointerDown(event);
+  pointer.handlePointerUp(event);
+  assert.equal(opened, 1);
+});
+
+test('a hovered particle remains clickable while the camera finishes turning', () => {
+  const context = {
+    currentWorld: 'lightcable',
+    lightCableWorld: {
+      creatureView: null,
+      dataParticles: { pick: () => { throw new Error('moving position used'); } },
+    },
+    pacificHoveredParticle: { index: 7, x: 120, y: 180, at: performance.now() },
+  };
+  assert.deepEqual(ExperienceController.prototype.pickPacificParticle.call(context, 130, 180),
+    { index: 7 });
+});

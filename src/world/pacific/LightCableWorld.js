@@ -1,29 +1,73 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { Water } from 'three/addons/objects/Water.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
+import { HAMINA_TERRAIN_TEXTURE_CONFIG } from '../../config.js';
+import { PACIFIC_ARRIVAL_NARRATION, PACIFIC_NARRATION_START_MS } from '../../content/WorldNarration.js';
+import { cueDurationMs } from '../../audio/EchoCuePlayer.js';
 import { createCloudTexture } from '../shared/SkyDetail.js';
 import {
   CABLE_GAP_METERS, CABLE_START_X, CABLE_WINDOW_COUNT,
   cablePoint, cableTangent, cableSpacing, cableWindowStart, cableSegmentMatrix,
 } from './EndlessCablePath.js';
-import { CABLE_EXIT_DURATION, getCableExitMotion } from './CableExitMotion.js';
+import { CABLE_ECHO_LEAD, CABLE_EXIT_DURATION, getCableExitMotion } from './CableExitMotion.js';
 import { createSeabedGeometry, seabedHeight, SEABED_RECENTER_DISTANCE } from './SeabedSurface.js';
-import { createGlassCableModule } from './GlassCableModule.js';
+import { createGlassCableModule, GLASS_CABLE_WIDTH } from './GlassCableModule.js';
+import { CableDataParticles } from './CableDataParticles.js';
+import { createHoverHighlightMaterial } from '../../interaction/HoverHighlight.js';
 
 const MODEL_URL = '/models/LightCable.runtime.glb';
 const DETRITUS_URL = '/textures/lightcable/';
 const X_AXIS = new THREE.Vector3(1, 0, 0);
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
-const DIVE_START = 11.8;
-const DIVE_END = 19.4;
+const IMPACT_AT = 3.7;
+const SINK_END = 7.6;
+const QUESTION_AT = (PACIFIC_NARRATION_START_MS + PACIFIC_ARRIVAL_NARRATION[1].atMs) / 1000;
+const QUESTION_ZOOM_IN_END = QUESTION_AT + 2.2;
+const LOST_CUE = PACIFIC_ARRIVAL_NARRATION[3];
+const DIVE_START = (PACIFIC_NARRATION_START_MS + LOST_CUE.atMs + cueDurationMs('K09')) / 1000 + .2;
+const DIVE_END = DIVE_START + 9.2;
+const VERTICAL_DESCENT_DURATION = 3.2;
+const CABLE_RUSH_START = DIVE_END - 2.2;
 const CAMERA_START = DIVE_END;
-const TRAVEL_SPEED = 2.8;
+const TRAVEL_SPEED = 3.8;
+const ENTRY_SPRINT_DURATION = 2.5;
+const ENTRY_SPRINT_DISTANCE = 12;
 const ORIGIN_REBASE_DISTANCE = 1200;
+const ECHO_WALK_SCALE = 2.45;
+const FISH_SCALE = .53;
+const FISH_ROUTE_LENGTH = 100;
+const PLANT_SCALE = .6;
+const CAMERA_SPRING_STIFFNESS = 23;
+const CAMERA_SPRING_DAMPING = 9.5;
+const CAMERA_LOOK_AHEAD = 9;
 
 const smooth = (value) => {
   const t = THREE.MathUtils.clamp(value, 0, 1);
   return t * t * (3 - 2 * t);
 };
+
+const smoother = (value) => {
+  const t = THREE.MathUtils.clamp(value, 0, 1);
+  return t * t * t * (t * (t * 6 - 15) + 10);
+};
+
+function rippleGeometry(seed) {
+  const geometry = new THREE.RingGeometry(1, 1.12, 96);
+  const positions = geometry.attributes.position;
+  for (let index = 0; index < positions.count; index += 1) {
+    const x = positions.getX(index);
+    const y = positions.getY(index);
+    const angle = Math.atan2(y, x);
+    const variation = 1 + .055 * Math.sin(angle * 5 + seed)
+      + .035 * Math.sin(angle * 11 - seed * 1.7);
+    positions.setXY(index, x * variation, y * variation);
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
 function random(seed) {
   let state = seed >>> 0;
@@ -37,10 +81,10 @@ function pacificLight() {
   const hour = Number(new Intl.DateTimeFormat('en-US', {
     timeZone: 'Pacific/Honolulu', hour: '2-digit', hourCycle: 'h23',
   }).format(new Date()));
-  if (hour < 5 || hour >= 20) return { zenith: '#263a50', horizon: '#597687', water: '#102b3d', cloud: '#8a9aa7', sun: '#bacbd1', daylight: .16, hour };
-  if (hour < 7) return { zenith: '#58738e', horizon: '#c29f98', water: '#194252', cloud: '#d7b8ae', sun: '#ffcfac', daylight: .48, hour };
-  if (hour < 17) return { zenith: '#388eb8', horizon: '#c3d6d4', water: '#173f50', cloud: '#eef0e9', sun: '#fff0c9', daylight: .9, hour };
-  return { zenith: '#657d98', horizon: '#c9a4a0', water: '#193848', cloud: '#d6bdb7', sun: '#ffd4ad', daylight: .46, hour };
+  if (hour < 5 || hour >= 20) return { zenith: '#07162e', middle: '#203a58', horizon: '#647a8b', water: '#061329', cloud: '#9aabb8', sun: '#b9cbd9', daylight: .16, hour };
+  if (hour < 7) return { zenith: '#123b66', middle: '#638fae', horizon: '#bccbd3', water: '#071b36', cloud: '#dee0db', sun: '#ffddae', daylight: .48, hour };
+  if (hour < 17) return { zenith: '#11629b', middle: '#74b1d1', horizon: '#d8e4e8', water: '#071b3b', cloud: '#f0f4f3', sun: '#fff2d4', daylight: .9, hour };
+  return { zenith: '#173f69', middle: '#7397b1', horizon: '#bdccd4', water: '#071832', cloud: '#e0e5e2', sun: '#ffdbac', daylight: .46, hour };
 }
 
 function instancedGeometry(source, count, material) {
@@ -49,6 +93,23 @@ function instancedGeometry(source, count, material) {
   result.castShadow = false;
   result.receiveShadow = true;
   return result;
+}
+
+export function computeFishViewPose(matrix, boundingSphere, position, target, cableTarget = null) {
+  const center = boundingSphere.center.clone().applyMatrix4(matrix);
+  const rotation = new THREE.Quaternion().setFromRotationMatrix(matrix);
+  const forward = Z_AXIS.clone().applyQuaternion(rotation).normalize();
+  const radius = Math.max(.16, boundingSphere.radius * matrix.getMaxScaleOnAxis());
+  // Sit just in front of the head. Keeping the complete model behind the near
+  // plane prevents large authored fish meshes from covering the whole view.
+  position.copy(center).addScaledVector(forward, radius * 1.45 + .34);
+  position.y += Math.min(.18, radius * .28);
+  if (cableTarget) target.copy(cableTarget);
+  else {
+    target.copy(position).addScaledVector(forward, 8);
+    target.y += .06;
+  }
+  return { position, target, radius };
 }
 
 export class LightCableWorld {
@@ -67,8 +128,8 @@ export class LightCableWorld {
     this.cableWindowStart = null;
     this.exitSuction = null;
     this.travelBias = 0;
-    this.underwaterFog = new THREE.FogExp2('#071a30', .007);
-    this.underwaterColor = new THREE.Color('#071a30');
+    this.underwaterFog = new THREE.FogExp2('#061426', .011);
+    this.underwaterColor = new THREE.Color('#061426');
     this.surfaceColor = new THREE.Color();
     this.oldBackground = null;
     this.oldFog = null;
@@ -81,43 +142,86 @@ export class LightCableWorld {
     this.gazeTarget = new THREE.Vector3();
     this.pointerLookTarget = 0;
     this.pointerLook = 0;
+    this.pointerLookTargetY = 0;
+    this.pointerLookY = 0;
     this.echoFacing = new THREE.Quaternion();
+    this.previousCameraQuaternion = new THREE.Quaternion();
+    this.desiredCameraQuaternion = new THREE.Quaternion();
+    this.cameraRollQuaternion = new THREE.Quaternion();
+    this.cameraRigPosition = new THREE.Vector3();
+    this.cameraRigVelocity = new THREE.Vector3();
+    this.cameraRigTarget = new THREE.Vector3();
+    this.cameraRigAcceleration = new THREE.Vector3();
+    this.cameraSide = new THREE.Vector3();
+    this.cameraFutureTangent = new THREE.Vector3();
+    this.cameraRigReady = false;
+    this.cameraRoll = 0;
     this.swimTilt = new THREE.Quaternion();
     this.swimEuler = new THREE.Euler();
     this.bodyRest = null;
+    this.bodyRestPosition = null;
+    this.echoLocalBottom = 0;
     this.legRest = [];
+    this.motionBlur = 0;
+    this.creatureView = null;
+    this.hoveredCreature = null;
+    this.creatureViewBlend = 0;
+    this.creatureCameraPosition = new THREE.Vector3();
+    this.creatureLookTarget = new THREE.Vector3();
+    this.pickMatrix = new THREE.Matrix4();
+    this.pickPosition = new THREE.Vector3();
+    this.pickProjected = new THREE.Vector3();
+    this.creatureRaycaster = new THREE.Raycaster();
+    this.creaturePointer = new THREE.Vector2();
+    this.creatureHoverMesh = null;
+    this.creaturePickMeshes = [];
   }
 
   async load(echoSource) {
     const loader = new THREE.TextureLoader();
-    const [gltf, base, normal, roughness, height] = await Promise.all([
+    const [gltf, base, normal, roughness, height, waterNormals] = await Promise.all([
       new GLTFLoader().loadAsync(MODEL_URL),
       loader.loadAsync(`${DETRITUS_URL}base.jpg`),
       loader.loadAsync(`${DETRITUS_URL}normal.jpg`),
       loader.loadAsync(`${DETRITUS_URL}roughness.jpg`),
       loader.loadAsync(`${DETRITUS_URL}height.jpg`),
+      loader.loadAsync(HAMINA_TERRAIN_TEXTURE_CONFIG.water.normal),
     ]);
     for (const texture of [base, normal, roughness, height]) {
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(15, 5);
-      texture.anisotropy = 4;
+      texture.repeat.set(60, 21);
+      texture.anisotropy = 8;
     }
     base.colorSpace = THREE.SRGBColorSpace;
+    waterNormals.wrapS = THREE.RepeatWrapping;
+    waterNormals.wrapT = THREE.RepeatWrapping;
+    waterNormals.anisotropy = 8;
+    this.waterNormals = waterNormals;
     this.terrainTextures = [base, normal, roughness, height];
     this.terrainMaterial = new THREE.MeshStandardMaterial({
-      color: '#486a7d', map: base, normalMap: normal, roughnessMap: roughness,
+      color: '#ffffff', map: base, normalMap: normal, roughnessMap: roughness,
       bumpMap: height, bumpScale: 0.11, roughness: 1, metalness: 0,
-      emissive: '#0b3447', emissiveIntensity: .09,
+      emissive: '#a0c9d4', emissiveMap: base, emissiveIntensity: .35,
     });
+    this.terrainMaterial.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+        diffuseColor.rgb = pow(diffuseColor.rgb, vec3(0.72)) * 1.3;`,
+      );
+    };
 
     this.palette = pacificLight();
     this.makeSurface();
+    this.makeImpactEffects();
+    this.makeLightShafts();
     this.makeSeabed(gltf.scene.getObjectByName('SeaBottom'));
     this.makeCable();
     this.makePlants(gltf.scene);
     this.makeFish(gltf.scene);
     this.makePlankton();
+    this.dataParticles = new CableDataParticles(this.root, this.random);
     this.makeLights();
     this.makeEcho(echoSource);
     this.scene.add(this.root);
@@ -139,6 +243,7 @@ export class LightCableWorld {
         side: THREE.BackSide, depthWrite: false,
         uniforms: {
           zenith: { value: new THREE.Color(this.palette.zenith) },
+          middle: { value: new THREE.Color(this.palette.middle) },
           horizon: { value: new THREE.Color(this.palette.horizon) },
           cloudColor: { value: new THREE.Color(this.palette.cloud) },
           sunColor: { value: new THREE.Color(this.palette.sun) },
@@ -149,24 +254,28 @@ export class LightCableWorld {
         },
         vertexShader: `varying vec3 vDirection;
           void main(){ vDirection=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-        fragmentShader: `uniform vec3 zenith,horizon,cloudColor,sunColor,sunDirection;
+        fragmentShader: `uniform vec3 zenith,middle,horizon,cloudColor,sunColor,sunDirection;
           uniform sampler2D cloudMap; uniform float cloudDrift,daylight;
           varying vec3 vDirection;
           float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
           void main(){
             vec3 direction=normalize(vDirection);
-            float altitude=smoothstep(-.12,.75,direction.y);
-            vec3 color=mix(horizon,zenith,altitude);
+            float altitude=max(direction.y,0.);
+            vec3 color=mix(horizon,middle,smoothstep(0.,.13,altitude));
+            color=mix(color,zenith,smoothstep(.12,.78,altitude));
+            // A thin atmospheric haze at the sea horizon keeps the sky from
+            // reading as a flat painted dome.
+            color=mix(color,horizon,pow(1.-smoothstep(0.,.19,altitude),2.)*.18);
             float sunDot=dot(direction,sunDirection);
-            float halo=pow(max(sunDot,0.),24.)*.16*daylight;
-            float disk=smoothstep(.99925,.99978,sunDot)*daylight;
-            color+=sunColor*(halo+disk*1.7);
+            float halo=pow(max(sunDot,0.),10.)*.075*daylight;
+            float disk=smoothstep(.99955,.99988,sunDot)*daylight;
+            color+=sunColor*(halo+disk*.95);
             vec2 cloudUv=vec2(atan(direction.z,direction.x)/6.283185+.5+cloudDrift,
               asin(clamp(direction.y,-1.,1.))/3.141593+.5);
             vec4 cloud=texture2D(cloudMap,cloudUv);
-            float coverage=smoothstep(.14,.69,cloud.r)*smoothstep(-.04,.14,direction.y);
-            float rim=.68+.32*max(dot(direction,sunDirection),0.);
-            color=mix(color,cloudColor*rim+sunColor*halo*.35,coverage*.75);
+            float coverage=smoothstep(.22,.68,cloud.r)*smoothstep(-.015,.12,direction.y);
+            float rim=.82+.18*max(dot(direction,sunDirection),0.);
+            color=mix(color,cloudColor*rim+sunColor*halo*.2,coverage*.25);
             vec2 starCell=floor(cloudUv*vec2(520.,220.));
             float star=step(.9989,hash(starCell))*pow(max(0.,1.-length(fract(cloudUv*vec2(520.,220.))-.5)*2.),3.);
             color+=vec3(.75,.85,1.)*star*(1.-daylight)*smoothstep(.02,.2,direction.y);
@@ -176,64 +285,180 @@ export class LightCableWorld {
     );
     this.sky.frustumCulled = false;
     this.root.add(this.sky);
-    this.water = new THREE.Mesh(
-      new THREE.PlaneGeometry(900, 900, 96, 96),
-      new THREE.ShaderMaterial({
-        side: THREE.FrontSide,
-        uniforms: {
-          time: { value: 0 },
-          waterColor: { value: new THREE.Color(this.palette.water) },
-          horizonColor: { value: new THREE.Color(this.palette.horizon) },
-          zenithColor: { value: new THREE.Color(this.palette.zenith) },
-          sunColor: { value: new THREE.Color(this.palette.sun) },
-          sunDirection: { value: this.sunDirection },
-          daylight: { value: this.palette.daylight },
-        },
-        vertexShader: `uniform float time; varying vec3 vWorld;
-          void main(){
-            vec3 p=position;
-            p.z+=.12*sin(p.x*.042+time*.34)*sin(p.y*.054-time*.27);
-            p.z+=.045*sin(p.x*.11-p.y*.075+time*.48);
-            vec4 world=modelMatrix*vec4(p,1.); vWorld=world.xyz;
-            gl_Position=projectionMatrix*viewMatrix*world;
-          }`,
-        fragmentShader: `uniform vec3 waterColor,horizonColor,zenithColor,sunColor,sunDirection;
-          uniform float time,daylight; varying vec3 vWorld;
-          void main(){
-            vec2 p=vWorld.xz;
-            float a=p.x*.14+p.y*.08+time*.56;
-            float b=p.x*.095-p.y*.16-time*.46;
-            float c=p.x*.68+p.y*.31+time*1.16;
-            float d=p.x*1.36-p.y*.62-time*1.48;
-            vec2 slope=vec2(
-              cos(a)*.037+cos(b)*.027+cos(c)*.021+cos(d)*.010,
-              cos(a)*.023-cos(b)*.039+cos(c)*.010-cos(d)*.014);
-            vec3 normal=normalize(vec3(-slope.x,1.,-slope.y));
-            vec3 view=normalize(cameraPosition-vWorld);
-            float fresnel=pow(1.-max(dot(view,normal),0.),4.);
-            vec3 reflected=reflect(-view,normal);
-            vec3 sky=mix(horizonColor,zenithColor,smoothstep(0.,.65,reflected.y));
-            vec3 sparkleDirection=normalize(vec3(sunDirection.x*.55,
-              max(.25,sunDirection.y),-.72));
-            float reflectedSun=max(dot(reflected,sparkleDirection),0.);
-            float ripple=.5+.25*sin(c)+.18*sin(d)+.07*sin(a*5.+b*3.);
-            float smallCrests=smoothstep(.69,.88,ripple);
-            float brokenGlints=.35+.65*smoothstep(.43,.86,
-              .5+.28*sin(c*2.3)+.22*sin(d*1.7+a));
-            float illumination=max(daylight,.13);
-            float glitterPath=pow(reflectedSun,18.)*.25
-              +pow(reflectedSun,72.)*(.8+1.3*brokenGlints);
-            float fine=.5+.5*sin(c*.7+sin(d*.5));
-            vec3 color=mix(waterColor*(.86+.14*fine),sky,fresnel*.38+.045);
-            color+=sunColor*(glitterPath*illumination
-              +smallCrests*(.018+.04*reflectedSun)*illumination);
-            gl_FragColor=vec4(color,1.);
-          }`,
-      }),
-    );
+    // Share Hamina's real reflected-water renderer and its authored wave normal.
+    // The Pacific uses broader, gentler ripples and its own sky/sun palette.
+    this.water = new Water(new THREE.PlaneGeometry(1600, 1600, 256, 256), {
+      textureWidth: 512,
+      textureHeight: 512,
+      waterNormals: this.waterNormals,
+      sunDirection: new THREE.Vector3(
+        this.sunDirection.x, Math.max(.12, this.sunDirection.y), this.sunDirection.z,
+      ).normalize(),
+      sunColor: this.palette.sun,
+      waterColor: this.palette.water,
+      distortionScale: 1.35,
+      alpha: 1,
+      fog: false,
+    });
+    this.water.name = 'PacificSea';
     this.water.rotation.x = -Math.PI / 2;
     this.water.frustumCulled = false;
+    this.water.material.uniforms.size.value = 3.4;
+    // Water's mirror stays level; small geometric swells break the perfectly
+    // straight horizon and give the nearby reflection a physical surface.
+    this.water.material.vertexShader = this.water.material.vertexShader
+      .replace('void main() {', `float seaSwell(vec2 p, float t) {
+        return .58 * sin(p.x * .023 + p.y * .016 + t * .42)
+          + .31 * sin(p.x * -.037 + p.y * .028 - t * .34)
+          + .12 * sin(p.x * .071 - p.y * .052 + t * .58);
+      }
+      void main() {
+        vec3 seaPosition = position;
+        seaPosition.z += seaSwell((modelMatrix * vec4(position, 1.0)).xz, time);`)
+      .replaceAll('vec4( position, 1.0 )', 'vec4( seaPosition, 1.0 )');
+    const renderReflection = this.water.onBeforeRender.bind(this.water);
+    let reflectionFrame = 0;
+    this.water.onBeforeRender = (...args) => {
+      reflectionFrame = (reflectionFrame + 1) % 2;
+      if (reflectionFrame === 0) renderReflection(...args);
+    };
     this.root.add(this.water);
+  }
+
+  makeImpactEffects() {
+    this.impactRings = Array.from({ length: 3 }, (_, index) => {
+      const ring = new THREE.Mesh(rippleGeometry(index * 2.3 + .7), new THREE.MeshBasicMaterial({
+        color: '#e5fbff', transparent: true, opacity: 0,
+        depthWrite: false, side: THREE.DoubleSide,
+      }));
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(0, .2, -11);
+      ring.visible = false;
+      this.root.add(ring);
+      return ring;
+    });
+    this.impactWake = new THREE.Mesh(rippleGeometry(7.4), new THREE.MeshBasicMaterial({
+      color: '#a9dce9', transparent: true, opacity: 0,
+      depthWrite: false, side: THREE.DoubleSide,
+    }));
+    this.impactWake.rotation.x = -Math.PI / 2;
+    this.impactWake.position.set(0, .45, -11);
+    this.impactWake.visible = false;
+    this.root.add(this.impactWake);
+    this.impactSpray = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(.09, 5, 4),
+      new THREE.MeshBasicMaterial({
+        color: '#eafcff', transparent: true, opacity: 0, depthWrite: false,
+      }),
+      26,
+    );
+    this.impactSpray.frustumCulled = false;
+    this.impactSpray.visible = false;
+    this.impactParticles = Array.from({ length: this.impactSpray.count }, (_, index) => ({
+      angle: index * 2.39996,
+      speed: 2.4 + (index % 7) * .48,
+      lift: 2.7 + (index % 5) * .63,
+      delay: (index % 4) * .025,
+    }));
+    this.root.add(this.impactSpray);
+  }
+
+  makeLightShafts() {
+    const count = 8;
+    const geometry = new THREE.CylinderGeometry(.7, 5.6, 31, 10, 1, true);
+    geometry.translate(0, -15.5, 0);
+    const offsets = Array.from({ length: count }, (_, index) => ({
+      x: -20 + index * 5.8 + this.random() * 2.8,
+      z: -18 + this.random() * 34,
+      scale: .65 + this.random() * .65,
+      phase: this.random() * Math.PI * 2,
+    }));
+    const material = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        time: { value: 0 },
+        amount: { value: 0 },
+        color: { value: new THREE.Color(this.palette.sun).lerp(new THREE.Color('#78d7ee'), .58) },
+      },
+      vertexShader: `varying vec3 vLocal; varying vec3 vWorld;
+        void main(){
+          vLocal = position;
+          vec4 world = modelMatrix * instanceMatrix * vec4(position, 1.0);
+          vWorld = world.xyz;
+          gl_Position = projectionMatrix * viewMatrix * world;
+        }`,
+      fragmentShader: `uniform float time,amount; uniform vec3 color;
+        varying vec3 vLocal; varying vec3 vWorld;
+        float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+        void main(){
+          float vertical = smoothstep(-31.0,-3.0,vLocal.y) * (1.0-smoothstep(-5.0,0.0,vLocal.y));
+          float shimmer = .72 + .28*sin(vWorld.x*.18+vWorld.z*.13+time*.42);
+          float grain = .82 + .18*hash(floor(vWorld.xz*.45+time*.08));
+          gl_FragColor = vec4(color * shimmer, vertical * grain * amount * .12);
+        }`,
+    });
+    this.lightShafts = new THREE.InstancedMesh(geometry, material, count);
+    this.lightShafts.name = 'PacificLightShafts';
+    this.lightShafts.frustumCulled = false;
+    this.lightShafts.renderOrder = -1;
+    offsets.forEach((offset, index) => {
+      this.dummy.position.set(offset.x, -.1, offset.z);
+      this.dummy.rotation.set(0, offset.phase, .025 * Math.sin(offset.phase));
+      this.dummy.scale.set(offset.scale, 1, offset.scale);
+      this.dummy.updateMatrix();
+      this.lightShafts.setMatrixAt(index, this.dummy.matrix);
+    });
+    this.lightShafts.instanceMatrix.needsUpdate = true;
+    this.lightShafts.visible = false;
+    this.root.add(this.lightShafts);
+  }
+
+  updateLightShafts(depthMix, submerged) {
+    if (!this.lightShafts) return;
+    const shallow = submerged ? 1 - smooth((depthMix - .1) / .78) : 0;
+    const amount = shallow * (.24 + this.palette.daylight * .76);
+    this.lightShafts.visible = amount > .002;
+    this.lightShafts.material.uniforms.amount.value = amount;
+    this.lightShafts.material.uniforms.time.value = this.elapsed;
+    this.lightShafts.position.x = this.camera.position.x * .16;
+    this.lightShafts.position.z = this.camera.position.z * .12;
+  }
+
+  updateImpactEffects(time) {
+    const age = time - IMPACT_AT;
+    this.impactRings.forEach((ring, index) => {
+      const progress = (age - index * .17) / 1.5;
+      ring.visible = progress >= 0 && progress < 1;
+      if (!ring.visible) return;
+      ring.scale.setScalar(.5 + 5.3 * smooth(progress));
+      ring.material.opacity = .68 * (1 - smooth(progress));
+    });
+    const wakeProgress = (age - 1.35) / 5.25;
+    this.impactWake.visible = wakeProgress >= 0 && wakeProgress < 1;
+    if (this.impactWake.visible) {
+      this.impactWake.scale.setScalar(1.5 + 2.9 * smooth(wakeProgress));
+      this.impactWake.material.opacity = .24 * (1 - smooth(wakeProgress));
+    }
+    this.impactSpray.visible = age >= 0 && age < 1.35;
+    if (!this.impactSpray.visible) return;
+    this.impactParticles.forEach((particle, index) => {
+      const t = Math.max(0, age - particle.delay);
+      const radius = .35 + particle.speed * t;
+      this.dummy.position.set(
+        Math.cos(particle.angle) * radius,
+        .22 + particle.lift * t - 5.7 * t * t,
+        -11 + Math.sin(particle.angle) * radius,
+      );
+      const fade = Math.max(.001, 1 - smooth(t / 1.35));
+      this.dummy.scale.set(fade * .6, fade * (1.2 + particle.lift * .12), fade * .6);
+      this.dummy.updateMatrix();
+      this.impactSpray.setMatrixAt(index, this.dummy.matrix);
+    });
+    this.impactSpray.instanceMatrix.needsUpdate = true;
+    this.impactSpray.material.opacity = 1 - smooth(age / 1.35);
   }
 
   makeSeabed(source) {
@@ -274,7 +499,7 @@ export class LightCableWorld {
       }
     }
     this.updateCableWindow(0, true);
-    if (import.meta.env.DEV) console.info('[LightCable] procedural four-sided glass corridor', {
+    if (import.meta.env.DEV) console.info('[LightCable] procedural cylindrical glass tunnel', {
       frameLength: module.frameLength,
       pieces: CABLE_WINDOW_COUNT,
       spacing: this.cableSpacing,
@@ -308,14 +533,18 @@ export class LightCableWorld {
       const count = 8;
       const instances = instancedGeometry(plant, count, plant.material.clone());
       instances.material.side = THREE.DoubleSide;
+      instances.material.emissive = new THREE.Color('#65e2d9');
+      instances.material.emissiveMap = instances.material.map;
+      instances.material.emissiveIntensity = .85;
       const placements = Array.from({ length: count }, (_, index) => ({
         distance: -35 + ((index + this.random()) / count) * 245,
         side: (index % 2 ? 1 : -1) * (5 + this.random() * 16),
         altitude: .05 + this.random() * .25,
         rotation: this.random() * Math.PI * 2,
-        scale: 12 + this.random() * 13,
+        scale: (12 + this.random() * 13) * PLANT_SCALE,
       }));
       this.plants.push({ instances, placements });
+      this.creaturePickMeshes.push(instances);
       this.root.add(instances);
     }
     this.updatePlants(true);
@@ -356,11 +585,14 @@ export class LightCableWorld {
     for (let species = 1; species <= 5; species += 1) {
       const fish = source.getObjectByName(`Fish${species}`);
       if (!fish?.isMesh) continue;
-      const count = 4;
+      const count = 7;
       const material = fish.material.clone();
       material.side = THREE.DoubleSide;
-      material.emissive = new THREE.Color('#3e8eaa');
-      material.emissiveIntensity = .34;
+      // Let the authored color and normal textures respond to nearby plankton
+      // light instead of flattening them with a constant cyan emission.
+      material.emissiveMap = material.map;
+      material.emissive = new THREE.Color('#ffffff');
+      material.emissiveIntensity = .55;
       material.onBeforeCompile = (shader) => {
         shader.uniforms.swimTime = { value: 0 };
         shader.vertexShader = `uniform float swimTime;\n${shader.vertexShader}`;
@@ -368,54 +600,89 @@ export class LightCableWorld {
           '#include <begin_vertex>',
           `#include <begin_vertex>
           float tail = smoothstep(-0.03, 0.1, position.z);
-          transformed.x += sin(swimTime * 2.2 + position.z * 23.0
-            + instanceMatrix[3].x * 0.31) * 0.008 * tail;`,
+          transformed.x += sin(swimTime * 2.8 + position.z * 23.0
+            + instanceMatrix[3].x * 0.31) * 0.014 * tail;`,
         );
         material.userData.swimShader = shader;
       };
-      material.customProgramCacheKey = () => 'lightcable-fish-swim-v1';
+      material.customProgramCacheKey = () => 'lightcable-fish-swim-v2';
       const instances = instancedGeometry(fish, count, material);
       // Their transforms travel across the whole route after the initial
       // bounds are computed; these low-poly schools stay cheap to render.
       instances.frustumCulled = false;
       const swimmers = Array.from({ length: count }, () => ({
-        distance: -40 + this.random() * 240,
-        side: (this.random() < .5 ? -1 : 1) * (4.5 + this.random() * 7.5),
+        distance: -25 + this.random() * FISH_ROUTE_LENGTH,
+        side: (this.random() < .5 ? -1 : 1) * (5.2 + this.random() * 5.5),
         altitude: -2.5 + this.random() * 5,
-        speed: (.55 + this.random() * 1.1) * (this.random() < .5 ? -1 : 1),
+        speed: (2.4 + this.random() * 2.6) * (this.random() < .75 ? -1 : 1),
         phase: this.random() * Math.PI * 2,
-        scale: 9 + this.random() * 10,
+        driftRate: .8 + this.random() * .65,
+        speedPhase: this.random() * Math.PI * 2,
+        scale: (9 + this.random() * 10) * FISH_SCALE,
       }));
-      this.fish.push({ instances, swimmers });
-      this.root.add(instances);
+      const hoverMaterial = createHoverHighlightMaterial(material, 'blue');
+      hoverMaterial.depthWrite = false;
+      hoverMaterial.polygonOffset = true;
+      hoverMaterial.polygonOffsetFactor = -1;
+      const hoverMesh = new THREE.InstancedMesh(instances.geometry, hoverMaterial, 1);
+      hoverMesh.frustumCulled = false;
+      hoverMesh.renderOrder = 5;
+      hoverMesh.visible = false;
+      this.fish.push({ instances, swimmers, hoverMesh });
+      this.creaturePickMeshes.push(instances);
+      this.root.add(instances, hoverMesh);
     }
     this.updateFish(0);
     for (const { instances } of this.fish) instances.computeBoundingSphere();
   }
 
   updateFish(delta) {
-    for (const { instances, swimmers } of this.fish) {
+    for (const [groupIndex, { instances, swimmers }] of this.fish.entries()) {
       if (instances.material.userData.swimShader) {
         instances.material.userData.swimShader.uniforms.swimTime.value = this.elapsed;
       }
       swimmers.forEach((swimmer, index) => {
-        swimmer.distance += swimmer.speed * delta;
-        if (swimmer.distance < this.travelDistance - 55) swimmer.distance += 250;
-        if (swimmer.distance > this.travelDistance + 210) swimmer.distance -= 250;
+        const time = this.elapsed * swimmer.driftRate;
+        const glide = 1 + .18 * Math.sin(time * .31 + swimmer.speedPhase)
+          + .08 * Math.sin(time * .79 + swimmer.phase);
+        const forwardSpeed = swimmer.speed * glide;
+        swimmer.distance += forwardSpeed * delta;
+        if (swimmer.distance < this.travelDistance - 25) swimmer.distance += FISH_ROUTE_LENGTH;
+        if (swimmer.distance > this.travelDistance + 75) swimmer.distance -= FISH_ROUTE_LENGTH;
         cablePoint(swimmer.distance, this.originDistance, this.point);
         cableTangent(swimmer.distance, this.tangent);
-        const sign = Math.sign(swimmer.speed);
+        const sideA = time * .37 + swimmer.phase;
+        const sideB = time * .83 + swimmer.speedPhase;
+        const heightA = time * .43 + swimmer.speedPhase;
+        const heightB = time * .91 + swimmer.phase;
+        const sideOffset = 1.2 * Math.sin(sideA) + .55 * Math.sin(sideB);
+        const heightOffset = .65 * Math.sin(heightA) + .3 * Math.sin(heightB);
+        const sideVelocity = swimmer.driftRate * (
+          1.2 * .37 * Math.cos(sideA) + .55 * .83 * Math.cos(sideB)
+        );
+        const heightVelocity = swimmer.driftRate * (
+          .65 * .43 * Math.cos(heightA) + .3 * .91 * Math.cos(heightB)
+        );
         this.dummy.position.copy(this.point);
-        this.dummy.position.x -= this.tangent.z * swimmer.side;
-        this.dummy.position.z += this.tangent.x * swimmer.side;
-        this.dummy.position.y = this.point.y + swimmer.altitude
-          + Math.sin(this.elapsed * .9 + swimmer.phase) * .25;
-        this.swimDirection.copy(this.tangent).multiplyScalar(sign);
+        this.dummy.position.x -= this.tangent.z * (swimmer.side + sideOffset);
+        this.dummy.position.z += this.tangent.x * (swimmer.side + sideOffset);
+        this.dummy.position.y = this.point.y + swimmer.altitude + heightOffset;
+        this.swimDirection.copy(this.tangent).multiplyScalar(forwardSpeed);
+        this.swimDirection.x -= this.tangent.z * sideVelocity;
+        this.swimDirection.z += this.tangent.x * sideVelocity;
+        this.swimDirection.y += heightVelocity;
+        this.swimDirection.normalize();
         this.dummy.quaternion.setFromUnitVectors(Z_AXIS, this.swimDirection);
-        this.dummy.rotateZ(Math.sin(this.elapsed * 1.2 + swimmer.phase) * .13);
+        this.dummy.rotateZ(Math.sin(time * .65 + swimmer.phase) * .055);
+        const hovered = this.hoveredCreature?.groupIndex === groupIndex
+          && this.hoveredCreature.index === index;
         this.dummy.scale.setScalar(swimmer.scale);
         this.dummy.updateMatrix();
         instances.setMatrixAt(index, this.dummy.matrix);
+        if (hovered && this.creatureHoverMesh) {
+          this.creatureHoverMesh.setMatrixAt(0, this.dummy.matrix);
+          this.creatureHoverMesh.instanceMatrix.needsUpdate = true;
+        }
       });
       instances.instanceMatrix.needsUpdate = true;
     }
@@ -426,13 +693,16 @@ export class LightCableWorld {
     const positions = new Float32Array(count * 3);
     const phases = new Float32Array(count);
     for (let index = 0; index < count; index += 1) {
-      const insideCable = index < count * .42;
-      const spread = insideCable ? 5.2 : 45;
-      positions[index * 3] = -70 + this.random() * 250;
+      const insideCable = index < count * .18;
+      const x = -70 + this.random() * 250;
+      const z = insideCable
+        ? (this.random() - .5) * 4.8
+        : (this.random() < .5 ? -1 : 1) * (4 + this.random() * 20);
+      positions[index * 3] = x;
       positions[index * 3 + 1] = insideCable
-        ? -47.8 + (this.random() - .5) * 3.4
-        : -53 + this.random() * 19;
-      positions[index * 3 + 2] = (this.random() - .5) * spread;
+        ? -50.45 + this.random() * 1.7
+        : seabedHeight(CABLE_START_X + x, z) + .65 + Math.pow(this.random(), 2) * 5.2;
+      positions[index * 3 + 2] = z;
       phases[index] = this.random() * 6.283;
     }
     const geometry = new THREE.BufferGeometry();
@@ -441,21 +711,23 @@ export class LightCableWorld {
     this.planktonMaterial = new THREE.ShaderMaterial({
       transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
       uniforms: { time: { value: 0 } },
-      vertexShader: `attribute float phase; uniform float time; varying float vGlow; varying float vHue;
+      vertexShader: `attribute float phase; uniform float time; varying float vGlow; varying float vHue; varying float vDistance;
         void main(){ vec3 p=position;
           p.x+=sin(time*.24+phase)*.22; p.y+=sin(time*.41+phase*2.)*.18;
           vec4 eye=modelViewMatrix*vec4(p,1.);
-          gl_PointSize=clamp(71./max(1.,-eye.z),3.,13.);
+          gl_PointSize=clamp(85./max(1.,-eye.z),4.,17.);
           gl_Position=projectionMatrix*eye;
+          vDistance=-eye.z;
           vGlow=.68+.32*sin(time*.8+phase);
           vHue=sin(phase*2.3)*.5+.5; }`,
-      fragmentShader: `varying float vGlow; varying float vHue;
+      fragmentShader: `varying float vGlow; varying float vHue; varying float vDistance;
         void main(){ float r=length(gl_PointCoord-.5);
           float halo=pow(smoothstep(.5,.04,r),1.6);
           float core=pow(smoothstep(.19,0.,r),1.3);
           vec3 color=mix(vec3(.18,.65,1.),vec3(.45,1.,.89),vHue);
-          gl_FragColor=vec4(color*(halo*.42+core*1.45)*vGlow,
-            (halo*.38+core*.83)*vGlow); }`,
+          float nearness=1.-smoothstep(17.,68.,vDistance);
+          gl_FragColor=vec4(color*(halo*.5+core*2.2)*vGlow*nearness,
+            (halo*.38+core*.83)*vGlow*nearness); }`,
     });
     this.plankton = new THREE.Points(geometry, this.planktonMaterial);
     this.plankton.frustumCulled = false;
@@ -469,10 +741,52 @@ export class LightCableWorld {
     this.sunLight = new THREE.DirectionalLight(this.palette.sun, this.palette.daylight * 1.1);
     this.sunLight.position.copy(this.sunDirection).multiplyScalar(80);
     this.root.add(this.sunLight);
-    this.cameraLamp = new THREE.PointLight('#75c1d9', 1.35, 24, 1.7);
+    this.cameraLamp = new THREE.PointLight('#b4dbea', 2.1, 29, 1.5);
     this.echoLamp = new THREE.PointLight('#a5d8eb', 1.05, 18, 1.7);
-    this.planktonLamp = new THREE.PointLight('#35aace', .85, 13, 2);
-    this.root.add(this.cameraLamp, this.echoLamp, this.planktonLamp);
+    this.planktonLamp = new THREE.PointLight('#8cdbfa', 0, 20, 1.6);
+    this.planktonFill = new THREE.PointLight('#62d9ed', 0, 18, 1.6);
+    this.root.add(this.cameraLamp, this.echoLamp, this.planktonLamp, this.planktonFill);
+    this.seabedGlowLights = this.plants.map((_, index) => {
+      const light = new THREE.PointLight(index % 2 ? '#55d9cf' : '#72c9f5', 0, 19, 1.7);
+      this.root.add(light);
+      return light;
+    });
+  }
+
+  updateSeabedGlowLights(amount) {
+    this.plants.forEach(({ instances, placements }, index) => {
+      const targetDistance = this.travelDistance + 14 + index * 7;
+      const placement = placements.reduce((nearest, candidate) => (
+        !nearest || Math.abs(candidate.distance - targetDistance)
+          < Math.abs(nearest.distance - targetDistance) ? candidate : nearest
+      ), null);
+      if (!placement) return;
+      cablePoint(placement.distance, this.originDistance, this.point);
+      cableTangent(placement.distance, this.tangent);
+      const x = this.point.x - this.tangent.z * placement.side;
+      const z = this.point.z + this.tangent.x * placement.side;
+      const light = this.seabedGlowLights[index];
+      const floorY = seabedHeight(x + this.originDistance, z);
+      light.position.set(x, floorY + 2.2, z);
+      const proximity = 1 - smooth((Math.abs(placement.distance - this.travelDistance) - 12) / 55);
+      light.intensity = amount * proximity
+        * (4.1 + .25 * Math.sin(this.elapsed * 1.1 + index * 1.7));
+      instances.material.emissiveIntensity = .85 + amount * .42
+        + .1 * Math.sin(this.elapsed * .85 + index);
+    });
+  }
+
+  updatePlanktonLights(amount) {
+    this.planktonLamp.intensity = amount * (2.1 + .25 * Math.sin(this.elapsed * 1.2));
+    this.planktonFill.intensity = amount * (1.7 + .2 * Math.sin(this.elapsed * 1.5 + 1.8));
+    this.planktonLamp.position.copy(this.camera.position);
+    this.planktonLamp.position.x += 6;
+    this.planktonLamp.position.y += 1.8;
+    this.planktonLamp.position.z -= 5.5;
+    this.planktonFill.position.copy(this.camera.position);
+    this.planktonFill.position.x += 9;
+    this.planktonFill.position.y += 1.2;
+    this.planktonFill.position.z += 6.5;
   }
 
   makeEcho(source) {
@@ -491,8 +805,10 @@ export class LightCableWorld {
     fittedEcho.position.copy(center).multiplyScalar(-factor);
     fittedEcho.add(echo);
     this.echoTraveler.add(fittedEcho);
+    this.echoLocalBottom = new THREE.Box3().setFromObject(fittedEcho).min.y;
     this.swimBody = echo.getObjectByName('Body');
     this.bodyRest = this.swimBody?.quaternion.clone() ?? null;
+    this.bodyRestPosition = this.swimBody?.position.clone() ?? null;
     this.legRest = Array.from({ length: 4 }, (_, index) => {
       const id = String(index + 1).padStart(2, '0');
       const upper = echo.getObjectByName(`Leg_${id}_Upper`);
@@ -518,6 +834,7 @@ export class LightCableWorld {
     this.scene.fog = null;
     this.root.visible = true;
     this.echoTraveler.visible = false;
+    this.echoTraveler.scale.setScalar(1);
     this.elapsed = 0;
     this.travelDistance = 0;
     this.originDistance = 0;
@@ -525,31 +842,238 @@ export class LightCableWorld {
     this.travelBias = 0;
     this.pointerLook = 0;
     this.pointerLookTarget = 0;
+    this.pointerLookY = 0;
+    this.pointerLookTargetY = 0;
     this.updateCableWindow(0, true);
     this.updatePlants(true);
     this.updateFish(0);
     this.floorCell = null;
     this.updateSeabed(CABLE_START_X);
     this.phase = 'surface';
+    this.motionBlur = 0;
+    this.creatureView = null;
+    this.creatureViewBlend = 0;
+    this.dataParticles.group.visible = false;
     this.camera.fov = 52;
     this.camera.updateProjectionMatrix();
     this.update(0);
   }
 
+  updateSurfaceEcho(time) {
+    if (!this.echoTraveler) return;
+    this.echoTraveler.visible = time < SINK_END;
+    if (!this.echoTraveler.visible) return;
+    const fall = smooth((time - .35) / (IMPACT_AT - .35));
+    const sink = smooth((time - IMPACT_AT) / (SINK_END - IMPACT_AT));
+    const height = time < IMPACT_AT
+      ? THREE.MathUtils.lerp(12.8, .18, fall * fall)
+      : THREE.MathUtils.lerp(.18, -13, sink);
+    this.echoTraveler.position.set(0, height, -11);
+    this.echoTraveler.scale.setScalar(2.5 - .48 * sink);
+    this.echoTraveler.quaternion.setFromAxisAngle(Y_AXIS, time * .4);
+    this.swimTilt.setFromAxisAngle(X_AXIS, -.25 - .45 * fall + .3 * sink);
+    this.echoTraveler.quaternion.multiply(this.swimTilt);
+    this.animateEchoSwimming(time * 1.7);
+    this.echoLamp.position.copy(this.echoTraveler.position);
+    this.echoLamp.intensity = time < IMPACT_AT ? .65 : .65 * (1 - sink);
+  }
+
+  updateCableEntryEcho(time) {
+    if (!this.echoTraveler) return;
+    const progress = THREE.MathUtils.clamp(
+      (time - CABLE_RUSH_START) / (DIVE_END - CABLE_RUSH_START), 0, 1,
+    );
+    this.echoTraveler.visible = true;
+    this.echoTraveler.scale.setScalar(ECHO_WALK_SCALE * (1 + .08 * (1 - smooth(progress))));
+    this.placeEchoOnCable(CABLE_ECHO_LEAD);
+    cableTangent(CABLE_ECHO_LEAD, this.tangent);
+    this.echoTraveler.quaternion.setFromUnitVectors(Z_AXIS, this.tangent);
+    this.animateEchoWalking(0);
+    this.echoLamp.position.copy(this.echoTraveler.position);
+    this.echoLamp.intensity = .6 + progress * .7;
+  }
+
+  placeEchoOnCable(distance) {
+    cablePoint(distance, this.originDistance, this.echoTraveler.position);
+    this.echoTraveler.position.y += -GLASS_CABLE_WIDTH / 2 + .14
+      - this.echoLocalBottom * this.echoTraveler.scale.y;
+  }
+
+  aimCameraAt(target, delta, roll = 0) {
+    this.previousCameraQuaternion.copy(this.camera.quaternion);
+    this.camera.lookAt(target);
+    this.desiredCameraQuaternion.copy(this.camera.quaternion);
+    this.cameraRoll = THREE.MathUtils.damp(this.cameraRoll, roll, 3.4, delta);
+    this.cameraRollQuaternion.setFromAxisAngle(Z_AXIS, this.cameraRoll);
+    this.desiredCameraQuaternion.multiply(this.cameraRollQuaternion);
+    this.camera.quaternion.copy(this.previousCameraQuaternion)
+      .slerp(this.desiredCameraQuaternion, 1 - Math.exp(-delta * 5));
+  }
+
+  updateCableCameraRig(travel, delta) {
+    cablePoint(travel, this.originDistance, this.cameraRigTarget);
+    cableTangent(travel, this.tangent);
+    cableTangent(travel + CAMERA_LOOK_AHEAD, this.cameraFutureTangent);
+    const turn = THREE.MathUtils.clamp(
+      this.tangent.x * this.cameraFutureTangent.z - this.tangent.z * this.cameraFutureTangent.x,
+      -.35, .35,
+    );
+    this.cameraSide.set(-this.tangent.z, 0, this.tangent.x).normalize();
+    const drift = Math.sin(this.elapsed * .31) * .13 + Math.sin(this.elapsed * .17 + 1.8) * .08;
+    this.cameraRigTarget.addScaledVector(this.cameraSide, drift - turn * 2.4);
+    this.cameraRigTarget.y += .28
+      + Math.sin(this.elapsed * .47) * .08 + Math.sin(this.elapsed * .19 + .7) * .045;
+    if (!this.cameraRigReady) {
+      this.cameraRigPosition.copy(this.cameraRigTarget);
+      this.cameraRigVelocity.set(0, 0, 0);
+      this.cameraRigReady = true;
+    }
+    const step = Math.min(delta, 1 / 30);
+    this.cameraRigAcceleration.subVectors(this.cameraRigTarget, this.cameraRigPosition)
+      .multiplyScalar(CAMERA_SPRING_STIFFNESS)
+      .addScaledVector(this.cameraRigVelocity, -CAMERA_SPRING_DAMPING);
+    this.cameraRigVelocity.addScaledVector(this.cameraRigAcceleration, step);
+    this.cameraRigPosition.addScaledVector(this.cameraRigVelocity, step);
+    this.camera.position.copy(this.cameraRigPosition);
+    return turn;
+  }
+
   startExitSuction() {
     if (this.phase !== 'cable' || this.exitSuction) return CABLE_EXIT_DURATION;
     this.pointerLookTarget = 0;
+    this.pointerLookTargetY = 0;
     this.exitSuction = { startedAt: this.elapsed, duration: CABLE_EXIT_DURATION };
     return CABLE_EXIT_DURATION;
   }
 
-  setPointerLook(normalizedX) {
-    if (this.phase !== 'cable' || this.exitSuction) return;
+  setPointerLook(normalizedX, normalizedY = 0) {
+    if (this.phase !== 'cable' || this.exitSuction || this.creatureView) return;
     this.pointerLookTarget = THREE.MathUtils.clamp(normalizedX, -1, 1);
+    this.pointerLookTargetY = THREE.MathUtils.clamp(normalizedY, -1, 1);
   }
 
   clearPointerLook() {
     this.pointerLookTarget = 0;
+    this.pointerLookTargetY = 0;
+  }
+
+  get cableIntroReady() {
+    return this.phase === 'cable' && this.elapsed >= CAMERA_START + ENTRY_SPRINT_DURATION;
+  }
+
+  pickCreature(clientX, clientY, rect) {
+    if (!this.cableIntroReady || this.creatureView || this.exitSuction
+      || !rect.width || !rect.height) return null;
+    this.creaturePointer.set(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      1 - ((clientY - rect.top) / rect.height) * 2,
+    );
+    this.creatureRaycaster.setFromCamera(this.creaturePointer, this.camera);
+    this.creatureRaycaster.far = 52;
+    const directHit = this.creatureRaycaster.intersectObjects(this.creaturePickMeshes, false)[0];
+    if (directHit?.instanceId !== undefined) {
+      const fishIndex = this.fish.findIndex(({ instances }) => instances === directHit.object);
+      return fishIndex >= 0
+        ? { kind: 'fish', groupIndex: fishIndex, index: directHit.instanceId }
+        : { kind: 'plant', groupIndex: this.plants.findIndex(
+          ({ instances }) => instances === directHit.object), index: directHit.instanceId };
+    }
+    let closest = null;
+    let bestScore = Infinity;
+    for (const [kind, groups] of [['fish', this.fish], ['plant', this.plants]]) {
+      groups.forEach((group, groupIndex) => {
+        if (!group.instances.geometry.boundingSphere) {
+          group.instances.geometry.computeBoundingSphere();
+        }
+        const visualCenter = group.instances.geometry.boundingSphere.center;
+        for (let index = 0; index < group.instances.count; index += 1) {
+          group.instances.getMatrixAt(index, this.pickMatrix);
+          this.pickPosition.copy(visualCenter).applyMatrix4(this.pickMatrix);
+          const distance = this.camera.position.distanceTo(this.pickPosition);
+          if (distance > 52 || distance < .5) continue;
+          this.pickProjected.copy(this.pickPosition).project(this.camera);
+          if (this.pickProjected.z <= -1 || this.pickProjected.z >= 1
+            || Math.abs(this.pickProjected.x) > 1 || Math.abs(this.pickProjected.y) > 1) continue;
+          const dx = rect.left + (this.pickProjected.x * .5 + .5) * rect.width - clientX;
+          const dy = rect.top + (-this.pickProjected.y * .5 + .5) * rect.height - clientY;
+          // The whole projected fish silhouette should respond, including fins and tail.
+          const projectedRadius = group.instances.geometry.boundingSphere.radius
+            * this.pickMatrix.getMaxScaleOnAxis()
+            * rect.height / (2 * Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2) * distance);
+          const radius = kind === 'fish' ? Math.max(54, projectedRadius * 1.1) : 72;
+          const score = (dx * dx + dy * dy) / (radius * radius) + distance * .003;
+          if (score >= 1 || score >= bestScore) continue;
+          bestScore = score;
+          closest = { kind, groupIndex, index };
+        }
+      });
+    }
+    return closest;
+  }
+
+  setCreatureHover(creature = null) {
+    const next = creature?.kind === 'fish' ? creature : null;
+    const previous = this.hoveredCreature;
+    if (previous?.groupIndex === next?.groupIndex && previous?.index === next?.index) return;
+    if (this.creatureHoverMesh) this.creatureHoverMesh.visible = false;
+    this.hoveredCreature = next;
+    if (next) {
+      const group = this.fish[next.groupIndex];
+      if (!group) return;
+      const { instances, hoverMesh } = group;
+      this.creatureHoverMesh = hoverMesh;
+      instances.getMatrixAt(next.index, this.pickMatrix);
+      this.creatureHoverMesh.setMatrixAt(0, this.pickMatrix);
+      this.creatureHoverMesh.instanceMatrix.needsUpdate = true;
+      this.creatureHoverMesh.visible = true;
+    } else {
+      this.creatureHoverMesh = null;
+    }
+  }
+
+  enterCreatureView(creature) {
+    if (!creature || !this.cableIntroReady || this.exitSuction) return false;
+    this.creatureView = creature;
+    this.pointerLookTarget = 0;
+    this.pointerLookTargetY = 0;
+    return true;
+  }
+
+  leaveCreatureView() {
+    this.creatureView = null;
+  }
+
+  updateCreatureCamera(delta) {
+    this.creatureViewBlend = THREE.MathUtils.damp(this.creatureViewBlend,
+      this.creatureView ? 1 : 0, 2.5, delta);
+    if (this.creatureView) {
+      const { kind, groupIndex, index } = this.creatureView;
+      const group = (kind === 'fish' ? this.fish : this.plants)[groupIndex];
+      const subject = kind === 'fish' ? group?.swimmers[index] : group?.placements[index];
+      if (!group || !subject) { this.leaveCreatureView(); return; }
+      group.instances.getMatrixAt(index, this.pickMatrix);
+      if (!group.instances.geometry.boundingSphere) {
+        group.instances.geometry.computeBoundingSphere();
+      }
+      const plant = kind === 'plant';
+      if (plant) {
+        this.creatureCameraPosition.copy(group.instances.geometry.boundingSphere.center)
+          .applyMatrix4(this.pickMatrix);
+        this.creatureCameraPosition.y += 1.6 + Math.sin(this.elapsed * .72) * .12;
+        this.creatureCameraPosition.z += Math.sin(this.elapsed * .45) * .14;
+        cablePoint(subject.distance + 6, this.originDistance, this.creatureLookTarget);
+        this.creatureLookTarget.y -= .1;
+      } else {
+        cablePoint(subject.distance + 5, this.originDistance, this.lookTarget);
+        computeFishViewPose(this.pickMatrix, group.instances.geometry.boundingSphere,
+          this.creatureCameraPosition, this.creatureLookTarget, this.lookTarget);
+        this.creatureCameraPosition.y += Math.sin(this.elapsed * .72) * .035;
+      }
+    }
+    if (this.creatureViewBlend > .002) {
+      this.camera.position.lerp(this.creatureCameraPosition, this.creatureViewBlend);
+      this.gazeTarget.lerp(this.creatureLookTarget, this.creatureViewBlend);
+    }
   }
 
   cancelExitSuction() {
@@ -561,7 +1085,7 @@ export class LightCableWorld {
     this.camera.updateProjectionMatrix();
     if (this.echoTraveler) {
       this.echoTraveler.visible = true;
-      this.echoTraveler.scale.setScalar(1);
+      this.echoTraveler.scale.setScalar(ECHO_WALK_SCALE);
     }
   }
 
@@ -571,114 +1095,201 @@ export class LightCableWorld {
     this.sky.material.uniforms.cloudDrift.value = this.elapsed * .000055;
     this.planktonMaterial.uniforms.time.value = this.elapsed;
     const time = this.elapsed;
+    this.updateImpactEffects(time);
     if (time < DIVE_START) {
       this.phase = 'surface';
+      this.dataParticles.group.visible = false;
+      // Hide the abrupt handoff from the splash to the first ECHO narration shot.
+      const splashBlurIn = smooth((time - IMPACT_AT) / .08);
+      const splashBlurOut = 1 - smooth((time - IMPACT_AT - .15)
+        / (PACIFIC_NARRATION_START_MS / 1000 - IMPACT_AT - .15));
+      const zoomMotion = time < QUESTION_AT || time >= QUESTION_ZOOM_IN_END ? 0
+        : Math.sin(Math.PI * (time - QUESTION_AT) / (QUESTION_ZOOM_IN_END - QUESTION_AT));
+      this.motionBlur = Math.min(1, splashBlurIn * splashBlurOut * .65
+        + zoomMotion * .22);
+      this.submersion = 0;
       this.sky.visible = true;
       this.water.visible = true;
       this.plankton.visible = false;
       this.sunLight.intensity = this.palette.daylight * 1.1;
       this.cameraLamp.intensity = 0;
-      this.echoLamp.intensity = 0;
-      this.planktonLamp.intensity = 0;
-      this.camera.position.set(0, 5.7, 19);
-      this.camera.lookAt(0, 0, -60);
+      this.updateSurfaceEcho(time);
+      this.updatePlanktonLights(0);
+      this.updateSeabedGlowLights(0);
+      this.updateLightShafts(0, false);
+      this.terrainMaterial.emissiveIntensity = .35;
+      const zoom = time < QUESTION_AT ? 0
+        : smoother((time - QUESTION_AT) / (QUESTION_ZOOM_IN_END - QUESTION_AT));
+      const zoomAmount = THREE.MathUtils.clamp(zoom, 0, 1);
+      // Begin at wave height, looking up into ECHO's fall. After the splash,
+      // ease into the established surface framing before the question zoom.
+      const fallProgress = smoother(time / IMPACT_AT);
+      const splashReframe = smoother((time - IMPACT_AT - .1) / 2);
+      this.camera.position.set(
+        THREE.MathUtils.lerp(3, 2, fallProgress),
+        THREE.MathUtils.lerp(1.45, 1.1, fallProgress),
+        THREE.MathUtils.lerp(7, 4.8, fallProgress),
+      );
+      this.lookTarget.set(0,
+        2.3 + Math.max(0, this.echoTraveler?.position.y ?? 0) * .53, -11);
+      this.camera.position.lerp(this.point.set(0,
+        THREE.MathUtils.lerp(5.7, 3.2, zoomAmount),
+        THREE.MathUtils.lerp(19, 3, zoomAmount)), splashReframe);
+      this.lookTarget.lerp(this.gazeTarget.set(0,
+        THREE.MathUtils.lerp(1, .1, zoomAmount),
+        THREE.MathUtils.lerp(-14, -11, zoomAmount)), splashReframe);
+      this.camera.lookAt(this.lookTarget);
+      const surfaceFov = THREE.MathUtils.lerp(52, 42, zoomAmount);
+      if (Math.abs(this.camera.fov - surfaceFov) > .01) {
+        this.camera.fov = surfaceFov;
+        this.camera.updateProjectionMatrix();
+      }
       return;
     }
     if (time < DIVE_END) {
       this.phase = 'descent';
-      const progress = smooth((time - DIVE_START) / (DIVE_END - DIVE_START));
+      this.dataParticles.group.visible = false;
+      const dropProgress = THREE.MathUtils.clamp(
+        (time - DIVE_START) / VERTICAL_DESCENT_DURATION, 0, 1,
+      );
+      const travelProgress = THREE.MathUtils.clamp(
+        (time - DIVE_START - VERTICAL_DESCENT_DURATION)
+          / (DIVE_END - DIVE_START - VERTICAL_DESCENT_DURATION), 0, 1,
+      );
+      const drop = smoother(dropProgress);
+      const travel = smoother(travelProgress);
+      const cameraMotion = Math.max(
+        Math.sin(Math.PI * dropProgress), Math.sin(Math.PI * travelProgress),
+      );
       this.camera.position.set(
-        THREE.MathUtils.lerp(0, -102, progress),
-        THREE.MathUtils.lerp(5.7, -47.8, progress),
-        THREE.MathUtils.lerp(19, 3, progress),
+        THREE.MathUtils.lerp(0, CABLE_START_X, travel),
+        THREE.MathUtils.lerp(3.2, -47.8, drop),
+        THREE.MathUtils.lerp(3, 0, travel),
       );
       const submerged = this.camera.position.y < -.25;
+      this.motionBlur = submerged ? 0 : cameraMotion * .65;
       const depthMix = smooth((Math.max(0, -this.camera.position.y) - .25) / 34);
+      this.submersion = depthMix;
       this.sky.visible = !submerged;
       this.water.visible = !submerged;
       this.plankton.visible = submerged;
       this.surfaceColor.set(this.palette.horizon);
       this.scene.background.lerpColors(this.surfaceColor, this.underwaterColor, depthMix);
       if (submerged) {
-        this.underwaterFog.density = THREE.MathUtils.lerp(.002, .007, depthMix);
+        this.underwaterFog.density = THREE.MathUtils.lerp(.003, .011, depthMix);
         this.underwaterFog.color.copy(this.scene.background);
         this.scene.fog = this.underwaterFog;
       } else this.scene.fog = null;
+      this.updateLightShafts(depthMix, submerged);
       this.sunLight.intensity = this.palette.daylight * 1.1 * (1 - depthMix);
-      this.cameraLamp.intensity = depthMix * 1.35;
+      this.cameraLamp.intensity = depthMix * 2.1;
       this.cameraLamp.position.copy(this.camera.position);
-      this.echoLamp.intensity = depthMix * 1.05;
-      cablePoint(6.4, this.originDistance, this.echoLamp.position);
-      this.planktonLamp.intensity = depthMix * .85;
-      this.planktonLamp.position.copy(this.camera.position);
-      this.planktonLamp.position.x += 4;
-      this.planktonLamp.position.y += 1.2;
-      this.planktonLamp.position.z -= 2;
-      const target = cablePoint(7.2, this.originDistance, this.lookTarget);
-      this.camera.lookAt(
-        THREE.MathUtils.lerp(0, target.x, progress),
-        THREE.MathUtils.lerp(-2, target.y, progress),
-        THREE.MathUtils.lerp(-10, target.z, progress),
+      this.echoLamp.intensity = 0;
+      this.updatePlanktonLights(depthMix);
+      this.updateSeabedGlowLights(depthMix);
+      this.terrainMaterial.emissiveIntensity = .35 + depthMix * .55;
+      const target = cablePoint(CABLE_ECHO_LEAD + .8, this.originDistance, this.lookTarget);
+      const downwardLook = THREE.MathUtils.lerp(.1, this.camera.position.y - 18,
+        smoother((time - DIVE_START) / 1.05));
+      this.gazeTarget.set(
+        THREE.MathUtils.lerp(0, target.x, travel),
+        THREE.MathUtils.lerp(downwardLook, target.y - .65, travel),
+        THREE.MathUtils.lerp(-11, target.z, travel),
       );
+      this.aimCameraAt(this.gazeTarget, delta);
+      const diveFov = THREE.MathUtils.lerp(42, 52, travel);
+      if (Math.abs(this.camera.fov - diveFov) > .01) {
+        this.camera.fov = diveFov;
+        this.camera.updateProjectionMatrix();
+      }
+      if (time >= CABLE_RUSH_START) this.updateCableEntryEcho(time);
+      else if (this.echoTraveler) this.echoTraveler.visible = false;
       this.updateFish(delta);
       return;
     }
     this.phase = 'cable';
+    this.updateLightShafts(1, true);
+    this.motionBlur = 0;
+    this.submersion = 1;
     this.sky.visible = false;
     this.water.visible = false;
     this.plankton.visible = true;
     this.scene.background.copy(this.underwaterColor);
     this.underwaterFog.color.copy(this.underwaterColor);
-    this.underwaterFog.density = .007;
+    this.underwaterFog.density = .011;
     if (!this.scene.fog) this.scene.fog = this.underwaterFog;
     this.sunLight.intensity = .07;
+    this.terrainMaterial.emissiveIntensity = .9;
     const exitMotion = this.exitSuction
       ? getCableExitMotion((time - this.exitSuction.startedAt) / this.exitSuction.duration)
       : null;
-    const travel = Math.max(0, (time - CAMERA_START) * TRAVEL_SPEED + this.travelBias
+    const entrySprint = THREE.MathUtils.clamp(
+      (time - CAMERA_START) / ENTRY_SPRINT_DURATION, 0, 1,
+    );
+    const travel = this.creatureView ? this.travelDistance : Math.max(0, (time - CAMERA_START) * TRAVEL_SPEED + this.travelBias
+      + ENTRY_SPRINT_DISTANCE * smoother(entrySprint)
       + (exitMotion?.cameraBoost ?? 0));
     this.travelDistance = travel;
     const nextOrigin = Math.floor(travel / ORIGIN_REBASE_DISTANCE) * ORIGIN_REBASE_DISTANCE;
     const rebased = nextOrigin !== this.originDistance;
     this.originDistance = nextOrigin;
+    this.dataParticles.update(delta, travel, this.originDistance);
     this.updateCableWindow(travel, rebased);
     this.updatePlants(rebased);
-    cablePoint(travel, this.originDistance, this.camera.position);
+    const cameraTurn = this.updateCableCameraRig(travel, delta);
     this.updateSeabed(this.camera.position.x);
-    this.camera.position.y += .1 + Math.sin(time * .8) * .07;
     this.cameraLamp.position.copy(this.camera.position);
-    this.cameraLamp.intensity = 1.35;
-    this.planktonLamp.position.copy(this.camera.position);
-    this.planktonLamp.position.x += 4;
-    this.planktonLamp.position.y += 1.2;
-    this.planktonLamp.position.z -= 2;
-    this.planktonLamp.intensity = .85;
-    const echoDistance = travel + (exitMotion?.echoLead ?? 6.4);
+    this.cameraLamp.intensity = 2.1;
+    this.updatePlanktonLights(1);
+    this.updateSeabedGlowLights(1);
+    // echoLead describes the departure path from the original cable position;
+    // subtract the camera's catch-up distance so ECHO stays in the shot.
+    const echoDistance = travel + (exitMotion?.echoLead ?? CABLE_ECHO_LEAD)
+      - (exitMotion?.cameraBoost ?? 0);
     cablePoint(echoDistance, this.originDistance, this.lookTarget);
-    this.lookTarget.y += .1;
+    // Keep the cable and ECHO higher in the frame beneath the persistent caption.
+    const captionFraming = this.creatureView ? 0 : smoother(
+      (time - CAMERA_START - ENTRY_SPRINT_DURATION) / 1.8,
+    );
+    this.lookTarget.y -= .65 + captionFraming * .9;
     this.pointerLook = THREE.MathUtils.damp(this.pointerLook,
       this.exitSuction ? 0 : this.pointerLookTarget, 4.2, delta);
-    cableTangent(travel + 6.4, this.tangent);
+    this.pointerLookY = THREE.MathUtils.damp(this.pointerLookY,
+      this.exitSuction ? 0 : this.pointerLookTargetY, 4.2, delta);
+    cableTangent(travel + CABLE_ECHO_LEAD, this.tangent);
     this.gazeTarget.copy(this.lookTarget);
     this.gazeTarget.x -= this.tangent.z * this.pointerLook * 5.8;
     this.gazeTarget.z += this.tangent.x * this.pointerLook * 5.8;
-    this.camera.lookAt(this.gazeTarget);
+    this.gazeTarget.y += this.pointerLookY * 2.2;
+    this.updateCreatureCamera(delta);
+    this.cameraLamp.position.copy(this.camera.position);
+    const cameraRoll = this.creatureView || this.exitSuction
+      ? 0 : THREE.MathUtils.clamp(-cameraTurn * 5.2 - this.pointerLook * .018, -.085, .085);
+    this.aimCameraAt(this.gazeTarget, delta, cameraRoll);
     if (this.echoTraveler) {
       this.echoTraveler.visible = exitMotion?.echoVisible ?? true;
-      this.echoTraveler.scale.setScalar(exitMotion?.echoScale ?? 1);
-      this.echoTraveler.position.copy(this.lookTarget);
-      this.echoTraveler.position.y += Math.sin(time * 1.05) * .14;
+      this.echoTraveler.scale.setScalar(ECHO_WALK_SCALE * (exitMotion?.echoScale ?? 1));
+      this.placeEchoOnCable(echoDistance);
       cableTangent(echoDistance, this.tangent);
       this.echoFacing.setFromUnitVectors(Z_AXIS, this.tangent);
-      this.swimTilt.setFromAxisAngle(Z_AXIS, Math.sin(time * .82) * .075);
-      this.echoTraveler.quaternion.copy(this.echoFacing).multiply(this.swimTilt);
-      this.animateEchoSwimming(time);
+      this.echoTraveler.quaternion.copy(this.echoFacing);
+      this.animateEchoWalking((echoDistance - CABLE_ECHO_LEAD) * 1.6);
       this.echoLamp.position.copy(this.echoTraveler.position);
       this.echoLamp.intensity = 1.05;
     }
     if (exitMotion && Math.abs(this.camera.fov - exitMotion.fov) > .01) {
       this.camera.fov = exitMotion.fov;
       this.camera.updateProjectionMatrix();
+    } else if (!exitMotion) {
+      const speedLift = THREE.MathUtils.clamp(
+        (this.cameraRigVelocity.length() - TRAVEL_SPEED) * .32, 0, 1.8,
+      );
+      const sprintFov = 52 + 2 * Math.sin(Math.PI * entrySprint)
+        + speedLift + Math.abs(cameraTurn) * 4.5;
+      if (Math.abs(this.camera.fov - sprintFov) > .01) {
+        this.camera.fov = sprintFov;
+        this.camera.updateProjectionMatrix();
+      }
     }
     this.plankton.position.x = this.camera.position.x;
     this.plankton.position.z = this.camera.position.z;
@@ -687,6 +1298,7 @@ export class LightCableWorld {
 
   animateEchoSwimming(time) {
     if (this.swimBody && this.bodyRest) {
+      if (this.bodyRestPosition) this.swimBody.position.copy(this.bodyRestPosition);
       this.swimEuler.set(
         .055 + Math.sin(time * .74) * .035,
         Math.sin(time * .52) * .035,
@@ -716,6 +1328,45 @@ export class LightCableWorld {
     }
   }
 
+  animateEchoWalking(phase) {
+    if (this.swimBody && this.bodyRest) {
+      this.swimEuler.set(.018 * Math.sin(phase), 0, .025 * Math.sin(phase));
+      this.swimTilt.setFromEuler(this.swimEuler);
+      this.swimBody.quaternion.copy(this.bodyRest).multiply(this.swimTilt);
+      if (this.bodyRestPosition) {
+        this.swimBody.position.copy(this.bodyRestPosition);
+        this.swimBody.position.y += .018 * (1 + Math.cos(phase * 2));
+      }
+    }
+    this.legRest.forEach((leg, index) => {
+      // Diagonal legs alternate. Each foot moves quickly through the air,
+      // then spends longer planted while the body passes over it.
+      const cycle = ((phase + (index === 0 || index === 3 ? 0 : Math.PI))
+        % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      const progress = cycle / (Math.PI * 2);
+      const swing = progress < .38;
+      const swingProgress = swing ? progress / .38 : 0;
+      const lift = swing ? Math.sin(Math.PI * swingProgress) : 0;
+      const pitch = swing
+        ? -.38 + .76 * smooth(swingProgress)
+        : .38 - .76 * ((progress - .38) / .62);
+      const side = index % 2 ? 1 : -1;
+      if (leg.upper && leg.upperRest) {
+        this.swimEuler.set(pitch, 0, side * (.09 + lift * .18));
+        this.swimTilt.setFromEuler(this.swimEuler);
+        leg.upper.quaternion.copy(leg.upperRest).multiply(this.swimTilt);
+      }
+      if (leg.lower && leg.lowerRest) {
+        this.swimTilt.setFromAxisAngle(X_AXIS, .04 + lift * .5);
+        leg.lower.quaternion.copy(leg.lowerRest).multiply(this.swimTilt);
+      }
+      if (leg.foot && leg.footRest) {
+        this.swimTilt.setFromAxisAngle(X_AXIS, -pitch * .42 - lift * .24);
+        leg.foot.quaternion.copy(leg.footRest).multiply(this.swimTilt);
+      }
+    });
+  }
+
   dispose() {
     this.root.removeFromParent();
     this.scene.background = this.oldBackground;
@@ -734,6 +1385,6 @@ export class LightCableWorld {
     });
     for (const geometry of geometries) geometry.dispose();
     for (const material of materials) material.dispose();
-    for (const texture of [...textures, ...(this.terrainTextures ?? []), this.cloudTexture]) texture?.dispose();
+    for (const texture of [...textures, ...(this.terrainTextures ?? []), this.cloudTexture, this.waterNormals]) texture?.dispose();
   }
 }
