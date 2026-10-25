@@ -10,6 +10,8 @@ import {
 import { NevadaWorld } from '../world/nevada/NevadaWorld.js';
 import { InteractiveFocusLight } from '../world/shared/InteractiveFocusLight.js';
 import { HaminaWorld } from '../world/hamina/HaminaWorld.js';
+import { KobeWorld } from '../world/kobe/KobeWorld.js';
+import { KobeMaterialPanel } from '../world/kobe/KobeMaterialPanel.js';
 import { createWorldRoute } from './WorldRoute.js';
 import { WORLD_ENTRY_COPY, WORLD_PRESENTATION } from '../content/WorldPresentation.js';
 import { WORLD_ACTIONS, WORLD_CAPTIONS } from '../content/WorldUiCopy.js';
@@ -98,7 +100,9 @@ export class ExperienceController {
 
     this.navigation = new WorldNavigation();
     this.world = this.firstLandWorld === 'hamina'
-      ? new HaminaWorld(this.scene) : new NevadaWorld(this.scene);
+      ? new HaminaWorld(this.scene)
+      : this.firstLandWorld === 'kobe'
+        ? new KobeWorld(this.scene) : new NevadaWorld(this.scene);
     this.characterManager = new CharacterManager(this.scene, this.camera, this.navigation);
     this.cameraController = new CinematicCameraController(this.camera, this.navigation);
     this.cameraController.onStateChange = (state) => {
@@ -218,10 +222,13 @@ export class ExperienceController {
     this.currentWorld = this.worldOrder[0];
     this.worldTransitioning = false;
     this.haminaPromise = null;
+    this.kobePromise = null;
+    this.kobeMaterialPanel = null;
     this.lightCableWorld = null;
     this.lightCableNarrationTimers = [];
     this.nevadaEntryAudioPlayed = false;
     this.haminaEntryAudioPlayed = false;
+    this.kobeEntryAudioPlayed = false;
     this.dataCenterNarrationTimers = [];
     this.danceNarrationTimer = null;
     this.pendingDanceNarrationGroup = null;
@@ -496,10 +503,19 @@ export class ExperienceController {
     this.cameraController.configure(world);
     this.dataCenterArchive.restore(world);
     this.atmosphere = new Atmosphere(this.scene, world, this.firstLandWorld);
-    this.weather = new WeatherParticles(this.scene, world, WORLD_PRESENTATION[this.firstLandWorld].weather);
+    this.weather = WORLD_PRESENTATION[this.firstLandWorld].weather === 'none'
+      ? null
+      : new WeatherParticles(this.scene, world, WORLD_PRESENTATION[this.firstLandWorld].weather);
     this.stage.dataset.world = this.currentWorld;
     this.stage.dataset.weather = WORLD_PRESENTATION[this.firstLandWorld].weather;
+    if (this.firstLandWorld === 'kobe') {
+      this.kobeMaterialPanel = new KobeMaterialPanel(this.stage, world);
+      this.kobeMaterialPanel.setVisible(true);
+    }
     await this.characterManager.spawnNevadaNpcs();
+    if (this.firstLandWorld === 'kobe') {
+      for (const entity of this.characterManager.entities) entity.root.visible = false;
+    }
     if (this.firstLandWorld === 'hamina') {
       for (const entity of this.characterManager.entities) entity.setWorldMode('hamina');
     }
@@ -978,6 +994,9 @@ export class ExperienceController {
     } else if (mode === 'hamina' && !this.haminaEntryAudioPlayed) {
       this.haminaEntryAudioPlayed = true;
       this.cuePlayer.playSequence(['K01', 'K02']);
+    } else if (mode === 'kobe' && !this.kobeEntryAudioPlayed) {
+      this.kobeEntryAudioPlayed = true;
+      this.cuePlayer.playSequence(['K01', 'K02']);
     }
   }
 
@@ -1039,7 +1058,7 @@ export class ExperienceController {
   }
 
   handleWorldDoubleClick(event) {
-    if (!['nevada', 'hamina'].includes(this.currentWorld) || this.worldTransitioning
+    if (!['nevada', 'hamina', 'kobe'].includes(this.currentWorld) || this.worldTransitioning
       || this.characterManager.ritualActive
       || this.cameraController.state !== EXPERIENCE_STATES.ECHO_ORBIT) return;
     if (!Number.isFinite(this.getEchoHitDistance(event.clientX, event.clientY))) return;
@@ -1051,7 +1070,7 @@ export class ExperienceController {
     const pacific = this.currentWorld === 'lightcable';
     if (this.worldTransitioning || this.cameraController.state !== EXPERIENCE_STATES.ECHO_ORBIT
       || (pacific ? this.lightCableWorld?.phase !== 'cable'
-        : !['nevada', 'hamina'].includes(this.currentWorld) || !this.world.echo.visible)) return Infinity;
+        : !['nevada', 'hamina', 'kobe'].includes(this.currentWorld) || !this.world.echo.visible)) return Infinity;
     const rect = this.canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return Infinity;
     this.echoPointer.set(
@@ -1338,7 +1357,7 @@ export class ExperienceController {
 
   setEchoActionMenuVisible(visible) {
     const hasNextWorld = this.visitIndex < this.worldOrder.length - 1;
-    this.echoNextButton.hidden = !hasNextWorld && this.currentWorld !== 'hamina';
+    this.echoNextButton.hidden = !hasNextWorld && this.currentWorld !== 'kobe';
     if (this.echoActionMenu.classList.contains('visible') === visible) return;
     this.echoActionMenu.classList.toggle('visible', visible);
     this.echoActionMenu.setAttribute('aria-hidden', String(!visible));
@@ -1465,10 +1484,12 @@ export class ExperienceController {
 
   preloadLandWorld(mode) {
     if (mode === this.firstLandWorld && this.visitIndex === 0) return this.readyPromise;
-    const promiseKey = mode === 'hamina' ? 'haminaPromise' : 'nevadaPromise';
+    const promiseKey = mode === 'hamina' ? 'haminaPromise'
+      : mode === 'kobe' ? 'kobePromise' : 'nevadaPromise';
     if (!this[promiseKey]) {
       const destination = mode === 'hamina'
-        ? new HaminaWorld(this.scene) : new NevadaWorld(this.scene);
+        ? new HaminaWorld(this.scene)
+        : mode === 'kobe' ? new KobeWorld(this.scene) : new NevadaWorld(this.scene);
       const startedAt = performance.now();
       this[promiseKey] = destination.load({ visible: false }).then(async (world) => {
         world.root.visible = false;
@@ -1503,7 +1524,7 @@ export class ExperienceController {
     const destination = this.worldOrder[this.visitIndex + 1];
     if (this.worldTransitioning) return;
     if (!destination) {
-      if (this.currentWorld === 'hamina') this.startEchoReturn();
+      if (this.currentWorld !== 'lightcable') this.startEchoReturn();
       return;
     }
     if (destination === 'lightcable') this.startLightCableJourney();
@@ -1525,7 +1546,7 @@ export class ExperienceController {
   }
 
   async startEchoReturn() {
-    if (this.worldTransitioning || !['nevada', 'hamina', 'lightcable'].includes(this.currentWorld)) return;
+    if (this.worldTransitioning || !['nevada', 'hamina', 'kobe', 'lightcable'].includes(this.currentWorld)) return;
     this.worldTransitioning = true;
     this.echoActionMenu.classList.remove('visible');
     this.echoActionMenu.setAttribute('aria-hidden', 'true');
@@ -1553,8 +1574,8 @@ export class ExperienceController {
   }
 
   async startWorldJump(destination = this.worldOrder[this.visitIndex + 1]) {
-    if (this.worldTransitioning || !['nevada', 'hamina'].includes(this.currentWorld)
-      || !['nevada', 'hamina'].includes(destination) || destination === this.currentWorld) return;
+    if (this.worldTransitioning || !['nevada', 'hamina', 'kobe'].includes(this.currentWorld)
+      || !['nevada', 'hamina', 'kobe'].includes(destination) || destination === this.currentWorld) return;
     const sourceMode = this.currentWorld;
     this.cancelDanceNarration();
     this.worldInteraction.cancel();
@@ -1809,7 +1830,7 @@ export class ExperienceController {
       this.atmosphere.skyDome.visible = true;
       this.atmosphere.lensflare.visible = true;
       this.configureLandPresentation(destinationWorld, mode);
-      for (const entity of this.characterManager.entities) entity.root.visible = true;
+      for (const entity of this.characterManager.entities) entity.root.visible = mode !== 'kobe';
       const center = destinationWorld.echoCenter;
       const height = 85;
       const angle = Number.isFinite(this.cameraController.haminaArrivalAngle)
@@ -1852,12 +1873,22 @@ export class ExperienceController {
     this.dataCenterArchive.restore(world);
     this.characterManager.relocate(this.navigation, { preserveNevadaNpcs: true });
     this.characterManager.setWorldMode(mode);
+    for (const entity of this.characterManager.entities) entity.root.visible = mode !== 'kobe';
     this.cameraController.configure(world);
     this.atmosphere.finishTransition(mode, world);
-    this.weather = new WeatherParticles(this.scene, world, WORLD_PRESENTATION[mode].weather);
+    this.weather = WORLD_PRESENTATION[mode].weather === 'none'
+      ? null : new WeatherParticles(this.scene, world, WORLD_PRESENTATION[mode].weather);
     this.postProcessing.setWorldMode(mode);
     this.stage.dataset.world = mode;
     this.stage.dataset.weather = WORLD_PRESENTATION[mode].weather;
+    if (mode === 'kobe') {
+      this.kobeMaterialPanel?.dispose();
+      this.kobeMaterialPanel = new KobeMaterialPanel(this.stage, world);
+      this.kobeMaterialPanel.setVisible(true);
+    } else {
+      this.kobeMaterialPanel?.dispose();
+      this.kobeMaterialPanel = null;
+    }
   }
 
   async activateLandWorld(destinationWorld, mode) {
@@ -2505,7 +2536,7 @@ export class ExperienceController {
         remaining: Number(conversation.remaining.toFixed(1)),
       })),
     );
-    if (['nevada', 'hamina'].includes(this.currentWorld)) {
+    if (['nevada', 'hamina', 'kobe'].includes(this.currentWorld)) {
       const echo = this.world.echoCenter;
       const characters = this.characterManager.entities;
       this.stage.dataset.qaActivityBounds = JSON.stringify({
@@ -2663,6 +2694,7 @@ export class ExperienceController {
     this.echoTravel.dispose();
     this.lightCableNarrationTimers.forEach((timer) => window.clearTimeout(timer));
     this.lightCableWorld?.dispose();
+    this.kobeMaterialPanel?.dispose();
     this.npcWalkQaOverlay?.remove();
     this.interactiveTitle.remove();
     this.echoNextButton.removeEventListener('click', this.handleEchoNext);

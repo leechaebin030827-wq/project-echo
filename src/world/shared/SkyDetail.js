@@ -4,10 +4,12 @@ const clamp = THREE.MathUtils.clamp;
 const WORLD_TIME_ZONES = Object.freeze({
   nevada: 'America/Los_Angeles',
   hamina: 'Europe/Helsinki',
+  kobe: 'Asia/Tokyo',
 });
 const WORLD_COORDINATES = Object.freeze({
   nevada: { latitude: 39, longitude: -116 },
   hamina: { latitude: 60.57, longitude: 27.2 },
+  kobe: { latitude: 34.69, longitude: 135.2 },
 });
 const smoothstep = (low, high, value) => {
   const t = clamp((value - low) / (high - low), 0, 1);

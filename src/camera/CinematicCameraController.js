@@ -127,6 +127,22 @@ export class CinematicCameraController {
       this.farHeight = this.echoCenter.y
         + (this.nearHeight - this.echoCenter.y) * this.config.landIntroHeightFromNear;
     }
+    if (world.root?.name === 'KobeWorld') {
+      // Kobe is a narrow interior: keep both entry and orbit cameras inside
+      // the arched shell instead of applying the outdoor-world clearances.
+      this.kobeOrbitRadiusX = Math.min(2.35, world.size.x * 0.26);
+      this.nearRadius = 7.5;
+      this.farRadius = 10.5;
+      this.nearHeight = this.echoCenter.y + Math.max(2.35, world.echoSize.y * 0.86);
+      this.farHeight = this.echoCenter.y + Math.max(3.8, world.echoSize.y * 1.2);
+      this.orbitTargetHeightRatio = 0.12;
+      this.kobeTargetHeight = world.options?.wallHeight * 0.72 ?? 2.5;
+      this.kobeTargetDepth = -6;
+    } else {
+      this.kobeOrbitRadiusX = null;
+      this.kobeTargetHeight = null;
+      this.kobeTargetDepth = null;
+    }
     this.nevadaIntroAngle = null;
     this.nevadaIntroTarget = null;
     if (world.root?.name === 'NevadaWorld' && world.interactiveRegions?.length) {
@@ -226,8 +242,10 @@ export class CinematicCameraController {
 
   startIntro() {
     this.elapsed = 0;
-    const stopAngle = Number.isFinite(this.nevadaIntroAngle)
-      ? this.nevadaIntroAngle : -Math.PI * 0.15;
+    const stopAngle = this.world?.root?.name === 'KobeWorld'
+      ? Math.PI * 0.5
+      : Number.isFinite(this.nevadaIntroAngle)
+        ? this.nevadaIntroAngle : -Math.PI * 0.15;
     this.angle = stopAngle - Math.PI * 2;
     this.focused = null;
     this.focusFraming = 'character';
@@ -286,16 +304,29 @@ export class CinematicCameraController {
   }
 
   getOrbitPosition(angle = this.angle, target = new THREE.Vector3()) {
+    if (this.kobeOrbitRadiusX) return target.set(0, this.nearHeight, -4);
+    const radiusX = this.kobeOrbitRadiusX ?? this.nearRadius;
     return target.set(
-      this.echoCenter.x + Math.cos(angle) * this.nearRadius,
+      this.echoCenter.x + Math.cos(angle) * radiusX,
       this.nearHeight,
       this.echoCenter.z + Math.sin(angle) * this.nearRadius,
     );
   }
 
   applyOrbitPose(radius, height, angle, targetOverride = null) {
+    if (this.kobeOrbitRadiusX && !targetOverride) {
+      const amount = THREE.MathUtils.clamp(
+        (radius - this.nearRadius) / Math.max(0.001, this.farRadius - this.nearRadius), 0, 1,
+      );
+      this.camera.position.set(0, THREE.MathUtils.lerp(3.7, 5.25, amount),
+        THREE.MathUtils.lerp(-4.2, -1.5, amount));
+      this.target.set(0, 1.2, -31);
+      this.camera.lookAt(this.target);
+      return;
+    }
+    const radiusX = this.kobeOrbitRadiusX ? Math.min(radius, this.kobeOrbitRadiusX) : radius;
     this.camera.position.set(
-      this.echoCenter.x + Math.cos(angle) * radius,
+      this.echoCenter.x + Math.cos(angle) * radiusX,
       height,
       this.echoCenter.z + Math.sin(angle) * radius,
     );
@@ -303,6 +334,8 @@ export class CinematicCameraController {
     else this.target.copy(this.echoCenter).add(this.tempA.set(
       0, this.echoSize.y * this.orbitTargetHeightRatio, 0,
     ));
+    if (!targetOverride && this.kobeTargetHeight !== null) this.target.y = this.kobeTargetHeight;
+    if (!targetOverride && this.kobeTargetDepth !== null) this.target.z += this.kobeTargetDepth;
     this.camera.lookAt(this.target);
   }
 
@@ -1248,7 +1281,8 @@ export class CinematicCameraController {
 
     if (this.state === EXPERIENCE_STATES.INTRO_FAR_ORBIT) {
       const progress = Math.min(1, this.elapsed / this.config.introOrbitDuration);
-      this.angle += delta * Math.PI * 2 / this.config.introOrbitDuration;
+      this.angle += delta * (this.kobeOrbitRadiusX
+        ? 0.012 : Math.PI * 2 / this.config.introOrbitDuration);
       this.applyOrbitPose(this.farRadius, this.farHeight, this.angle);
       if (progress >= 1) this.zoomToEcho();
       return;
@@ -1259,19 +1293,29 @@ export class CinematicCameraController {
       const eased = smoothStep(progress);
       const radius = THREE.MathUtils.lerp(this.farRadius, this.nearRadius, eased);
       const height = THREE.MathUtils.lerp(this.farHeight, this.nearHeight, eased);
+      if (this.kobeOrbitRadiusX) {
+        this.applyOrbitPose(radius, height, this.angle);
+        if (progress >= 1) this.startEchoOrbit();
+        return;
+      }
       const farSpeed = Math.PI * 2 / this.config.introOrbitDuration;
       const nearSpeed = this.config.echoOrbitSpeed;
       const taperingTurn = progress - progress * progress + progress ** 3 / 3;
-      this.angle = this.transition.fromAngle + this.transition.duration
-        * (nearSpeed * progress + (farSpeed - nearSpeed) * taperingTurn);
+      this.angle = this.kobeOrbitRadiusX
+        ? this.transition.fromAngle + progress * 0.018
+        : this.transition.fromAngle + this.transition.duration
+          * (nearSpeed * progress + (farSpeed - nearSpeed) * taperingTurn);
+      const radiusX = this.kobeOrbitRadiusX ? Math.min(radius, this.kobeOrbitRadiusX) : radius;
       this.camera.position.set(
-        this.echoCenter.x + Math.cos(this.angle) * radius,
+        this.echoCenter.x + Math.cos(this.angle) * radiusX,
         height,
         this.echoCenter.z + Math.sin(this.angle) * radius,
       );
       this.tempA.copy(this.echoCenter).add(this.tempB.set(
         0, this.echoSize.y * this.orbitTargetHeightRatio, 0,
       ));
+      if (this.kobeTargetHeight !== null) this.tempA.y = this.kobeTargetHeight;
+      if (this.kobeTargetDepth !== null) this.tempA.z += this.kobeTargetDepth;
       this.target.lerpVectors(this.transition.fromTarget, this.tempA, eased);
       this.camera.lookAt(this.target);
       if (progress >= 1) this.startEchoOrbit();
@@ -1279,7 +1323,7 @@ export class CinematicCameraController {
     }
 
     if (this.state === EXPERIENCE_STATES.ECHO_ORBIT) {
-      this.angle += delta * this.config.echoOrbitSpeed;
+      this.angle += delta * (this.kobeOrbitRadiusX ? 0.008 : this.config.echoOrbitSpeed);
       this.applyOrbitPose(this.nearRadius, this.nearHeight, this.angle);
       return;
     }

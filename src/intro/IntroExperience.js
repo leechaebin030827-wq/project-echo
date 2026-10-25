@@ -1,4 +1,5 @@
 import { AudioController } from './AudioController.js';
+import { createCoverCameraArrayScene } from './CoverCameraArrayScene.js';
 import { createIntroVisualLayer } from './IntroVisualLayer.js';
 import { CAPTIONS, INTRO_TEXT, IntroState, STAGE, TIMING } from './config.js';
 
@@ -70,56 +71,150 @@ function createTypingQuote({ onFinished, onTypingStart, onTypingEnd }) {
   };
 }
 
+function createCoverTypewriter({ quote, citation, question }) {
+  const quoteText = 'When it comes to online data,\nthere is no equivalent sense of\na place where something resides…';
+  const citationText = '— William Odom et al., Lost in Translation: Understanding the Possession of Digital Things in the Cloud, CHI 2012, p. 785.';
+  const questionText = '내 삶의 일부라 여겨온 기록들이 내가 한 번도 가본 적 없는 장소에서, 타인이 운영하는 시스템에 의존해 존재한다면,\n\n디지털 시대에 무언가를 ‘소유한다’는 것은 과연 무엇을 의미하는가?';
+  let timers = [];
+  let stopped = false;
+
+  const schedule = (callback, delay) => {
+    const timer = window.setTimeout(callback, delay);
+    timers.push(timer);
+  };
+  const typeText = (element, text, speed, onComplete) => {
+    let index = 0;
+    element.textContent = '';
+    const typeNext = () => {
+      if (stopped) return;
+      index += 1;
+      element.textContent = text.slice(0, index);
+      if (index < text.length) schedule(typeNext, speed);
+      else onComplete?.();
+    };
+    schedule(typeNext, speed);
+  };
+  const typeSequence = (items, onComplete) => {
+    const runItem = (index) => {
+      if (index >= items.length) {
+        onComplete();
+        return;
+      }
+      const item = items[index];
+      typeText(item.element, item.text, item.speed, () => {
+        schedule(() => runItem(index + 1), item.pauseAfter ?? 180);
+      });
+    };
+    runItem(0);
+  };
+  const scheduleReplay = (initial = false) => {
+    const delay = initial
+      ? 6500 + Math.random() * 4500
+      : 15000 + Math.random() * 9000;
+    schedule(play, delay);
+  };
+  const play = () => {
+    if (stopped) return;
+    let completedTracks = 0;
+    const finishTrack = () => {
+      completedTracks += 1;
+      if (completedTracks === 2) scheduleReplay();
+    };
+    typeSequence([
+      { element: quote, text: quoteText, speed: 25, pauseAfter: 260 },
+      { element: citation, text: citationText, speed: 16 },
+    ], finishTrack);
+    typeSequence([
+      { element: question, text: questionText, speed: 29 },
+    ], finishTrack);
+  };
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) scheduleReplay(true);
+
+  return {
+    stop() {
+      stopped = true;
+      timers.forEach(window.clearTimeout);
+      timers = [];
+    },
+    destroy() {
+      stopped = true;
+      timers.forEach(window.clearTimeout);
+      timers = [];
+    },
+  };
+}
+
 function createTitle(callbacks) {
-  const titleLines = [
-    { top: 4.5, bottom: 80.5, left: 4.2, right: 4.1 },
-    { top: 21.8, bottom: 66.8, left: 13.2, right: 24.4 },
-    { top: 36.4, bottom: 51.4, left: 12.2, right: 19.1 },
-    { top: 49.1, bottom: 37.1, left: 7.3, right: 7.2 },
-    { top: 62.8, bottom: 23.5, left: 26.4, right: 26.3 },
-    { top: 76.5, bottom: 8.2, left: 21.2, right: 21.1 },
+  const coverAssets = [
+    ['project-p.svg', 83, 97.52],
+    ['project-r.svg', 218.6, 97.52],
+    ['project-o.svg', 351.48, 95],
+    ['project-j.svg', 492.51, 97.52],
+    ['project-e.svg', 601.66, 97.52],
+    ['project-c.svg', 736, 95],
+    ['project-t.svg', 881, 97.52],
+    ['echo-e.svg', 83, 315],
+    ['echo-c.svg', 326.9, 312],
+    ['echo-h.svg', 592, 315],
+    ['echo-o.svg', 852, 312],
+    ['dot-small.svg', 252, 387],
+    ['dot-wide.svg', 516, 387],
+    ['dot-small.svg', 777, 387],
+    ['korean-scattered.svg', 625, 579],
+    ['korean-ours.svg', 496, 774],
+    ['korean-manifestation.svg', 84, 1331],
+    ['hanja-manifestation.svg', 403, 1617],
+    ['rule-long.svg', 84, 1718.5],
+    ['rule-short.svg', 914, 1718.5],
   ];
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'start-title';
   button.setAttribute('aria-label', 'Start Project ECHO introduction');
   const artwork = document.createElement('span');
-  artwork.className = 'start-title__artwork';
+  artwork.className = 'start-title__camera-array';
   artwork.setAttribute('aria-hidden', 'true');
-  titleLines.forEach((line) => {
-    const lineArtwork = document.createElement('span');
-    lineArtwork.className = 'start-title__line-artwork';
-    lineArtwork.style.setProperty('--line-top', `${line.top}%`);
-    lineArtwork.style.setProperty('--line-bottom', `${line.bottom}%`);
-    lineArtwork.style.setProperty('--line-left', `${line.left}%`);
-    lineArtwork.style.setProperty('--line-right', `${line.right}%`);
-    artwork.append(lineArtwork);
+  const cameraArrayCanvas = document.createElement('canvas');
+  cameraArrayCanvas.className = 'start-title__camera-array-canvas';
+  artwork.append(cameraArrayCanvas);
+  coverAssets.forEach(([filename, x, y]) => {
+    const image = document.createElement('img');
+    image.className = 'start-title__camera-array-asset';
+    image.src = `/intro/assets/cover-figma/${filename}`;
+    image.alt = '';
+    image.style.left = `${x}px`;
+    image.style.top = `${y}px`;
+    artwork.append(image);
+  });
+  artwork.insertAdjacentHTML('beforeend', `
+    <p class="start-title__quote">When it comes to online data,<br>there is no equivalent sense of<br>a place where something resides…</p>
+    <p class="start-title__citation">— William Odom et al., Lost in Translation: Understanding the Possession of Digital Things in the Cloud, CHI 2012, p. 785.</p>
+    <p class="start-title__question">내 삶의 일부라 여겨온 기록들이 내가 한 번도 가본 적 없는 장소에서, 타인이 운영하는 시스템에 의존해 존재한다면,<br><br>디지털 시대에 무언가를 ‘소유한다’는 것은 과연 무엇을 의미하는가?</p>`);
+  const coverTypewriter = createCoverTypewriter({
+    quote: artwork.querySelector('.start-title__quote'),
+    citation: artwork.querySelector('.start-title__citation'),
+    question: artwork.querySelector('.start-title__question'),
   });
   const accessibleText = document.createElement('span');
   accessibleText.className = 'start-title__accessible-text';
   accessibleText.textContent = INTRO_TEXT.title;
   button.append(artwork, accessibleText);
+  const cameraArrayScene = createCoverCameraArrayScene(cameraArrayCanvas);
+  button.coverScene = {
+    stop() {
+      cameraArrayScene.stop();
+      coverTypewriter.stop();
+    },
+    destroy() {
+      cameraArrayScene.destroy();
+      coverTypewriter.destroy();
+    },
+  };
 
   button.addEventListener('pointerleave', callbacks.onLeave);
   button.addEventListener('pointerenter', callbacks.onHover);
   button.addEventListener('click', callbacks.onClick);
-
-  const lineArtworks = [...artwork.children];
-  const scheduleBlink = () => {
-    const delay = 360 + Math.random() * 980;
-    window.setTimeout(() => {
-      if (!button.isConnected || button.classList.contains('is-hidden')) return;
-      const shuffled = lineArtworks.slice().sort(() => Math.random() - 0.5);
-      const blinkCount = Math.random() < 0.28 ? 2 : 1;
-      const blinking = shuffled.slice(0, blinkCount);
-      blinking.forEach((line) => line.classList.add('is-blink-off'));
-      window.setTimeout(() => {
-        blinking.forEach((line) => line.classList.remove('is-blink-off'));
-        scheduleBlink();
-      }, 90 + Math.random() * 330);
-    }, delay);
-  };
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) scheduleBlink();
   return button;
 }
 
@@ -272,6 +367,7 @@ class IntroController {
     if (this.destroyed) return;
     this.view.opening.classList.add('is-hidden');
     this.view.title.classList.add('is-hidden');
+    this.view.title.coverScene?.stop();
     this.view.split.classList.add('is-hidden');
     this.transition(IntroState.NARRATION_1);
     this.captions.start(this.audio.narration1, CAPTIONS.narration1);
@@ -317,6 +413,7 @@ class IntroController {
     this.view.split.classList.add('is-open');
     await wait(TIMING.INTRO_SPLIT_DURATION);
     this.view.title.classList.add('is-hidden');
+    this.view.title.coverScene?.stop();
     this.view.split.classList.add('is-hidden');
     this.transition(IntroState.NARRATION_1);
     this.captions.start(this.audio.narration1, CAPTIONS.narration1);
@@ -423,6 +520,7 @@ class IntroController {
     this.captions.stop();
     this.audio.narration1.removeEventListener('ended', this.boundNarration1End);
     this.audio.narration2.removeEventListener('ended', this.boundNarration2End);
+    this.view.title.coverScene?.destroy();
     if (!preserveMusic) this.audio.destroy();
     this.view.visualLayer.destroy();
   }

@@ -1,12 +1,12 @@
-export const WORLD_IDS = Object.freeze(['nevada', 'hamina', 'lightcable']);
-export const DEFAULT_WORLD_ROUTE = Object.freeze(['nevada', 'lightcable', 'hamina']);
+export const WORLD_IDS = Object.freeze(['nevada', 'hamina', 'lightcable', 'kobe']);
+export const DEFAULT_WORLD_ROUTE = Object.freeze(['nevada', 'lightcable', 'hamina', 'kobe']);
 
 export function createRandomWorldRoute(random = Math.random) {
   const first = random() < .5 ? 'nevada' : 'hamina';
   const otherLand = first === 'nevada' ? 'hamina' : 'nevada';
   return random() < .5
-    ? [first, otherLand, 'lightcable']
-    : [first, 'lightcable', otherLand];
+    ? [first, otherLand, 'lightcable', 'kobe']
+    : [first, 'lightcable', otherLand, 'kobe'];
 }
 
 export function createWorldRoute(search = '', random = Math.random, allowOverride = false) {

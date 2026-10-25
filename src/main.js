@@ -46,6 +46,7 @@ const developerShortcuts = [
   ['1', 'Nevada 즉시 진입'],
   ['2', 'Hamina 즉시 진입'],
   ['3', 'Pacific 즉시 진입'],
+  ['4', 'Kobe 즉시 진입'],
   ['O', '현재 육지 월드 오비트'],
   ['J', '다음 월드로 이동'],
   ['D', 'Data Center 상호작용'],
@@ -87,9 +88,10 @@ const openDeveloperPreset = (preset) => {
   next.search = '';
   next.searchParams.set('worldQa', '1');
   const orders = {
-    nevada: 'nevada,lightcable,hamina',
-    hamina: 'hamina,lightcable,nevada',
-    pacific: 'nevada,lightcable,hamina',
+    nevada: 'nevada,lightcable,hamina,kobe',
+    hamina: 'hamina,lightcable,nevada,kobe',
+    pacific: 'nevada,lightcable,hamina,kobe',
+    kobe: 'kobe,nevada,lightcable,hamina',
   };
   next.searchParams.set('worldOrder', orders[preset.world] ?? orders.nevada);
   for (const [key, value] of Object.entries(preset.params ?? {})) {
@@ -160,6 +162,7 @@ const handleDeveloperWorldShortcut = async (event) => {
     Digit1: { world: 'nevada', params: { orbitQa: '1' } },
     Digit2: { world: 'hamina', params: { orbitQa: '1' } },
     Digit3: { world: 'pacific', params: { lightCableQa: '1' } },
+    Digit4: { world: 'kobe', params: { orbitQa: '1' } },
     KeyO: { world: experience.currentWorld === 'hamina' ? 'hamina' : 'nevada', params: { orbitQa: '1' } },
     KeyD: { world: experience.currentWorld === 'hamina' ? 'hamina' : 'nevada', params: { dataCenterQa: '1' } },
     KeyM: { world: 'nevada', params: { moneyQa: '1' } },

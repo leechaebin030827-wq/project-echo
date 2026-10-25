@@ -39,4 +39,15 @@ export const WORLD_PRESENTATION = Object.freeze({
       local: 'Beyond the cloud, I saw you here.',
     }),
   }),
+  kobe: Object.freeze({
+    entryWords: Object.freeze([
+      Object.freeze({ text: 'KOBE,', className: 'world-entry-word--nevada' }),
+      Object.freeze({ text: 'JAPAN', className: 'world-entry-word--usa' }),
+    ]),
+    weather: 'none',
+    defaultCaption: Object.freeze({
+      korean: '아직 도착하지 않은 미래의 지하에서, 당신의 흔적을 기다립니다.',
+      local: 'Beneath Kobe, a future still under construction waits for your trace.',
+    }),
+  }),
 });

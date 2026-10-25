@@ -1108,3 +1108,68 @@ button { -webkit-tap-highlight-color: transparent; }
 .stage:has(.world-interaction.visible) .interaction-cursor[data-mode="blocked"] {
   display: none;
 }
+
+.kobe-material-panel {
+  position: absolute;
+  z-index: 24;
+  top: 3.2%;
+  right: 3.2%;
+  width: min(330px, 88vw);
+  color: #dce8ec;
+  font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.kobe-material-panel[hidden] { display: none; }
+.kobe-material-toggle {
+  float: right;
+  border: 1px solid rgba(190, 220, 229, .34);
+  border-radius: 999px;
+  padding: 9px 13px;
+  background: rgba(7, 17, 23, .78);
+  color: inherit;
+  letter-spacing: .12em;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+}
+.kobe-material-drawer {
+  clear: both;
+  visibility: hidden;
+  max-height: 0;
+  margin-top: 46px;
+  overflow: hidden;
+  opacity: 0;
+  border: 1px solid rgba(190, 220, 229, .24);
+  border-radius: 13px;
+  background: rgba(7, 17, 23, .92);
+  backdrop-filter: blur(18px);
+  transition: opacity 180ms ease, max-height 260ms ease, visibility 260ms ease;
+}
+.kobe-material-panel.open .kobe-material-drawer {
+  visibility: visible;
+  max-height: min(78vh, 690px);
+  padding: 18px;
+  overflow: auto;
+  opacity: 1;
+}
+.kobe-material-drawer header { display: grid; gap: 2px; margin-bottom: 8px; }
+.kobe-material-drawer header span { color: #91b3bd; font-size: 9px; letter-spacing: .22em; }
+.kobe-material-drawer header strong { font-size: 14px; letter-spacing: .08em; }
+.kobe-material-drawer > p { margin: 0 0 16px; color: #91a4ab; }
+.kobe-material-surfaces > section { padding: 12px 0; border-top: 1px solid rgba(190,220,229,.14); }
+.kobe-material-surfaces > section > strong { display: block; margin-bottom: 8px; }
+.kobe-material-surfaces > section > div { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.kobe-material-surfaces label {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(190,220,229,.16);
+  border-radius: 6px;
+  background: rgba(255,255,255,.035);
+  cursor: pointer;
+}
+.kobe-material-surfaces label:hover { border-color: rgba(190,220,229,.48); }
+.kobe-material-surfaces label span,
+.kobe-material-surfaces label small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kobe-material-surfaces label small { margin-top: 3px; color: #82969d; font-size: 9px; }
+.kobe-material-surfaces input[type="file"] { display: none; }
+.kobe-tile-control { display: grid; gap: 8px; margin-top: 10px; }
+.kobe-tile-control span { display: flex; justify-content: space-between; }
+.kobe-tile-control input { width: 100%; accent-color: #a9d0da; }

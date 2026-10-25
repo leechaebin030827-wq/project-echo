@@ -5,6 +5,7 @@ import { createCloudTexture, createStarTexture, getLocalSkyHour, getSkyVisibilit
 const SUN_DIRECTIONS = Object.freeze({
   nevada: new THREE.Vector3(-0.5, 0.79, 0.34).normalize(),
   hamina: new THREE.Vector3(-0.49, 0.8, 0.35).normalize(),
+  kobe: new THREE.Vector3(-0.35, 0.62, 0.7).normalize(),
 });
 
 // The normal world camera looks slightly downward and both locations have a
@@ -13,6 +14,7 @@ const SUN_DIRECTIONS = Object.freeze({
 const SKY_LATITUDE_OFFSETS = Object.freeze({
   nevada: 0.18,
   hamina: 0.15,
+  kobe: 0.15,
 });
 
 const SKY_PALETTES = Object.freeze({
@@ -27,6 +29,12 @@ const SKY_PALETTES = Object.freeze({
     dawn: ['#284785', '#516893', '#848da8', '#b3abbf', '#d5c1c8', '#dfd5d2', '#dedcdb', '#dedcdb', '#dedcdb'],
     day: ['#2b70bd', '#4887c7', '#77a9d0', '#a5c7dc', '#c4d8e2', '#dce3e7', '#dce3e5', '#dce3e5', '#dce3e5'],
     dusk: ['#254278', '#526586', '#8e8da5', '#b7a8b4', '#d1b8bc', '#dccfce', '#d8d8d7', '#d8d8d7', '#d8d8d7'],
+  },
+  kobe: {
+    night: ['#04090d', '#071118', '#0b1820', '#102029', '#172832', '#1c3039', '#1c3039', '#1c3039', '#1c3039'],
+    dawn: ['#0b1720', '#122530', '#1d3541', '#294552', '#365866', '#456b78', '#456b78', '#456b78', '#456b78'],
+    day: ['#10232e', '#183541', '#244956', '#315d6a', '#3f7180', '#518895', '#518895', '#518895', '#518895'],
+    dusk: ['#09151e', '#112732', '#1c3a46', '#294c58', '#365e6a', '#456f79', '#456f79', '#456f79', '#456f79'],
   },
 });
 
@@ -145,7 +153,7 @@ export class Atmosphere {
   }
 
   getGradientStops(mode) {
-    if (mode === 'hamina') return [0, 0.08, 0.14, 0.19, 0.24, 0.34, 0.48, 0.7, 1];
+    if (mode === 'hamina' || mode === 'kobe') return [0, 0.08, 0.14, 0.19, 0.24, 0.34, 0.48, 0.7, 1];
     return [0, 0.055, 0.09, 0.12, 0.15, 0.245, 0.4, 0.66, 1];
   }
 
