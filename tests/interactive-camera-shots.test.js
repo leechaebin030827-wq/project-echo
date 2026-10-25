@@ -101,3 +101,30 @@ test('cooler approach begins at the current camera and settles close above the m
   assert.ok(controller.transition.destination.y > region.bounds.max.y);
   assert.ok(duration >= 2.1);
 });
+
+test('ritual portraits glide between faces without a one-frame camera teleport', () => {
+  const camera = new THREE.PerspectiveCamera(52, 9 / 16, 0.1, 1000);
+  camera.position.set(0, 5, 18);
+  const controller = new CinematicCameraController(camera, {});
+  controller.echoCenter.set(0, 1, 0);
+  controller.target.set(0, 1, 0);
+  controller.state = EXPERIENCE_STATES.ECHO_ORBIT;
+  const entities = Array.from({ length: 6 }, (_, index) => {
+    const angle = index / 6 * Math.PI * 2;
+    const position = new THREE.Vector3(Math.cos(angle) * 5, 0, Math.sin(angle) * 5);
+    return {
+      root: { position },
+      getHeadWorldPosition(target) { return target.copy(position).add(new THREE.Vector3(0, 1.55, 0)); },
+    };
+  });
+  assert.equal(controller.startEchoRitualSpin(entities), true);
+  const frame = 1 / 60;
+  let largestStep = 0;
+  let previous = camera.position.clone();
+  for (let index = 0; index < 260; index += 1) {
+    controller.update(frame);
+    largestStep = Math.max(largestStep, camera.position.distanceTo(previous));
+    previous.copy(camera.position);
+  }
+  assert.ok(largestStep < 0.45, `ritual camera step was ${largestStep.toFixed(3)}`);
+});

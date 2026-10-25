@@ -339,13 +339,11 @@ export function createOpeningEchoLayer(host) {
   const layer = document.createElement('div');
   layer.className = 'opening-echo-layer';
   const backgroundVideo = document.createElement('video');
-  backgroundVideo.className = 'opening-echo-background';
-  backgroundVideo.src = '/intro/assets/opening/opening-background-pingpong.mp4';
+  backgroundVideo.className = 'opening-echo-background opening-echo-background--cover';
+  backgroundVideo.src = '/intro/assets/opening/project-echo-cover-morph.mp4';
   backgroundVideo.autoplay = true;
   backgroundVideo.loop = true;
   backgroundVideo.muted = true;
-  backgroundVideo.defaultPlaybackRate = 0.5;
-  backgroundVideo.playbackRate = 0.5;
   backgroundVideo.playsInline = true;
   backgroundVideo.preload = 'auto';
   layer.append(backgroundVideo);

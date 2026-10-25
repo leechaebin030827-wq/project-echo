@@ -9,7 +9,13 @@ import {
   sampleBillboardScan, sampleDataCenterSweep, sampleInteractiveShot, sampleMoneyOrbit,
 } from './InteractiveCameraShots.js';
 
-const smoothStep = (value) => value * value * (3 - 2 * value);
+// Quintic easing keeps both velocity and acceleration continuous at the ends.
+// Camera paths use this instead of cubic smoothstep so consecutive world and
+// focus moves do not reveal a small speed kink at their hand-off frames.
+const smoothStep = (value) => {
+  const t = THREE.MathUtils.clamp(value, 0, 1);
+  return t * t * t * (t * (t * 6 - 15) + 10);
+};
 
 export class CinematicCameraController {
   constructor(camera, navigation, config = CAMERA_CONFIG) {
@@ -268,6 +274,10 @@ export class CinematicCameraController {
       fromTarget: this.target.clone(),
       shots,
       shotDuration: 3.4,
+      activeShot: 0,
+      blendDuration: 0.82,
+      blendFromPosition: this.camera.position.clone(),
+      blendFromTarget: this.target.clone(),
     };
     this.elapsed = 0;
     this.transition = null;
@@ -1293,14 +1303,22 @@ export class CinematicCameraController {
         .addScaledVector(side, THREE.MathUtils.lerp(-0.36, 0.2, shotProgress));
       position.y += THREE.MathUtils.lerp(0.55, 0.2, shotProgress);
       const target = head.clone().add(new THREE.Vector3(0, -0.15, 0));
+      if (shotIndex !== spin.activeShot) {
+        spin.activeShot = shotIndex;
+        spin.blendFromPosition.copy(this.camera.position);
+        spin.blendFromTarget.copy(this.target);
+      }
       if (shotIndex === 0) {
         const entry = THREE.MathUtils.smootherstep(Math.min(1, shotTime / 1.55), 0, 1);
         this.camera.position.lerpVectors(spin.fromPosition, position, entry);
         this.target.lerpVectors(spin.fromTarget, target, entry);
       } else {
-        // Each new face begins on a hard cut, followed by a slow descending move.
-        this.camera.position.copy(position);
-        this.target.copy(target);
+        // Preserve the current frame at every shot boundary and glide into the
+        // next portrait. This removes the one-frame teleport that was visible
+        // in every land world during the five-face ritual.
+        const blend = smoothStep(shotTime / spin.blendDuration);
+        this.camera.position.lerpVectors(spin.blendFromPosition, position, blend);
+        this.target.lerpVectors(spin.blendFromTarget, target, blend);
       }
       this.camera.lookAt(this.target);
       if (this.elapsed >= spin.shots.length * spin.shotDuration) {

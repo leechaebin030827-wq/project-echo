@@ -17,7 +17,7 @@ export const IntroState = Object.freeze({
 export const STAGE = Object.freeze({ width: 2160, height: 3840 });
 
 export const INTRO_TEXT = Object.freeze({
-  title: 'PROJECT ECHO:\n분산된 우리의 현현(顯現)',
+  title: 'PROJECT\nECHO\n분산된\n우리들의\n현현\n顯現',
   quote: {
     korean: "'클라우드는 애초에 사용자가 그 뒤의\n실제 서버와 네트워크가 어디에 존재하는지\n의식하지 않아도 되도록 설계되어 있다.'",
     english: "'The cloud is designed so that users do not\nhave to be conscious of where the physical servers\nand networks behind it are located.'",

@@ -80,6 +80,35 @@
   display: block;
   object-fit: cover;
 }
+.opening-echo-background--cover {
+  z-index: 2;
+  object-position: center center;
+  filter: grayscale(1);
+  animation: opening-cover-color-glitch 6.4s steps(1, end) infinite;
+  will-change: filter, transform;
+}
+@keyframes opening-cover-color-glitch {
+  0%, 76%, 79%, 88%, 91%, 100% {
+    filter: grayscale(1) contrast(1);
+    transform: translateX(0) scale(1);
+  }
+  77% {
+    filter: grayscale(.1) saturate(2.4) hue-rotate(-18deg) contrast(1.18);
+    transform: translateX(-4px) scale(1.006);
+  }
+  78% {
+    filter: grayscale(.35) saturate(1.9) hue-rotate(34deg) contrast(1.25);
+    transform: translateX(3px) scale(1.006);
+  }
+  89% {
+    filter: grayscale(0) saturate(1.65) hue-rotate(12deg) contrast(1.12);
+    transform: translateX(2px) scale(1.003);
+  }
+  90% {
+    filter: grayscale(.55) saturate(2.1) hue-rotate(-28deg) contrast(1.2);
+    transform: translateX(-2px) scale(1.003);
+  }
+}
 .opening-echo-canvas {
   z-index: 1;
   display: block;
@@ -174,33 +203,68 @@
 .intro-root .start-title {
   position: absolute;
   z-index: 40;
-  top: 1860px;
-  left: 50%;
-  width: 1850px;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
   padding: 0;
-  transform: translate(-50%, -50%);
   border: 0;
   background: transparent;
   color: #fff;
-  text-align: center;
-  font-size: 80px;
-  font-weight: 600;
-  line-height: 1.5;
   pointer-events: auto;
-  opacity: 0;
-  transition: opacity 900ms ease;
+  opacity: 1;
+  cursor: pointer;
+  transition: opacity 900ms ease, visibility 0s linear;
 }
 .intro-root .start-title:not(.is-hidden) { opacity: 1; }
-.intro-root .start-title.is-hidden { display: block !important; visibility: hidden; opacity: 0; pointer-events: none; }
-.start-title__line { display: block; white-space: nowrap; }
-.start-title__glyph {
-  display: inline-block;
-  transition: opacity 300ms ease;
+.intro-root .start-title.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: 1.2s;
 }
-.start-title.is-hover-enabled:hover .start-title__glyph,
-.start-title:focus-visible .start-title__glyph {
-  opacity: .45;
+.intro-root .start-title.is-hidden {
+  display: block !important;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 900ms ease, visibility 0s linear 900ms;
 }
+.start-title__artwork {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+.start-title__line-artwork {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  -webkit-mask: url('/intro/assets/title/project-echo-cover.png') center / 100% 100% no-repeat;
+  mask: url('/intro/assets/title/project-echo-cover.png') center / 100% 100% no-repeat;
+  clip-path: inset(
+    var(--line-top)
+    var(--line-right)
+    var(--line-bottom)
+    var(--line-left)
+  );
+  will-change: opacity;
+}
+.start-title__line-artwork.is-blink-off { opacity: 0; }
+.start-title__accessible-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: pre-line;
+}
+.start-title:focus-visible { outline: 12px solid currentColor; outline-offset: -12px; }
 
 .split-transition { position: absolute; inset: 0; z-index: 35; pointer-events: none; visibility: hidden; }
 .split-transition.is-open { visibility: visible; }
@@ -326,5 +390,10 @@
   .typing-quote,
   .start-title,
   .split-panel { transition-duration: 1ms !important; }
+  .opening-echo-background--cover { animation: none; }
   .intro-shutter.is-ready { animation: none; }
+  .start-title__line-artwork {
+    clip-path: inset(var(--line-top) var(--line-right) var(--line-bottom) var(--line-left));
+    animation: none;
+  }
 }

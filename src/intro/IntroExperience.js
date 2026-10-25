@@ -71,24 +71,55 @@ function createTypingQuote({ onFinished, onTypingStart, onTypingEnd }) {
 }
 
 function createTitle(callbacks) {
+  const titleLines = [
+    { top: 4.5, bottom: 80.5, left: 4.2, right: 4.1 },
+    { top: 21.8, bottom: 66.8, left: 13.2, right: 24.4 },
+    { top: 36.4, bottom: 51.4, left: 12.2, right: 19.1 },
+    { top: 49.1, bottom: 37.1, left: 7.3, right: 7.2 },
+    { top: 62.8, bottom: 23.5, left: 26.4, right: 26.3 },
+    { top: 76.5, bottom: 8.2, left: 21.2, right: 21.1 },
+  ];
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'start-title is-hidden';
+  button.className = 'start-title';
   button.setAttribute('aria-label', 'Start Project ECHO introduction');
-  for (const line of INTRO_TEXT.title.split('\n')) {
-    const lineElement = document.createElement('span');
-    lineElement.className = 'start-title__line';
-    for (const character of line) {
-      const glyph = document.createElement('span');
-      glyph.className = 'start-title__glyph';
-      glyph.textContent = character === ' ' ? '\u00a0' : character;
-      lineElement.append(glyph);
-    }
-    button.append(lineElement);
-  }
-  button.addEventListener('pointerenter', callbacks.onHover);
+  const artwork = document.createElement('span');
+  artwork.className = 'start-title__artwork';
+  artwork.setAttribute('aria-hidden', 'true');
+  titleLines.forEach((line) => {
+    const lineArtwork = document.createElement('span');
+    lineArtwork.className = 'start-title__line-artwork';
+    lineArtwork.style.setProperty('--line-top', `${line.top}%`);
+    lineArtwork.style.setProperty('--line-bottom', `${line.bottom}%`);
+    lineArtwork.style.setProperty('--line-left', `${line.left}%`);
+    lineArtwork.style.setProperty('--line-right', `${line.right}%`);
+    artwork.append(lineArtwork);
+  });
+  const accessibleText = document.createElement('span');
+  accessibleText.className = 'start-title__accessible-text';
+  accessibleText.textContent = INTRO_TEXT.title;
+  button.append(artwork, accessibleText);
+
   button.addEventListener('pointerleave', callbacks.onLeave);
+  button.addEventListener('pointerenter', callbacks.onHover);
   button.addEventListener('click', callbacks.onClick);
+
+  const lineArtworks = [...artwork.children];
+  const scheduleBlink = () => {
+    const delay = 360 + Math.random() * 980;
+    window.setTimeout(() => {
+      if (!button.isConnected || button.classList.contains('is-hidden')) return;
+      const shuffled = lineArtworks.slice().sort(() => Math.random() - 0.5);
+      const blinkCount = Math.random() < 0.28 ? 2 : 1;
+      const blinking = shuffled.slice(0, blinkCount);
+      blinking.forEach((line) => line.classList.add('is-blink-off'));
+      window.setTimeout(() => {
+        blinking.forEach((line) => line.classList.remove('is-blink-off'));
+        scheduleBlink();
+      }, 90 + Math.random() * 330);
+    }, delay);
+  };
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) scheduleBlink();
   return button;
 }
 
@@ -235,10 +266,12 @@ class IntroController {
     this.view.visualLayer.startNarration1(this.audio.narration1);
     this.view.split.classList.add('is-open');
     this.view.opening.classList.add('is-leaving');
+    this.view.title.classList.add('is-leaving');
     this.view.visualLayer.fadeOpening();
     await wait(TIMING.INTRO_SPLIT_DURATION);
     if (this.destroyed) return;
     this.view.opening.classList.add('is-hidden');
+    this.view.title.classList.add('is-hidden');
     this.view.split.classList.add('is-hidden');
     this.transition(IntroState.NARRATION_1);
     this.captions.start(this.audio.narration1, CAPTIONS.narration1);

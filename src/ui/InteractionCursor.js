@@ -45,6 +45,20 @@ export class InteractionCursor {
     if (!this.pointerFrame) this.pointerFrame = window.requestAnimationFrame(this.flushPointerMove);
   }
 
+  refresh() {
+    if (!this.pendingPointer) return;
+    const { clientX, clientY } = this.pendingPointer;
+    this.pendingPointer = {
+      ...this.pendingPointer,
+      // A click can hide the return button without producing another pointer
+      // move. Re-hit-test the same screen position so the canvas immediately
+      // regains hover instead of staying in the button/blocked mode.
+      target: document.elementFromPoint(clientX, clientY),
+    };
+    this.lastTargetWasCanvas = false;
+    if (!this.pointerFrame) this.pointerFrame = window.requestAnimationFrame(this.flushPointerMove);
+  }
+
   flushPointerMove() {
     this.pointerFrame = 0;
     const event = this.pendingPointer;

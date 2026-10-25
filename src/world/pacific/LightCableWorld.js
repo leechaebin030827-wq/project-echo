@@ -36,7 +36,7 @@ const ENTRY_SPRINT_DURATION = 2.5;
 const ENTRY_SPRINT_DISTANCE = 12;
 const ORIGIN_REBASE_DISTANCE = 1200;
 const ECHO_WALK_SCALE = 2.45;
-const FISH_SCALE = .53;
+const FISH_SCALE = .39;
 const FISH_ROUTE_LENGTH = 100;
 const PLANT_SCALE = .6;
 const CAMERA_SPRING_STIFFNESS = 23;
@@ -52,6 +52,28 @@ const smoother = (value) => {
   const t = THREE.MathUtils.clamp(value, 0, 1);
   return t * t * t * (t * (t * 6 - 15) + 10);
 };
+
+export function getSurfaceEchoMotion(time) {
+  const fallStart = .35;
+  const fallDuration = IMPACT_AT - fallStart;
+  const fall = THREE.MathUtils.clamp((time - fallStart) / fallDuration, 0, 1);
+  const underwaterAge = Math.max(0, time - IMPACT_AT);
+  const sink = smoother(underwaterAge / (SINK_END - IMPACT_AT));
+  // Keep downward velocity through the surface instead of easing to a stop in
+  // mid-air. Water drag catches the body quickly, then the slower sink takes over.
+  const fallingHeight = THREE.MathUtils.lerp(12.8, .18, fall * fall);
+  const impactPenetration = 1.38 * (1 - Math.exp(-underwaterAge * 4.2));
+  const height = time < IMPACT_AT
+    ? fallingHeight
+    : .18 - impactPenetration - (13.18 - impactPenetration) * sink;
+  const swimBlend = smoother(underwaterAge / 1.25);
+  const yaw = time < IMPACT_AT
+    ? time * .4
+    : IMPACT_AT * .4 + underwaterAge * THREE.MathUtils.lerp(.4, .11, swimBlend);
+  const pitch = THREE.MathUtils.lerp(-.25, -.72, fall)
+    + THREE.MathUtils.lerp(0, .42, sink);
+  return { fall, sink, height, swimBlend, yaw, pitch };
+}
 
 function rippleGeometry(seed) {
   const geometry = new THREE.RingGeometry(1, 1.12, 96);
@@ -97,18 +119,19 @@ function instancedGeometry(source, count, material) {
 
 export function computeFishViewPose(matrix, boundingSphere, position, target, cableTarget = null) {
   const center = boundingSphere.center.clone().applyMatrix4(matrix);
-  const rotation = new THREE.Quaternion().setFromRotationMatrix(matrix);
-  const forward = Z_AXIS.clone().applyQuaternion(rotation).normalize();
   const radius = Math.max(.16, boundingSphere.radius * matrix.getMaxScaleOnAxis());
-  // Sit just in front of the head. Keeping the complete model behind the near
-  // plane prevents large authored fish meshes from covering the whole view.
-  position.copy(center).addScaledVector(forward, radius * 1.45 + .34);
-  position.y += Math.min(.18, radius * .28);
   if (cableTarget) target.copy(cableTarget);
-  else {
-    target.copy(position).addScaledVector(forward, 8);
-    target.y += .06;
-  }
+  else target.copy(center).add(Z_AXIS);
+  const viewDirection = target.clone().sub(center).normalize();
+  const side = new THREE.Vector3().crossVectors(viewDirection, Y_AXIS);
+  if (side.lengthSq() < 1e-5) side.set(1, 0, 0);
+  else side.normalize();
+  // Observe from outside the school, offset far enough sideways that the
+  // selected fish never sits between the lens and the advancing ECHO.
+  position.copy(center)
+    .addScaledVector(side, radius * 2.6 + .9)
+    .addScaledVector(Y_AXIS, radius * .72 + .28)
+    .addScaledVector(viewDirection, -(radius * .42 + .26));
   return { position, target, radius };
 }
 
@@ -599,13 +622,23 @@ export class LightCableWorld {
         shader.vertexShader = shader.vertexShader.replace(
           '#include <begin_vertex>',
           `#include <begin_vertex>
-          float tail = smoothstep(-0.03, 0.1, position.z);
-          transformed.x += sin(swimTime * 2.8 + position.z * 23.0
-            + instanceMatrix[3].x * 0.31) * 0.014 * tail;`,
+          float fishPhase = instanceMatrix[3].x * 0.31 + instanceMatrix[3].z * 0.17;
+          float swimPhase = swimTime * 2.35 + fishPhase;
+          float bodyJoint = smoothstep(-0.11, 0.03, position.z);
+          float midJoint = smoothstep(-0.01, 0.09, position.z);
+          float tailJoint = smoothstep(0.055, 0.145, position.z);
+          float bodyWave = sin(swimPhase + position.z * 7.0) * bodyJoint;
+          float midWave = sin(swimPhase - 0.48 + position.z * 11.0) * midJoint;
+          float tailWave = sin(swimPhase - 1.05 + position.z * 16.0) * tailJoint;
+          transformed.x += bodyWave * 0.006
+            + midWave * 0.013
+            + tailWave * 0.026;
+          transformed.y += cos(swimPhase * 0.82 + position.z * 8.0)
+            * (0.0025 * bodyJoint + 0.0045 * tailJoint);`,
         );
         material.userData.swimShader = shader;
       };
-      material.customProgramCacheKey = () => 'lightcable-fish-swim-v2';
+      material.customProgramCacheKey = () => 'lightcable-fish-swim-v3';
       const instances = instancedGeometry(fish, count, material);
       // Their transforms travel across the whole route after the initial
       // bounds are computed; these low-poly schools stay cheap to render.
@@ -673,10 +706,14 @@ export class LightCableWorld {
         this.swimDirection.y += heightVelocity;
         this.swimDirection.normalize();
         this.dummy.quaternion.setFromUnitVectors(Z_AXIS, this.swimDirection);
-        this.dummy.rotateZ(Math.sin(time * .65 + swimmer.phase) * .055);
+        this.dummy.rotateY(Math.sin(time * 2.05 + swimmer.phase) * .032);
+        this.dummy.rotateZ(Math.sin(time * .65 + swimmer.phase) * .082);
         const hovered = this.hoveredCreature?.groupIndex === groupIndex
           && this.hoveredCreature.index === index;
-        this.dummy.scale.setScalar(swimmer.scale);
+        const viewed = this.creatureView?.kind === 'fish'
+          && this.creatureView.groupIndex === groupIndex
+          && this.creatureView.index === index;
+        this.dummy.scale.setScalar(swimmer.scale * (viewed ? .2 : 1));
         this.dummy.updateMatrix();
         instances.setMatrixAt(index, this.dummy.matrix);
         if (hovered && this.creatureHoverMesh) {
@@ -863,17 +900,14 @@ export class LightCableWorld {
     if (!this.echoTraveler) return;
     this.echoTraveler.visible = time < SINK_END;
     if (!this.echoTraveler.visible) return;
-    const fall = smooth((time - .35) / (IMPACT_AT - .35));
-    const sink = smooth((time - IMPACT_AT) / (SINK_END - IMPACT_AT));
-    const height = time < IMPACT_AT
-      ? THREE.MathUtils.lerp(12.8, .18, fall * fall)
-      : THREE.MathUtils.lerp(.18, -13, sink);
+    const motion = getSurfaceEchoMotion(time);
+    const { fall, sink, height, swimBlend, yaw, pitch } = motion;
     this.echoTraveler.position.set(0, height, -11);
     this.echoTraveler.scale.setScalar(2.5 - .48 * sink);
-    this.echoTraveler.quaternion.setFromAxisAngle(Y_AXIS, time * .4);
-    this.swimTilt.setFromAxisAngle(X_AXIS, -.25 - .45 * fall + .3 * sink);
+    this.echoTraveler.quaternion.setFromAxisAngle(Y_AXIS, yaw);
+    this.swimTilt.setFromAxisAngle(X_AXIS, pitch);
     this.echoTraveler.quaternion.multiply(this.swimTilt);
-    this.animateEchoSwimming(time * 1.7);
+    this.animateEchoSwimming(time * 1.7, swimBlend);
     this.echoLamp.position.copy(this.echoTraveler.position);
     this.echoLamp.intensity = time < IMPACT_AT ? .65 : .65 * (1 - sink);
   }
@@ -1014,7 +1048,19 @@ export class LightCableWorld {
   setCreatureHover(creature = null) {
     const next = creature?.kind === 'fish' ? creature : null;
     const previous = this.hoveredCreature;
-    if (previous?.groupIndex === next?.groupIndex && previous?.index === next?.index) return;
+    const same = previous?.groupIndex === next?.groupIndex && previous?.index === next?.index;
+    if (same && !next) return;
+    if (same && next) {
+      // Fish are instanced and keep swimming. Refresh the proxy transform even
+      // while the hovered id is unchanged so its outline never gets left behind.
+      const group = this.fish[next.groupIndex];
+      if (!group || !this.creatureHoverMesh) return;
+      group.instances.getMatrixAt(next.index, this.pickMatrix);
+      this.creatureHoverMesh.setMatrixAt(0, this.pickMatrix);
+      this.creatureHoverMesh.instanceMatrix.needsUpdate = true;
+      this.creatureHoverMesh.visible = true;
+      return;
+    }
     if (this.creatureHoverMesh) this.creatureHoverMesh.visible = false;
     this.hoveredCreature = next;
     if (next) {
@@ -1033,6 +1079,7 @@ export class LightCableWorld {
 
   enterCreatureView(creature) {
     if (!creature || !this.cableIntroReady || this.exitSuction) return false;
+    this.setCreatureHover();
     this.creatureView = creature;
     this.pointerLookTarget = 0;
     this.pointerLookTargetY = 0;
@@ -1064,7 +1111,6 @@ export class LightCableWorld {
         cablePoint(subject.distance + 6, this.originDistance, this.creatureLookTarget);
         this.creatureLookTarget.y -= .1;
       } else {
-        cablePoint(subject.distance + 5, this.originDistance, this.lookTarget);
         computeFishViewPose(this.pickMatrix, group.instances.geometry.boundingSphere,
           this.creatureCameraPosition, this.creatureLookTarget, this.lookTarget);
         this.creatureCameraPosition.y += Math.sin(this.elapsed * .72) * .035;
@@ -1226,7 +1272,7 @@ export class LightCableWorld {
     const entrySprint = THREE.MathUtils.clamp(
       (time - CAMERA_START) / ENTRY_SPRINT_DURATION, 0, 1,
     );
-    const travel = this.creatureView ? this.travelDistance : Math.max(0, (time - CAMERA_START) * TRAVEL_SPEED + this.travelBias
+    const travel = Math.max(0, (time - CAMERA_START) * TRAVEL_SPEED + this.travelBias
       + ENTRY_SPRINT_DISTANCE * smoother(entrySprint)
       + (exitMotion?.cameraBoost ?? 0));
     this.travelDistance = travel;
@@ -1296,13 +1342,13 @@ export class LightCableWorld {
     this.updateFish(delta);
   }
 
-  animateEchoSwimming(time) {
+  animateEchoSwimming(time, strength = 1) {
     if (this.swimBody && this.bodyRest) {
       if (this.bodyRestPosition) this.swimBody.position.copy(this.bodyRestPosition);
       this.swimEuler.set(
-        .055 + Math.sin(time * .74) * .035,
-        Math.sin(time * .52) * .035,
-        Math.sin(time * .91) * .055,
+        strength * (.055 + Math.sin(time * .74) * .035),
+        strength * Math.sin(time * .52) * .035,
+        strength * Math.sin(time * .91) * .055,
       );
       this.swimTilt.setFromEuler(this.swimEuler);
       this.swimBody.quaternion.copy(this.bodyRest).multiply(this.swimTilt);
@@ -1312,17 +1358,17 @@ export class LightCableWorld {
       const cycle = time * 1.35 + (index % 2) * Math.PI + Math.floor(index / 2) * .55;
       const kick = Math.sin(cycle);
       if (leg.upper && leg.upperRest) {
-        this.swimEuler.set(kick * .23, 0,
-          (index % 2 ? 1 : -1) * (.06 + Math.cos(cycle) * .09));
+        this.swimEuler.set(strength * kick * .23, 0,
+          strength * (index % 2 ? 1 : -1) * (.06 + Math.cos(cycle) * .09));
         this.swimTilt.setFromEuler(this.swimEuler);
         leg.upper.quaternion.copy(leg.upperRest).multiply(this.swimTilt);
       }
       if (leg.lower && leg.lowerRest) {
-        this.swimTilt.setFromAxisAngle(X_AXIS, .1 - kick * .3);
+        this.swimTilt.setFromAxisAngle(X_AXIS, strength * (.1 - kick * .3));
         leg.lower.quaternion.copy(leg.lowerRest).multiply(this.swimTilt);
       }
       if (leg.foot && leg.footRest) {
-        this.swimTilt.setFromAxisAngle(X_AXIS, Math.sin(cycle - .5) * .15);
+        this.swimTilt.setFromAxisAngle(X_AXIS, strength * Math.sin(cycle - .5) * .15);
         leg.foot.quaternion.copy(leg.footRest).multiply(this.swimTilt);
       }
     }

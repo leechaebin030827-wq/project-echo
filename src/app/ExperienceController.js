@@ -1395,6 +1395,7 @@ export class ExperienceController {
     this.lightCableWorld.leaveCreatureView();
     this.pacificViewReturn.hidden = true;
     this.onPacificCreatureAudioChange?.(false);
+    this.cursor?.refresh();
   }
 
   async openPacificParticlePhoto() {
