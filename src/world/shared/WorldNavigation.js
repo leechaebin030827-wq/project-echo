@@ -62,7 +62,16 @@ export class WorldNavigation {
       center: this.garageCenter.toArray(),
       size: this.garageSize.toArray(),
     });
-    this.routes = this.buildRoutes(15);
+    if (world.characterRoutes?.length) {
+      const authoredRoutes = world.characterRoutes.map((points) => this.finishRoute(
+        points.map((point) => point.clone()),
+      ));
+      this.routes = Array.from({ length: 15 }, (_, index) => (
+        authoredRoutes[index % authoredRoutes.length]
+      ));
+    } else {
+      this.routes = this.buildRoutes(15);
+    }
     return this;
   }
 

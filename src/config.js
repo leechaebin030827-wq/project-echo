@@ -85,6 +85,15 @@ export const HAMINA_CONFIG = Object.freeze({
   interactions: HAMINA_INTERACTIONS,
 });
 
+export const KOBE_CONFIG = Object.freeze({
+  modelUrl: '/models/Kobe.runtime.glb',
+  echoTravelDistance: 8.4,
+  echoCycleDuration: 16.8,
+  conveyorWorldSpeed: 1.25,
+  echoVerticalOffset: 0.5,
+  cameraDistanceFromAxis: 6.35,
+});
+
 export const WORLD_JUMP_CONFIG = Object.freeze({
   focusDuration: 0.65,
   crouchDuration: 0.95,

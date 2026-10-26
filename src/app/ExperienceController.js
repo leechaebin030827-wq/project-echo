@@ -11,7 +11,6 @@ import { NevadaWorld } from '../world/nevada/NevadaWorld.js';
 import { InteractiveFocusLight } from '../world/shared/InteractiveFocusLight.js';
 import { HaminaWorld } from '../world/hamina/HaminaWorld.js';
 import { KobeWorld } from '../world/kobe/KobeWorld.js';
-import { KobeMaterialPanel } from '../world/kobe/KobeMaterialPanel.js';
 import { createWorldRoute } from './WorldRoute.js';
 import { WORLD_ENTRY_COPY, WORLD_PRESENTATION } from '../content/WorldPresentation.js';
 import { WORLD_ACTIONS, WORLD_CAPTIONS } from '../content/WorldUiCopy.js';
@@ -223,7 +222,6 @@ export class ExperienceController {
     this.worldTransitioning = false;
     this.haminaPromise = null;
     this.kobePromise = null;
-    this.kobeMaterialPanel = null;
     this.lightCableWorld = null;
     this.lightCableNarrationTimers = [];
     this.nevadaEntryAudioPlayed = false;
@@ -378,6 +376,7 @@ export class ExperienceController {
     this.handleCanvasPointerLeave = () => {
       this.scheduleEchoMenuHide();
       this.lightCableWorld?.clearPointerLook();
+      this.cameraController?.clearKobePointerLook();
       this.lightCableWorld?.dataParticles?.setHover();
     };
   }
@@ -508,10 +507,6 @@ export class ExperienceController {
       : new WeatherParticles(this.scene, world, WORLD_PRESENTATION[this.firstLandWorld].weather);
     this.stage.dataset.world = this.currentWorld;
     this.stage.dataset.weather = WORLD_PRESENTATION[this.firstLandWorld].weather;
-    if (this.firstLandWorld === 'kobe') {
-      this.kobeMaterialPanel = new KobeMaterialPanel(this.stage, world);
-      this.kobeMaterialPanel.setVisible(true);
-    }
     await this.characterManager.spawnNevadaNpcs();
     if (this.firstLandWorld === 'kobe') {
       for (const entity of this.characterManager.entities) entity.root.visible = false;
@@ -559,12 +554,15 @@ export class ExperienceController {
       pickArchivePhoto: (x, y) => this.dataCenterArchive.pick(x, y),
       onArchivePhoto: (card) => this.dataCenterArchive.select(card),
       onPointerPosition: (clientX, clientY) => {
-        if (this.currentWorld !== 'lightcable' || !this.lightCableWorld) return;
         const rect = this.canvas.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) this.lightCableWorld.setPointerLook(
-          ((clientX - rect.left) / rect.width) * 2 - 1,
-          1 - ((clientY - rect.top) / rect.height) * 2,
-        );
+        if (rect.width <= 0 || rect.height <= 0) return;
+        const normalizedX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const normalizedY = 1 - ((clientY - rect.top) / rect.height) * 2;
+        if (this.currentWorld === 'lightcable' && this.lightCableWorld) {
+          this.lightCableWorld.setPointerLook(normalizedX, normalizedY);
+        } else if (this.currentWorld === 'kobe') {
+          this.cameraController.setKobePointerLook(normalizedX, normalizedY);
+        }
       },
       onInteractiveBackground: () => {
         this.onWorldClick();
@@ -1357,7 +1355,7 @@ export class ExperienceController {
 
   setEchoActionMenuVisible(visible) {
     const hasNextWorld = this.visitIndex < this.worldOrder.length - 1;
-    this.echoNextButton.hidden = !hasNextWorld && this.currentWorld !== 'kobe';
+    this.echoNextButton.hidden = !hasNextWorld;
     if (this.echoActionMenu.classList.contains('visible') === visible) return;
     this.echoActionMenu.classList.toggle('visible', visible);
     this.echoActionMenu.setAttribute('aria-hidden', String(!visible));
@@ -1881,14 +1879,6 @@ export class ExperienceController {
     this.postProcessing.setWorldMode(mode);
     this.stage.dataset.world = mode;
     this.stage.dataset.weather = WORLD_PRESENTATION[mode].weather;
-    if (mode === 'kobe') {
-      this.kobeMaterialPanel?.dispose();
-      this.kobeMaterialPanel = new KobeMaterialPanel(this.stage, world);
-      this.kobeMaterialPanel.setVisible(true);
-    } else {
-      this.kobeMaterialPanel?.dispose();
-      this.kobeMaterialPanel = null;
-    }
   }
 
   async activateLandWorld(destinationWorld, mode) {
@@ -2694,7 +2684,6 @@ export class ExperienceController {
     this.echoTravel.dispose();
     this.lightCableNarrationTimers.forEach((timer) => window.clearTimeout(timer));
     this.lightCableWorld?.dispose();
-    this.kobeMaterialPanel?.dispose();
     this.npcWalkQaOverlay?.remove();
     this.interactiveTitle.remove();
     this.echoNextButton.removeEventListener('click', this.handleEchoNext);

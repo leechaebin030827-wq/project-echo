@@ -46,8 +46,8 @@ export const WORLD_PRESENTATION = Object.freeze({
     ]),
     weather: 'none',
     defaultCaption: Object.freeze({
-      korean: '아직 도착하지 않은 미래의 지하에서, 당신의 흔적을 기다립니다.',
-      local: 'Beneath Kobe, a future still under construction waits for your trace.',
+      korean: '흐르는 바닥을 거슬러, 에코가 자신의 자리로 돌아옵니다.',
+      local: 'Against the moving floor, ECHO returns to its axis.',
     }),
   }),
 });

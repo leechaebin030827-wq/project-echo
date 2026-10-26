@@ -5,9 +5,12 @@ import { ExperienceController } from './app/ExperienceController.js';
 import { IntroExperience } from './intro/IntroExperience.js';
 import { CAPTIONS, IntroState } from './intro/config.js';
 import { VintageFilmOverlay } from './ui/VintageFilmOverlay.js';
+import { CrtTextureOverlay } from './ui/CrtTextureOverlay.js';
 
 const params = new URLSearchParams(window.location.search);
-new VintageFilmOverlay(document.querySelector('#stage'));
+const stage = document.querySelector('#stage');
+const vintageFilmOverlay = new VintageFilmOverlay(stage);
+const crtTextureOverlay = new CrtTextureOverlay(stage);
 if (import.meta.env.DEV && params.get('npcFaceQa') === 'N01') {
   import('./qa/N01FaceQa.js').then(({ startN01FaceQa }) => startN01FaceQa()).catch((error) => {
     console.error('[N01 Face QA] initialization failed', error);
@@ -32,6 +35,12 @@ experience.initialize({ introMode: !worldQa }).catch((error) => {
   console.error('[ECHO] initialization failed', error);
   const status = document.querySelector('#face-status');
   if (status) status.textContent = '경험을 시작할 수 없습니다. 페이지를 새로고침해 주세요.';
+  if (worldQa) {
+    const output = document.createElement('pre');
+    output.className = 'developer-error-output';
+    output.textContent = `WORLD QA ERROR\n${error.stack ?? error.message}`;
+    document.querySelector('#stage')?.append(output);
+  }
 });
 
 let intro = null;
@@ -213,5 +222,7 @@ window.addEventListener('pagehide', () => {
   window.removeEventListener('pointerdown', restoreWorldMusicOnGesture);
   intro?.destroy();
   experience.dispose();
+  crtTextureOverlay.dispose();
+  vintageFilmOverlay.dispose();
 }, { once: true });
 }

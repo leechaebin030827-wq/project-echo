@@ -13,7 +13,6 @@ const EchoGradeShader = {
     time: { value: 0 },
     portraitFocus: { value: 0 },
     haminaMode: { value: 0 },
-    kobeMode: { value: 0 },
     coolerInvert: { value: 0 },
     pacificMotionBlur: { value: 0 },
     pacificDepth: { value: 0 },
@@ -31,7 +30,6 @@ const EchoGradeShader = {
     uniform float time;
     uniform float portraitFocus;
     uniform float haminaMode;
-    uniform float kobeMode;
     uniform float coolerInvert;
     uniform float pacificMotionBlur;
     uniform float pacificDepth;
@@ -77,7 +75,7 @@ const EchoGradeShader = {
       color = max(color, vec3(0.0));
 
       float gray = luma(color);
-      float saturation = mix(mix(1.25, 1.055, portraitFocus), 0.9, kobeMode);
+      float saturation = mix(1.25, 1.055, portraitFocus);
       color = mix(vec3(gray), color, saturation);
       float cobalt = smoothstep(0.015, 0.17, color.b - max(color.r, color.g));
       float coral = smoothstep(0.035, 0.2, color.r - max(color.g, color.b));
@@ -85,17 +83,14 @@ const EchoGradeShader = {
       color = mix(color, color * vec3(1.06, 1.005, 0.985), coral * (1.0 - portraitFocus * 0.72));
       float shadowWeight = 1.0 - smoothstep(0.08, 0.52, originalLuma);
       float highlightWeight = smoothstep(0.58, 1.0, originalLuma);
-      color += mix(vec3(0.0, 0.012, 0.048), vec3(0.032, 0.019, 0.006), kobeMode)
-        * shadowWeight * (1.0 - portraitFocus * 0.62);
-      color += mix(mix(vec3(0.043, 0.011, 0.016), vec3(0.014, 0.025, 0.046), haminaMode),
-        vec3(0.032, 0.023, 0.012), kobeMode)
+      color += vec3(0.0, 0.012, 0.048) * shadowWeight * (1.0 - portraitFocus * 0.62);
+      color += mix(vec3(0.043, 0.011, 0.016), vec3(0.014, 0.025, 0.046), haminaMode)
         * highlightWeight * (1.0 - portraitFocus * 0.55);
 
       float snowHighlight = smoothstep(0.6, 1.02, luma(color));
       color *= 1.0 - snowHighlight * 0.075 * haminaMode;
       color = mix(color, (color - 0.47) * 1.035 + 0.485, haminaMode);
       color *= mix(vec3(1.0), vec3(1.0, 1.012, 1.02), haminaMode);
-      color *= mix(vec3(1.0), vec3(1.055, 1.018, 0.93), kobeMode);
       color = max(color, vec3(0.0));
 
       float vignette = smoothstep(0.45, 0.82, distance(vUv, vec2(0.5)));
@@ -184,21 +179,12 @@ export class PostProcessing {
   setWorldMode(mode) {
     this.gradePass.uniforms.pacificMotionBlur.value = 0;
     this.gradePass.uniforms.pacificDepth.value = 0;
-    this.gradePass.uniforms.kobeMode.value = mode === 'kobe' ? 1 : 0;
     if (mode === 'lightcable') {
       this.gradePass.uniforms.haminaMode.value = 0.28;
       this.bloomPass.strength = 0.52;
       this.bloomPass.radius = 0.42;
       this.bloomPass.threshold = 0.9;
       this.renderer.toneMappingExposure = 1.02;
-      return;
-    }
-    if (mode === 'kobe') {
-      this.gradePass.uniforms.haminaMode.value = 0.08;
-      this.bloomPass.strength = 0.16;
-      this.bloomPass.radius = 0.24;
-      this.bloomPass.threshold = 0.96;
-      this.renderer.toneMappingExposure = 1.18;
       return;
     }
     const hamina = mode === 'hamina';
