@@ -12,13 +12,13 @@ const CAMERA_LAYOUTS = Object.freeze([
   Object.freeze({ columns: 2, rows: 2 }),
 ]);
 const LAYOUT_DURATION = 15;
-const BACKGROUND_COLORS = ['#2733d0', '#303ee5', '#3647f0', '#222bb8', '#3c46da'].map(
+const BACKGROUND_COLORS = ['#c7a8cd', '#d9aaa8', '#b8cfc2', '#dfbd9e', '#b9c4df'].map(
   (color) => new THREE.Color(color),
 );
-const PLANE_TOP_COLORS = ['#5868ff', '#6272ff', '#5261f2', '#6b78ff', '#485af0'].map(
+const PLANE_TOP_COLORS = ['#ecd7e8', '#f0d0cb', '#dbe8df', '#f3dcc5', '#d8dcf0'].map(
   (color) => new THREE.Color(color),
 );
-const PLANE_BOTTOM_COLORS = ['#222ba8', '#2834c2', '#1d268f', '#313bc8', '#252fb0'].map(
+const PLANE_BOTTOM_COLORS = ['#ae8bb4', '#c08f98', '#93b3a4', '#c89f7c', '#929fc4'].map(
   (color) => new THREE.Color(color),
 );
 
@@ -55,9 +55,9 @@ function createSubCameras(columns, rows) {
 
 function createEchoMaterial() {
   const material = new THREE.MeshPhysicalMaterial({
-    color: '#b9efff',
-    emissive: '#226fd1',
-    emissiveIntensity: 1.2,
+    color: '#f8e6f1',
+    emissive: '#b778ae',
+    emissiveIntensity: 0.92,
     roughness: 0.1,
     metalness: 0,
     transmission: 0.12,
@@ -90,7 +90,7 @@ function createEchoMaterial() {
       '#include <opaque_fragment>',
       `float xrayFacing = abs(dot(normalize(normal), normalize(vViewPosition)));
       float xrayFresnel = pow(1.0 - xrayFacing, 2.05);
-      outgoingLight += vec3(0.18, 0.7, 1.0) * (0.3 + xrayFresnel * 1.65);
+      outgoingLight += vec3(0.92, 0.54, 0.72) * (0.25 + xrayFresnel * 1.45);
       diffuseColor.a *= clamp(0.38 + xrayFresnel * 1.55, 0.0, 1.0);
       #include <opaque_fragment>`,
     );
@@ -119,17 +119,17 @@ export function createCoverCameraArrayScene(canvas) {
   renderer.toneMappingExposure = 1.18;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#040844');
+  scene.background = new THREE.Color('#c7a8cd');
   const camera = new THREE.ArrayCamera(createSubCameras(3, 5));
   camera.position.z = 2.65;
   camera.layers.enable(1);
   scene.add(camera);
 
-  scene.add(new THREE.AmbientLight('#718aff', 1.9));
-  const keyLight = new THREE.DirectionalLight('#dff7ff', 5.2);
+  scene.add(new THREE.AmbientLight('#efd7ea', 1.72));
+  const keyLight = new THREE.DirectionalLight('#fff2e7', 4.6);
   keyLight.position.set(2.4, 3.4, 5.5);
   scene.add(keyLight);
-  const rimLight = new THREE.DirectionalLight('#385dff', 3.1);
+  const rimLight = new THREE.DirectionalLight('#aa98cb', 2.5);
   rimLight.position.set(-4, -1, 2);
   scene.add(rimLight);
 

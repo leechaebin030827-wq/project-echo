@@ -5,7 +5,8 @@
   "sourceOrder": [
     "KO",
     "EN",
-    "FI"
+    "FI",
+    "JA"
   ],
   "cues": {
     "K01": {
@@ -136,6 +137,38 @@
       "src": "/audio/echo/ko/K16.mp3",
       "durationMs": 2650
     },
+    "K17": {
+      "id": "K17",
+      "language": "ko",
+      "text": "어라? 잠시만요. 스미마셍.",
+      "scene": "고베 / 도착 후속",
+      "src": "/audio/echo/ko/K17.mp3",
+      "durationMs": 4039
+    },
+    "K18": {
+      "id": "K18",
+      "language": "ko",
+      "text": "우리가 조금 일찍 도착했나 봐요.",
+      "scene": "고베 / 도착 후속",
+      "src": "/audio/echo/ko/K18.mp3",
+      "durationMs": 2454
+    },
+    "K19": {
+      "id": "K19",
+      "language": "ko",
+      "text": "여긴 원래 흙을 옮기던 길이래요.",
+      "scene": "고베 / 도착 후속",
+      "src": "/audio/echo/ko/K19.mp3",
+      "durationMs": 2484
+    },
+    "K20": {
+      "id": "K20",
+      "language": "ko",
+      "text": "이제 이곳에 데이터센터가 들어설 거래요!",
+      "scene": "고베 / 도착 후속",
+      "src": "/audio/echo/ko/K20.mp3",
+      "durationMs": 2961
+    },
     "KH-N01": {
       "id": "KH-N01",
       "language": "ko",
@@ -247,6 +280,14 @@
       "scene": "태평양 / 파티클 호버",
       "src": "/audio/echo/ko/KH-P02.mp3",
       "durationMs": 2430
+    },
+    "KH-K01": {
+      "id": "KH-K01",
+      "language": "ko",
+      "text": "벽화? 여기 무언가 그려져 있어요.",
+      "scene": "고베 / 전단지 호버",
+      "src": "/audio/echo/ko/KH-K01.mp3",
+      "durationMs": 2952
     },
     "EN-R01": {
       "id": "EN-R01",
@@ -767,6 +808,318 @@
       "scene": "하미나 / Forest",
       "src": "/audio/echo/fi/FI-O28.mp3",
       "durationMs": 2691
+    },
+    "JP-O01": {
+      "id": "JP-O01",
+      "language": "ja",
+      "text": "ここはもともと、土砂が通っていた道なんです！",
+      "scene": "고베 / Tunnel Archive 01",
+      "src": "/audio/echo/ja/JP-O01.mp3",
+      "durationMs": 3805
+    },
+    "JP-O02": {
+      "id": "JP-O02",
+      "language": "ja",
+      "text": "これからは、データのための空間になるそうです。",
+      "scene": "고베 / Tunnel Archive 01",
+      "src": "/audio/echo/ja/JP-O02.mp3",
+      "durationMs": 4240
+    },
+    "JP-O03": {
+      "id": "JP-O03",
+      "language": "ja",
+      "text": "トンネルも転職するんですね！",
+      "scene": "고베 / Tunnel Archive 01",
+      "src": "/audio/echo/ja/JP-O03.mp3",
+      "durationMs": 2357
+    },
+    "JP-O04": {
+      "id": "JP-O04",
+      "language": "ja",
+      "text": "私より働き者ですね？",
+      "scene": "고베 / Tunnel Archive 01",
+      "src": "/audio/echo/ja/JP-O04.mp3",
+      "durationMs": 2957
+    },
+    "JP-O05": {
+      "id": "JP-O05",
+      "language": "ja",
+      "text": "おお！トンネル再活用の計画書ですね。",
+      "scene": "고베 / Tunnel Archive 02",
+      "src": "/audio/echo/ja/JP-O05.mp3",
+      "durationMs": 4707
+    },
+    "JP-O06": {
+      "id": "JP-O06",
+      "language": "ja",
+      "text": "再活用というと、瓶や缶のことかと思っていましたが……",
+      "scene": "고베 / Tunnel Archive 02",
+      "src": "/audio/echo/ja/JP-O06.mp3",
+      "durationMs": 4473
+    },
+    "JP-O07": {
+      "id": "JP-O07",
+      "language": "ja",
+      "text": "トンネルも再活用するんですね！",
+      "scene": "고베 / Tunnel Archive 02",
+      "src": "/audio/echo/ja/JP-O07.mp3",
+      "durationMs": 3706
+    },
+    "JP-O08": {
+      "id": "JP-O08",
+      "language": "ja",
+      "text": "とても大きな分別回収ですね！",
+      "scene": "고베 / Tunnel Archive 02",
+      "src": "/audio/echo/ja/JP-O08.mp3",
+      "durationMs": 3037
+    },
+    "JP-O09": {
+      "id": "JP-O09",
+      "language": "ja",
+      "text": "2005年9月、土砂を運ぶ仕事は終了！",
+      "scene": "고베 / Tunnel Archive 03",
+      "src": "/audio/echo/ja/JP-O09.mp3",
+      "durationMs": 4778
+    },
+    "JP-O10": {
+      "id": "JP-O10",
+      "language": "ja",
+      "text": "40年以上も働いたそうです。",
+      "scene": "고베 / Tunnel Archive 03",
+      "src": "/audio/echo/ja/JP-O10.mp3",
+      "durationMs": 3203
+    },
+    "JP-O11": {
+      "id": "JP-O11",
+      "language": "ja",
+      "text": "やっとゆっくり休めるのかと思ったら……",
+      "scene": "고베 / Tunnel Archive 03",
+      "src": "/audio/echo/ja/JP-O11.mp3",
+      "durationMs": 3245
+    },
+    "JP-O12": {
+      "id": "JP-O12",
+      "language": "ja",
+      "text": "また出勤する予定なんですね！",
+      "scene": "고베 / Tunnel Archive 03",
+      "src": "/audio/echo/ja/JP-O12.mp3",
+      "durationMs": 2619
+    },
+    "JP-O13": {
+      "id": "JP-O13",
+      "language": "ja",
+      "text": "速報です！速報！",
+      "scene": "고베 / Tunnel Archive 04",
+      "src": "/audio/echo/ja/JP-O13.mp3",
+      "durationMs": 1255
+    },
+    "JP-O14": {
+      "id": "JP-O14",
+      "language": "ja",
+      "text": "ここにデータセンターを造ると、2026年10月6日に発表したそうです！",
+      "scene": "고베 / Tunnel Archive 04",
+      "src": "/audio/echo/ja/JP-O14.mp3",
+      "durationMs": 8193
+    },
+    "JP-O15": {
+      "id": "JP-O15",
+      "language": "ja",
+      "text": "でも、コンピューターたちはまだ出勤前みたいですね。",
+      "scene": "고베 / Tunnel Archive 04",
+      "src": "/audio/echo/ja/JP-O15.mp3",
+      "durationMs": 5286
+    },
+    "JP-O16": {
+      "id": "JP-O16",
+      "language": "ja",
+      "text": "あれ？ここは一年中、15度から20度の間だそうです！",
+      "scene": "고베 / Tunnel Archive 05",
+      "src": "/audio/echo/ja/JP-O16.mp3",
+      "durationMs": 5203
+    },
+    "JP-O17": {
+      "id": "JP-O17",
+      "language": "ja",
+      "text": "コンピューターたちが喜びそうですね。",
+      "scene": "고베 / Tunnel Archive 05",
+      "src": "/audio/echo/ja/JP-O17.mp3",
+      "durationMs": 2870
+    },
+    "JP-O18": {
+      "id": "JP-O18",
+      "language": "ja",
+      "text": "私はまず上着を用意します。",
+      "scene": "고베 / Tunnel Archive 05",
+      "src": "/audio/echo/ja/JP-O18.mp3",
+      "durationMs": 2999
+    },
+    "JP-O19": {
+      "id": "JP-O19",
+      "language": "ja",
+      "text": "ぶるぶる！",
+      "scene": "고베 / Tunnel Archive 05",
+      "src": "/audio/echo/ja/JP-O19.mp3",
+      "durationMs": 1106
+    },
+    "JP-O20": {
+      "id": "JP-O20",
+      "language": "ja",
+      "text": "2027年末にオープンする予定だそうです！",
+      "scene": "고베 / Tunnel Archive 06",
+      "src": "/audio/echo/ja/JP-O20.mp3",
+      "durationMs": 3904
+    },
+    "JP-O21": {
+      "id": "JP-O21",
+      "language": "ja",
+      "text": "どうりで誰もいないわけですね。",
+      "scene": "고베 / Tunnel Archive 06",
+      "src": "/audio/echo/ja/JP-O21.mp3",
+      "durationMs": 2819
+    },
+    "JP-O22": {
+      "id": "JP-O22",
+      "language": "ja",
+      "text": "私たち、ずいぶん早く来てしまいましたね。",
+      "scene": "고베 / Tunnel Archive 06",
+      "src": "/audio/echo/ja/JP-O22.mp3",
+      "durationMs": 3302
+    },
+    "JP-O23": {
+      "id": "JP-O23",
+      "language": "ja",
+      "text": "ほほう。待つことには自信があります！",
+      "scene": "고베 / Tunnel Archive 06",
+      "src": "/audio/echo/ja/JP-O23.mp3",
+      "durationMs": 3623
+    },
+    "JP-O24": {
+      "id": "JP-O24",
+      "language": "ja",
+      "text": "このトンネルは、14.5キロメートルもあるそうです！",
+      "scene": "고베 / Tunnel Archive 07",
+      "src": "/audio/echo/ja/JP-O24.mp3",
+      "durationMs": 4368
+    },
+    "JP-O25": {
+      "id": "JP-O25",
+      "language": "ja",
+      "text": "そのうち3キロメートルを、データセンターとして使う計画だそうです。",
+      "scene": "고베 / Tunnel Archive 07",
+      "src": "/audio/echo/ja/JP-O25.mp3",
+      "durationMs": 6806
+    },
+    "JP-O26": {
+      "id": "JP-O26",
+      "language": "ja",
+      "text": "残りは？",
+      "scene": "고베 / Tunnel Archive 07",
+      "src": "/audio/echo/ja/JP-O26.mp3",
+      "durationMs": 1178
+    },
+    "JP-O27": {
+      "id": "JP-O27",
+      "language": "ja",
+      "text": "うーん……私も気になります！",
+      "scene": "고베 / Tunnel Archive 07",
+      "src": "/audio/echo/ja/JP-O27.mp3",
+      "durationMs": 2764
+    },
+    "JP-O28": {
+      "id": "JP-O28",
+      "language": "ja",
+      "text": "あっ！工事関係者以外、立入禁止！",
+      "scene": "고베 / Tunnel Archive 08",
+      "src": "/audio/echo/ja/JP-O28.mp3",
+      "durationMs": 3139
+    },
+    "JP-O29": {
+      "id": "JP-O29",
+      "language": "ja",
+      "text": "私たちは関係者でしたっけ？",
+      "scene": "고베 / Tunnel Archive 08",
+      "src": "/audio/echo/ja/JP-O29.mp3",
+      "durationMs": 2755
+    },
+    "JP-O30": {
+      "id": "JP-O30",
+      "language": "ja",
+      "text": "ええと……私は案内係なんですけど。",
+      "scene": "고베 / Tunnel Archive 08",
+      "src": "/audio/echo/ja/JP-O30.mp3",
+      "durationMs": 4026
+    },
+    "JP-O31": {
+      "id": "JP-O31",
+      "language": "ja",
+      "text": "入構証は持っていません！ほほ。",
+      "scene": "고베 / Tunnel Archive 08",
+      "src": "/audio/echo/ja/JP-O31.mp3",
+      "durationMs": 3829
+    },
+    "JP-O32": {
+      "id": "JP-O32",
+      "language": "ja",
+      "text": "土砂を運んでいた場所が、今度はデータのための施設になるそうです。",
+      "scene": "고베 / Tunnel Archive 09",
+      "src": "/audio/echo/ja/JP-O32.mp3",
+      "durationMs": 5498
+    },
+    "JP-O33": {
+      "id": "JP-O33",
+      "language": "ja",
+      "text": "このトンネルは、第二の人生を準備しているんですね！",
+      "scene": "고베 / Tunnel Archive 09",
+      "src": "/audio/echo/ja/JP-O33.mp3",
+      "durationMs": 5031
+    },
+    "JP-O34": {
+      "id": "JP-O34",
+      "language": "ja",
+      "text": "あなたもいつか、また来てみませんか？",
+      "scene": "고베 / Tunnel Archive 09",
+      "src": "/audio/echo/ja/JP-O34.mp3",
+      "durationMs": 3457
+    },
+    "JP-T01": {
+      "id": "JP-T01",
+      "language": "ja",
+      "text": "ちょっと中に入ってみますね。",
+      "scene": "고베 / Inner Tunnel",
+      "src": "/audio/echo/ja/JP-T01.mp3",
+      "durationMs": 2420
+    },
+    "JP-T02": {
+      "id": "JP-T02",
+      "language": "ja",
+      "text": "私が見たものは……",
+      "scene": "고베 / Inner Tunnel",
+      "src": "/audio/echo/ja/JP-T02.mp3",
+      "durationMs": 1480
+    },
+    "JP-T03": {
+      "id": "JP-T03",
+      "language": "ja",
+      "text": "何もありません。",
+      "scene": "고베 / Inner Tunnel",
+      "src": "/audio/echo/ja/JP-T03.mp3",
+      "durationMs": 1320
+    },
+    "JP-T04": {
+      "id": "JP-T04",
+      "language": "ja",
+      "text": "空っぽですね。",
+      "scene": "고베 / Inner Tunnel",
+      "src": "/audio/echo/ja/JP-T04.mp3",
+      "durationMs": 1110
+    },
+    "JP-T05": {
+      "id": "JP-T05",
+      "language": "ja",
+      "text": "まるで、何かが入ってくるのを待っているみたいです。",
+      "scene": "고베 / Inner Tunnel",
+      "src": "/audio/echo/ja/JP-T05.mp3",
+      "durationMs": 4039
     }
   }
 }

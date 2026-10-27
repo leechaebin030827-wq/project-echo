@@ -235,17 +235,25 @@ export class CinematicCameraController {
 
   applyKobeCamera() {
     const breath = this.elapsed;
+    const panicFollow = this.world?.cameraFollowOffset ?? 0;
     this.camera.position.copy(this.kobeCameraPosition);
+    this.camera.position.x -= panicFollow;
     this.camera.position.y += Math.sin(breath * 0.72) * 0.018;
     this.camera.position.z += Math.sin(breath * 0.47 + 0.8) * 0.012;
     this.camera.position.y += this.kobePointerLook.y * 0.025;
-    this.camera.position.z += this.kobePointerLook.x * 0.05;
+    this.camera.position.z -= this.kobePointerLook.x * 0.05;
     this.target.copy(this.kobeCameraTarget);
+    this.target.x -= panicFollow;
     this.target.y += Math.sin(breath * 0.63 + 1.4) * 0.012;
     this.target.z += Math.sin(breath * 0.41) * 0.01;
     this.target.y += this.kobePointerLook.y * 0.24;
-    this.target.z += this.kobePointerLook.x * 0.46;
+    this.target.z -= this.kobePointerLook.x * 0.46;
     this.camera.lookAt(this.target);
+    const departureFov = this.world?.tunnelExitFov;
+    if (Number.isFinite(departureFov) && Math.abs(this.camera.fov - departureFov) > .01) {
+      this.camera.fov = departureFov;
+      this.camera.updateProjectionMatrix();
+    }
   }
 
   setKobePointerLook(normalizedX, normalizedY = 0) {
@@ -674,6 +682,7 @@ export class CinematicCameraController {
     const flagFocus = region.cameraMode === 'flag' || region.name === 'Flag';
     const coolerFocus = region.name === 'Cooler';
     const haminaCoolerFocus = region.cameraMode === 'hamina-cooler';
+    const kobePosterFocus = region.cameraMode === 'kobe-poster';
     const focusCenter = region.focusTarget ?? region.center;
     const focusBounds = region.focusBounds ?? region.bounds;
     const focusSize = region.focusSize ?? region.size;
@@ -681,7 +690,9 @@ export class CinematicCameraController {
     if (viewDirection.lengthSq() < 1e-6) viewDirection.set(0, 0.35, 1);
     if (flagFocus) viewDirection.y = 0;
     viewDirection.normalize();
-    if (haminaCoolerFocus) {
+    if (kobePosterFocus && region.focusDirection) {
+      viewDirection.copy(region.focusDirection).normalize();
+    } else if (haminaCoolerFocus) {
       // Always show the machinery from its open ECHO-facing side. Depending
       // on the orbit angle, using the current camera direction could otherwise
       // place the lens behind the facility or out over the sea.
@@ -703,6 +714,8 @@ export class CinematicCameraController {
       ? Math.max(5.6, Math.min(Math.max(focusSize.x, focusSize.z) * 2.3, 9.5))
       : haminaCoolerFocus
         ? Math.max(9, Math.min((region.focusRadius ?? region.radius) * 1.45, 18))
+      : kobePosterFocus
+        ? region.focusDistance
       : region.name === 'Data Center'
       ? (region.focusDistance ?? region.radius * 1.55)
       : region.cameraMode === 'timer'
@@ -715,13 +728,16 @@ export class CinematicCameraController {
           ? Math.max(9.5, Math.min(region.radius * 2.8, 38))
         : Math.max(7.5, Math.min(region.radius * 2.2, 34));
     const destination = focusCenter.clone().addScaledVector(viewDirection, distance);
-    if (flagFocus) destination.y = Math.max(focusBounds.min.y + 3.5,
+    if (kobePosterFocus) destination.y = focusCenter.y;
+    else if (flagFocus) destination.y = Math.max(focusBounds.min.y + 3.5,
       focusCenter.y - Math.max(1.4, focusSize.y * 0.18));
     else if (coolerFocus) destination.y = focusCenter.y + Math.max(5, focusSize.y * 0.65);
     else if (region.cameraMode === 'timer') destination.y = focusCenter.y + 0.65;
     else destination.y = Math.max(destination.y, focusBounds.min.y + focusSize.y * 0.72);
     const destinationTarget = focusCenter.clone();
-    if (!flagFocus) destinationTarget.y += focusSize.y * (coolerFocus ? 0.1 : 0.06);
+    if (!flagFocus && !kobePosterFocus) {
+      destinationTarget.y += focusSize.y * (coolerFocus ? 0.1 : 0.06);
+    }
     if (region.name === 'Billboard') {
       const graphic = region.meshes?.[0];
       graphic?.updateWorldMatrix(true, false);
@@ -745,7 +761,9 @@ export class CinematicCameraController {
       destination,
       destinationTarget,
       duration,
-      arcHeight: flagFocus ? 0 : Math.min(3.4, travelDistance * 0.1),
+      // Poster shots must stay inside the Kobe tunnel. The shared cinematic
+      // arc can lift long-distance approaches through the tunnel ceiling.
+      arcHeight: flagFocus || kobePosterFocus ? 0 : Math.min(3.4, travelDistance * 0.1),
       filmEntry: true,
     };
     this.elapsed = 0;
@@ -854,7 +872,8 @@ export class CinematicCameraController {
   applyInteractiveFilm(delta, archive = null) {
     if (this.state !== EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS
       || !this.interactiveFocus || this.transition || this.archivePhotoOrigin) return;
-    if (this.interactiveFocus.name === 'Cooler') return;
+    if (this.interactiveFocus.name === 'Cooler'
+      || this.interactiveFocus.cameraMode === 'kobe-poster') return;
 
     if (this.archiveDropFilm && (archive?.dropActive || archive?.settledHold)) {
       const fall = this.archiveDropFilm;
@@ -1008,13 +1027,16 @@ export class CinematicCameraController {
   returnFromInteractiveObject() {
     if (!this.interactiveOrigin) return;
     const travelDistance = this.camera.position.distanceTo(this.interactiveOrigin.position);
+    const kobePosterFocus = this.interactiveFocus?.cameraMode === 'kobe-poster';
     this.transition = {
       fromPosition: this.camera.position.clone(),
       fromTarget: this.target.clone(),
       destination: this.interactiveOrigin.position.clone(),
       destinationTarget: this.interactiveOrigin.target.clone(),
       duration: THREE.MathUtils.clamp(0.8 + travelDistance * 0.042, 1.2, 2.4),
-      arcHeight: Math.min(2.6, travelDistance * 0.08),
+      // Keep the reverse trip inside the tunnel as well. Distant posters make
+      // the default return arc tall enough to briefly expose the exterior.
+      arcHeight: kobePosterFocus ? 0 : Math.min(2.6, travelDistance * 0.08),
       orbitAngle: this.interactiveOrigin.angle,
     };
     this.interactiveFocus = null;
@@ -1217,7 +1239,11 @@ export class CinematicCameraController {
   update(delta) {
     this.camera.position.sub(this.hoverOffset);
     this.hoverOffset.set(0, 0, 0);
-    const portraitZoom = this.state === EXPERIENCE_STATES.GROUP_DANCE_FOCUS
+    const kobeTunnelHover = this.kobeFixedCamera
+      && this.state === EXPERIENCE_STATES.ECHO_ORBIT
+      && this.hoverTarget?.cameraMode === 'kobe-tunnel';
+    const portraitZoom = kobeTunnelHover ? 1.2
+      : this.state === EXPERIENCE_STATES.GROUP_DANCE_FOCUS
       && this.danceHeroIndex >= 0 ? 1.78
       : this.state === EXPERIENCE_STATES.ECHO_RITUAL_SPIN ? 1.15
         : (this.state === EXPERIENCE_STATES.CHARACTER_FOCUS
@@ -1234,6 +1260,8 @@ export class CinematicCameraController {
       EXPERIENCE_STATES.WORLD_JUMP_ECHO,
       EXPERIENCE_STATES.WORLD_JUMP_SKY,
       EXPERIENCE_STATES.WORLD_LOADING,
+      EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS,
+      EXPERIENCE_STATES.INTERACTIVE_OBJECT_RETURN,
     ].includes(this.state)) {
       this.kobePointerLook.x = THREE.MathUtils.damp(
         this.kobePointerLook.x, this.kobePointerLookTarget.x, 3.6, delta,

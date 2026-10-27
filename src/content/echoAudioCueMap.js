@@ -16,6 +16,10 @@ export const ECHO_AUDIO_CUES = {
   "K14": "/audio/echo/ko/K14.mp3",
   "K15": "/audio/echo/ko/K15.mp3",
   "K16": "/audio/echo/ko/K16.mp3",
+  "K17": "/audio/echo/ko/K17.mp3",
+  "K18": "/audio/echo/ko/K18.mp3",
+  "K19": "/audio/echo/ko/K19.mp3",
+  "K20": "/audio/echo/ko/K20.mp3",
   "KH-N01": "/audio/echo/ko/KH-N01.mp3",
   "KH-N02": "/audio/echo/ko/KH-N02.mp3",
   "KH-N03": "/audio/echo/ko/KH-N03.mp3",
@@ -30,6 +34,7 @@ export const ECHO_AUDIO_CUES = {
   "KH-D01": "/audio/echo/ko/KH-D01.mp3",
   "KH-P01": "/audio/echo/ko/KH-P01.mp3",
   "KH-P02": "/audio/echo/ko/KH-P02.mp3",
+  "KH-K01": "/audio/echo/ko/KH-K01.mp3",
   "EN-R01": "/audio/echo/en/EN-R01.mp3",
   "EN-R02": "/audio/echo/en/EN-R02.mp3",
   "EN-R03": "/audio/echo/en/EN-R03.mp3",
@@ -94,7 +99,46 @@ export const ECHO_AUDIO_CUES = {
   "FI-O25": "/audio/echo/fi/FI-O25.mp3",
   "FI-O26": "/audio/echo/fi/FI-O26.mp3",
   "FI-O27": "/audio/echo/fi/FI-O27.mp3",
-  "FI-O28": "/audio/echo/fi/FI-O28.mp3"
+  "FI-O28": "/audio/echo/fi/FI-O28.mp3",
+  "JP-O01": "/audio/echo/ja/JP-O01.mp3",
+  "JP-O02": "/audio/echo/ja/JP-O02.mp3",
+  "JP-O03": "/audio/echo/ja/JP-O03.mp3",
+  "JP-O04": "/audio/echo/ja/JP-O04.mp3",
+  "JP-O05": "/audio/echo/ja/JP-O05.mp3",
+  "JP-O06": "/audio/echo/ja/JP-O06.mp3",
+  "JP-O07": "/audio/echo/ja/JP-O07.mp3",
+  "JP-O08": "/audio/echo/ja/JP-O08.mp3",
+  "JP-O09": "/audio/echo/ja/JP-O09.mp3",
+  "JP-O10": "/audio/echo/ja/JP-O10.mp3",
+  "JP-O11": "/audio/echo/ja/JP-O11.mp3",
+  "JP-O12": "/audio/echo/ja/JP-O12.mp3",
+  "JP-O13": "/audio/echo/ja/JP-O13.mp3",
+  "JP-O14": "/audio/echo/ja/JP-O14.mp3",
+  "JP-O15": "/audio/echo/ja/JP-O15.mp3",
+  "JP-O16": "/audio/echo/ja/JP-O16.mp3",
+  "JP-O17": "/audio/echo/ja/JP-O17.mp3",
+  "JP-O18": "/audio/echo/ja/JP-O18.mp3",
+  "JP-O19": "/audio/echo/ja/JP-O19.mp3",
+  "JP-O20": "/audio/echo/ja/JP-O20.mp3",
+  "JP-O21": "/audio/echo/ja/JP-O21.mp3",
+  "JP-O22": "/audio/echo/ja/JP-O22.mp3",
+  "JP-O23": "/audio/echo/ja/JP-O23.mp3",
+  "JP-O24": "/audio/echo/ja/JP-O24.mp3",
+  "JP-O25": "/audio/echo/ja/JP-O25.mp3",
+  "JP-O26": "/audio/echo/ja/JP-O26.mp3",
+  "JP-O27": "/audio/echo/ja/JP-O27.mp3",
+  "JP-O28": "/audio/echo/ja/JP-O28.mp3",
+  "JP-O29": "/audio/echo/ja/JP-O29.mp3",
+  "JP-O30": "/audio/echo/ja/JP-O30.mp3",
+  "JP-O31": "/audio/echo/ja/JP-O31.mp3",
+  "JP-O32": "/audio/echo/ja/JP-O32.mp3",
+  "JP-O33": "/audio/echo/ja/JP-O33.mp3",
+  "JP-O34": "/audio/echo/ja/JP-O34.mp3",
+  "JP-T01": "/audio/echo/ja/JP-T01.mp3",
+  "JP-T02": "/audio/echo/ja/JP-T02.mp3",
+  "JP-T03": "/audio/echo/ja/JP-T03.mp3",
+  "JP-T04": "/audio/echo/ja/JP-T04.mp3",
+  "JP-T05": "/audio/echo/ja/JP-T05.mp3"
 };
 export const ECHO_AUDIO_META = {
   "K01": {
@@ -161,6 +205,22 @@ export const ECHO_AUDIO_META = {
     "durationMs": 2650,
     "text": "데이터들이 이동중인거같네요."
   },
+  "K17": {
+    "durationMs": 4039,
+    "text": "어라? 잠시만요. 스미마셍."
+  },
+  "K18": {
+    "durationMs": 2454,
+    "text": "우리가 조금 일찍 도착했나 봐요."
+  },
+  "K19": {
+    "durationMs": 2484,
+    "text": "여긴 원래 흙을 옮기던 길이래요."
+  },
+  "K20": {
+    "durationMs": 2961,
+    "text": "이제 이곳에 데이터센터가 들어설 거래요!"
+  },
   "KH-N01": {
     "durationMs": 1698,
     "text": "이곳에는 무엇이 있을까요?"
@@ -216,6 +276,10 @@ export const ECHO_AUDIO_META = {
   "KH-P02": {
     "durationMs": 2430,
     "text": "빠르게 움직이는 이것들은?"
+  },
+  "KH-K01": {
+    "durationMs": 2952,
+    "text": "벽화? 여기 무언가 그려져 있어요."
   },
   "EN-R01": {
     "durationMs": 2011,
@@ -476,6 +540,162 @@ export const ECHO_AUDIO_META = {
   "FI-O28": {
     "durationMs": 2691,
     "text": "Ai niin, eiväthän puut osaa kävellä!"
+  },
+  "JP-O01": {
+    "durationMs": 3805,
+    "text": "ここはもともと、土砂が通っていた道なんです！"
+  },
+  "JP-O02": {
+    "durationMs": 4240,
+    "text": "これからは、データのための空間になるそうです。"
+  },
+  "JP-O03": {
+    "durationMs": 2357,
+    "text": "トンネルも転職するんですね！"
+  },
+  "JP-O04": {
+    "durationMs": 2957,
+    "text": "私より働き者ですね？"
+  },
+  "JP-O05": {
+    "durationMs": 4707,
+    "text": "おお！トンネル再活用の計画書ですね。"
+  },
+  "JP-O06": {
+    "durationMs": 4473,
+    "text": "再活用というと、瓶や缶のことかと思っていましたが……"
+  },
+  "JP-O07": {
+    "durationMs": 3706,
+    "text": "トンネルも再活用するんですね！"
+  },
+  "JP-O08": {
+    "durationMs": 3037,
+    "text": "とても大きな分別回収ですね！"
+  },
+  "JP-O09": {
+    "durationMs": 4778,
+    "text": "2005年9月、土砂を運ぶ仕事は終了！"
+  },
+  "JP-O10": {
+    "durationMs": 3203,
+    "text": "40年以上も働いたそうです。"
+  },
+  "JP-O11": {
+    "durationMs": 3245,
+    "text": "やっとゆっくり休めるのかと思ったら……"
+  },
+  "JP-O12": {
+    "durationMs": 2619,
+    "text": "また出勤する予定なんですね！"
+  },
+  "JP-O13": {
+    "durationMs": 1255,
+    "text": "速報です！速報！"
+  },
+  "JP-O14": {
+    "durationMs": 8193,
+    "text": "ここにデータセンターを造ると、2026年10月6日に発表したそうです！"
+  },
+  "JP-O15": {
+    "durationMs": 5286,
+    "text": "でも、コンピューターたちはまだ出勤前みたいですね。"
+  },
+  "JP-O16": {
+    "durationMs": 5203,
+    "text": "あれ？ここは一年中、15度から20度の間だそうです！"
+  },
+  "JP-O17": {
+    "durationMs": 2870,
+    "text": "コンピューターたちが喜びそうですね。"
+  },
+  "JP-O18": {
+    "durationMs": 2999,
+    "text": "私はまず上着を用意します。"
+  },
+  "JP-O19": {
+    "durationMs": 1106,
+    "text": "ぶるぶる！"
+  },
+  "JP-O20": {
+    "durationMs": 3904,
+    "text": "2027年末にオープンする予定だそうです！"
+  },
+  "JP-O21": {
+    "durationMs": 2819,
+    "text": "どうりで誰もいないわけですね。"
+  },
+  "JP-O22": {
+    "durationMs": 3302,
+    "text": "私たち、ずいぶん早く来てしまいましたね。"
+  },
+  "JP-O23": {
+    "durationMs": 3623,
+    "text": "ほほう。待つことには自信があります！"
+  },
+  "JP-O24": {
+    "durationMs": 4368,
+    "text": "このトンネルは、14.5キロメートルもあるそうです！"
+  },
+  "JP-O25": {
+    "durationMs": 6806,
+    "text": "そのうち3キロメートルを、データセンターとして使う計画だそうです。"
+  },
+  "JP-O26": {
+    "durationMs": 1178,
+    "text": "残りは？"
+  },
+  "JP-O27": {
+    "durationMs": 2764,
+    "text": "うーん……私も気になります！"
+  },
+  "JP-O28": {
+    "durationMs": 3139,
+    "text": "あっ！工事関係者以外、立入禁止！"
+  },
+  "JP-O29": {
+    "durationMs": 2755,
+    "text": "私たちは関係者でしたっけ？"
+  },
+  "JP-O30": {
+    "durationMs": 4026,
+    "text": "ええと……私は案内係なんですけど。"
+  },
+  "JP-O31": {
+    "durationMs": 3829,
+    "text": "入構証は持っていません！ほほ。"
+  },
+  "JP-O32": {
+    "durationMs": 5498,
+    "text": "土砂を運んでいた場所が、今度はデータのための施設になるそうです。"
+  },
+  "JP-O33": {
+    "durationMs": 5031,
+    "text": "このトンネルは、第二の人生を準備しているんですね！"
+  },
+  "JP-O34": {
+    "durationMs": 3457,
+    "text": "あなたもいつか、また来てみませんか？"
+  },
+  "JP-T01": {
+    "durationMs": 2420,
+    "text": "ちょっと中に入ってみますね。"
+  },
+  "JP-T02": {
+    "durationMs": 1480,
+    "text": "私が見たものは……"
+  },
+  "JP-T03": {
+    "durationMs": 1320,
+    "text": "何もありません。"
+  },
+  "JP-T04": {
+    "durationMs": 1110,
+    "text": "空っぽですね。"
+  },
+  "JP-T05": {
+    "durationMs": 4039,
+    "text": "まるで、何かが入ってくるのを待っているみたいです。"
   }
 };
 export const getEchoAudioSrc = (cueId) => ECHO_AUDIO_CUES[cueId] ?? null;

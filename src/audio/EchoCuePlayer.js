@@ -9,6 +9,17 @@ const OBJECT_CUES = Object.freeze({
     'Data Center': [1, 4], Cooler: [5, 7], Timer: [8, 13],
     Finland: [14, 18], Ocean: [19, 22], Forest: [23, 28],
   }),
+  kobe: Object.freeze({
+    'Tunnel Archive 01': [1, 4],
+    'Tunnel Archive 02': [5, 8],
+    'Tunnel Archive 03': [9, 12],
+    'Tunnel Archive 04': [13, 15],
+    'Tunnel Archive 05': [16, 19],
+    'Tunnel Archive 06': [20, 23],
+    'Tunnel Archive 07': [24, 27],
+    'Tunnel Archive 08': [28, 31],
+    'Tunnel Archive 09': [32, 34],
+  }),
 });
 
 const HOVER_CUES = Object.freeze({
@@ -20,12 +31,18 @@ const HOVER_CUES = Object.freeze({
     'Data Center': 'KH-H01', Cooler: 'KH-H02', Timer: 'KH-H03',
     Finland: 'KH-H04', Ocean: 'KH-H05', Forest: 'KH-H06',
   }),
+  kobe: Object.freeze(Object.fromEntries(
+    Array.from({ length: 9 }, (_, index) => [
+      `Tunnel Archive ${String(index + 1).padStart(2, '0')}`,
+      'KH-K01',
+    ]),
+  )),
 });
 
 export const objectCueIds = (world, name) => {
   const range = OBJECT_CUES[world]?.[name];
   if (!range) return [];
-  const language = world === 'hamina' ? 'FI' : 'EN';
+  const language = world === 'hamina' ? 'FI' : world === 'kobe' ? 'JP' : 'EN';
   return Array.from({ length: range[1] - range[0] + 1 }, (_, index) =>
     `${language}-O${String(range[0] + index).padStart(2, '0')}`);
 };

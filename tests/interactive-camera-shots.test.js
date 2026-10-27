@@ -102,6 +102,36 @@ test('cooler approach begins at the current camera and settles close above the m
   assert.ok(duration >= 2.1);
 });
 
+test('distant Kobe poster focus and return stay inside the tunnel ceiling', () => {
+  const camera = new THREE.PerspectiveCamera(52, 9 / 16, 0.1, 1000);
+  camera.position.set(20, 4, 0);
+  const controller = new CinematicCameraController(camera, {});
+  controller.state = EXPERIENCE_STATES.ECHO_ORBIT;
+  controller.target.set(18, 4, 0);
+  const center = new THREE.Vector3(-32, 4, -4);
+  const size = new THREE.Vector3(5, 3, 0.1);
+  const region = {
+    name: 'Tunnel Archive 01',
+    cameraMode: 'kobe-poster',
+    center,
+    focusTarget: center.clone(),
+    focusDirection: new THREE.Vector3(0.7, 0, 1).normalize(),
+    focusDistance: 3,
+    bounds: new THREE.Box3().setFromCenterAndSize(center, size),
+    focusBounds: new THREE.Box3().setFromCenterAndSize(center, size),
+    size,
+    focusSize: size.clone(),
+    radius: 3,
+  };
+
+  controller.focusInteractiveObject(region);
+  assert.equal(controller.transition.arcHeight, 0);
+  camera.position.copy(controller.transition.destination);
+  controller.target.copy(controller.transition.destinationTarget);
+  controller.returnFromInteractiveObject();
+  assert.equal(controller.transition.arcHeight, 0);
+});
+
 test('ritual portraits glide between faces without a one-frame camera teleport', () => {
   const camera = new THREE.PerspectiveCamera(52, 9 / 16, 0.1, 1000);
   camera.position.set(0, 5, 18);

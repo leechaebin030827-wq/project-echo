@@ -1,5 +1,34 @@
 const FACE_DISTANCE = 13;
 const SCENE_DISTANCE = 9;
+export const RETURN_WORLDS = Object.freeze(['nevada', 'hamina', 'lightcable', 'kobe']);
+
+const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+
+export function missingReturnWorlds(candidates, worlds = RETURN_WORLDS) {
+  const represented = new Set(candidates.filter((frame) => frame.source).map((frame) => frame.world));
+  return worlds.filter((world) => !represented.has(world));
+}
+
+export function createMemoryComposition(world, random = Math.random) {
+  const anchors = {
+    nevada: [{ x: .3, y: .55 }, { x: .7, y: .48 }],
+    hamina: [{ x: .34, y: .5 }, { x: .66, y: .57 }],
+    lightcable: [{ x: .5, y: .43 }, { x: .68, y: .58 }],
+    kobe: [{ x: .5, y: .48 }, { x: .62, y: .57 }],
+  };
+  const options = anchors[world] ?? anchors.kobe;
+  const anchor = options[Math.floor(clamp(random(), 0, .999999) * options.length)];
+  return {
+    backgroundZoom: 1.08 + clamp(random(), 0, 1) * .24,
+    backgroundX: clamp(anchor.x + (random() - .5) * .16, .18, .82),
+    backgroundY: clamp(anchor.y + (random() - .5) * .12, .2, .8),
+    faceX: clamp((anchor.x < .5 ? .68 : .32) + (random() - .5) * .14, .2, .8),
+    faceY: clamp(.55 + (random() - .5) * .18, .35, .72),
+    faceScale: .5 + clamp(random(), 0, 1) * .18,
+    rotation: (random() - .5) * .075,
+    mirror: random() > .5,
+  };
+}
 
 export function differenceHash(imageData) {
   const { data, width, height } = imageData;

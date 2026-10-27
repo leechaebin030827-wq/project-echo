@@ -3,22 +3,32 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { KOBE_CONFIG } from '../../config.js';
 import { replaceEchoModel } from '../shared/EchoModel.js';
+import { createKobeArchivePosters } from './KobeArchivePosters.js';
 import { KobeMaterialSystem } from './KobeMaterialSystem.js';
 
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
 const ECHO_PUSH_START = 1.2;
-const ECHO_HOLD_DURATION = 0.9;
-const ECHO_RETURN_DURATION = 6.5;
+const ECHO_PUSH_HOLD_DURATION = 0.35;
+const ECHO_JOG_RETURN_DURATION = 3.1;
+const ECHO_SPRINT_IN_DURATION = 2.6;
+const ECHO_STARTLE_DURATION = 2.2;
+const ECHO_SPRINT_OUT_DURATION = 4;
 const smooth = (value) => {
   const t = THREE.MathUtils.clamp(value, 0, 1);
   return t * t * (3 - 2 * t);
 };
 
-export function sampleKobeEchoCycle(time, anchorX, farX) {
+const getKobeCycleTiming = (anchorX, farX) => {
   const pushDuration = Math.abs(farX - anchorX) / KOBE_CONFIG.conveyorWorldSpeed;
   const pushEnd = ECHO_PUSH_START + pushDuration;
-  const returnStart = pushEnd + ECHO_HOLD_DURATION;
-  const returnEnd = returnStart + ECHO_RETURN_DURATION;
+  const returnStart = pushEnd + ECHO_PUSH_HOLD_DURATION;
+  const returnEnd = returnStart + ECHO_JOG_RETURN_DURATION;
+  return { pushDuration, pushEnd, returnStart, returnEnd };
+};
+
+export function sampleKobeEchoCycle(time, anchorX, farX) {
+  const { pushDuration, pushEnd, returnStart, returnEnd } =
+    getKobeCycleTiming(anchorX, farX);
   if (time >= ECHO_PUSH_START && time < pushEnd) {
     return {
       x: THREE.MathUtils.lerp(anchorX, farX, (time - ECHO_PUSH_START) / pushDuration),
@@ -31,12 +41,65 @@ export function sampleKobeEchoCycle(time, anchorX, farX) {
       x: THREE.MathUtils.lerp(
         farX,
         anchorX,
-        smooth((time - returnStart) / ECHO_RETURN_DURATION),
+        smooth((time - returnStart) / ECHO_JOG_RETURN_DURATION),
       ),
       walking: true,
     };
   }
   return { x: anchorX, walking: false };
+}
+
+export function sampleKobeTunnelPanic(time, startX, anchorX, deepX) {
+  const sprintInEnd = ECHO_SPRINT_IN_DURATION;
+  const sprintOutStart = sprintInEnd + ECHO_STARTLE_DURATION;
+  const sprintOutEnd = sprintOutStart + ECHO_SPRINT_OUT_DURATION;
+  if (time < sprintInEnd) {
+    const progress = smooth(time / ECHO_SPRINT_IN_DURATION);
+    return {
+      x: THREE.MathUtils.lerp(startX, deepX, progress),
+      walking: true,
+      cameraFollow: KOBE_CONFIG.tunnelCameraFollowDistance * progress,
+      hidden: false,
+      complete: false,
+    };
+  }
+  if (time < sprintOutStart) {
+    return {
+      x: deepX,
+      walking: false,
+      cameraFollow: KOBE_CONFIG.tunnelCameraFollowDistance,
+      hidden: true,
+      complete: false,
+    };
+  }
+  if (time < sprintOutEnd) {
+    const progress = smooth((time - sprintOutStart) / ECHO_SPRINT_OUT_DURATION);
+    return {
+      x: THREE.MathUtils.lerp(deepX, anchorX, progress),
+      walking: true,
+      cameraFollow: KOBE_CONFIG.tunnelCameraFollowDistance * (1 - progress),
+      hidden: false,
+      complete: false,
+    };
+  }
+  return {
+    x: anchorX, walking: false, cameraFollow: 0, hidden: false, complete: true,
+  };
+}
+
+export function sampleKobeTunnelExit(time, startX, deepX, duration) {
+  const progress = THREE.MathUtils.clamp(time / duration, 0, 1);
+  const rush = progress * progress * (2 - progress);
+  const vanish = smooth((progress - .18) / .82);
+  return {
+    x: THREE.MathUtils.lerp(startX, deepX, rush),
+    walking: true,
+    cameraFollow: KOBE_CONFIG.tunnelExitCameraFollowDistance * rush,
+    scale: 1 - vanish * .9,
+    fov: 52 + rush * 14,
+    hidden: progress >= .995,
+    complete: progress >= 1,
+  };
 }
 
 export class KobeWorld {
@@ -57,6 +120,10 @@ export class KobeWorld {
     this.materialSystem = new KobeMaterialSystem();
     this.elapsed = 0;
     this.echoCycleElapsed = 0;
+    this.tunnelPanicElapsed = null;
+    this.tunnelExitElapsed = null;
+    this.echoMotionElapsed = 0;
+    this.cameraFollowOffset = 0;
     this.tempQuaternion = new THREE.Quaternion();
   }
 
@@ -106,14 +173,21 @@ export class KobeWorld {
 
     this.scene.add(this.root);
     this.root.updateMatrixWorld(true);
+    this.archivePosters = await createKobeArchivePosters(this.root, tunnelWall);
+    this.interactiveRegions.push(...this.archivePosters.regions);
     const echoAxis = this.root.getObjectByName('Project Echo')
       ?? this.root.getObjectByName('Project_Echo');
     if (!echoAxis) throw new Error('Kobe Project Echo axis is missing.');
     this.echo = await replaceEchoModel(echoAxis);
+    this.echo.scale.multiplyScalar(KOBE_CONFIG.echoScale);
     this.echoAnchor = this.echo.position.clone();
     this.echoAnchor.y += KOBE_CONFIG.echoVerticalOffset;
     this.echo.position.y = this.echoAnchor.y;
     this.echoFarX = this.echoAnchor.x - KOBE_CONFIG.echoTravelDistance;
+    this.echoTunnelInteractionX = this.echoAnchor.x - KOBE_CONFIG.tunnelInteractionDistance;
+    this.echoTunnelX = this.echoAnchor.x - KOBE_CONFIG.tunnelPanicDistance;
+    this.echoExitX = this.echoAnchor.x - KOBE_CONFIG.tunnelExitDistance;
+    this.echoRestScale = this.echo.scale.clone();
     this.setupEchoWalkPose();
 
     this.echo.updateMatrixWorld(true);
@@ -122,6 +196,7 @@ export class KobeWorld {
     this.echoBox.getSize(this.echoSize);
     this.echoBox.getBoundingSphere(this.echoSphere);
     this.axisCenter = this.echoCenter.clone();
+    this.setupTunnelInteraction();
     this.bounds.setFromObject(this.root);
     this.bounds.getSize(this.size);
     this.bounds.getCenter(this.center);
@@ -143,6 +218,7 @@ export class KobeWorld {
   setupEchoWalkPose() {
     this.echoBody = this.echo.getObjectByName('Body');
     this.echoBodyRest = this.echoBody?.position.clone();
+    this.echoBodyRestQuaternion = this.echoBody?.quaternion.clone();
     this.echoLegs = Array.from({ length: 4 }, (_, index) => {
       const id = String(index + 1).padStart(2, '0');
       const upper = this.echo.getObjectByName(`Leg_${id}_Upper`);
@@ -155,6 +231,69 @@ export class KobeWorld {
         footRest: foot?.quaternion.clone(),
       };
     }).filter((leg) => leg.upper && leg.lower && leg.foot);
+  }
+
+  setupTunnelInteraction() {
+    const geometry = new THREE.BoxGeometry(3.6, 2.35, 2.25);
+    const material = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      colorWrite: false,
+    });
+    const marker = new THREE.Mesh(geometry, material);
+    marker.name = 'Kobe Inner Tunnel Pick Area';
+    // Keep the hotspot on the authored tunnel entrance even though the click
+    // sends ECHO much farther down the passage.
+    marker.position.set((this.echoTunnelInteractionX ?? this.echoTunnelX) + 0.8, 1.45, 0);
+    this.root.add(marker);
+    marker.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(marker);
+    const center = bounds.getCenter(new THREE.Vector3());
+    const size = bounds.getSize(new THREE.Vector3());
+    this.interactiveRegions.push({
+      name: 'Inner Tunnel',
+      hoverLabel: '안쪽 터널',
+      bounds,
+      center,
+      size,
+      radius: bounds.getBoundingSphere(new THREE.Sphere()).radius,
+      pickBounds: bounds.clone(),
+      // Picking is driven by the invisible marker; no authored mesh changes
+      // material on hover. Kobe uses only the camera zoom response here.
+      meshes: [],
+      cameraMode: 'kobe-tunnel',
+    });
+  }
+
+  startTunnelPanic() {
+    if (this.tunnelPanicElapsed !== null || this.tunnelExitElapsed !== null) return false;
+    this.tunnelPanicElapsed = 0;
+    this.tunnelPanicStartX = this.echo.position.x;
+    this.echoMotionElapsed = 0;
+    return true;
+  }
+
+  startExitSuction() {
+    if (this.tunnelExitElapsed !== null) return KOBE_CONFIG.tunnelExitDuration;
+    this.tunnelPanicElapsed = null;
+    this.tunnelExitElapsed = 0;
+    this.tunnelExitStartX = this.echo.position.x;
+    this.echoMotionElapsed = 0;
+    this.cameraFollowOffset = 0;
+    this.tunnelExitFov = 52;
+    return KOBE_CONFIG.tunnelExitDuration;
+  }
+
+  cancelExitSuction() {
+    if (this.tunnelExitElapsed === null) return;
+    this.tunnelExitElapsed = null;
+    this.echo.position.copy(this.echoAnchor);
+    this.echo.scale.copy(this.echoRestScale);
+    this.echo.visible = true;
+    this.cameraFollowOffset = 0;
+    this.tunnelExitFov = null;
+    this.echoCycleElapsed = 0;
   }
 
   addLighting() {
@@ -214,17 +353,53 @@ export class KobeWorld {
   }
 
   updateEcho(delta) {
-    const duration = KOBE_CONFIG.echoCycleDuration;
-    this.echoCycleElapsed = (this.echoCycleElapsed + delta) % duration;
-    const time = this.echoCycleElapsed;
-    const { x, walking } = sampleKobeEchoCycle(time, this.echoAnchor.x, this.echoFarX);
+    let time = this.echoCycleElapsed;
+    let x;
+    let walking;
+    let hidden = false;
+    if (this.tunnelExitElapsed !== null) {
+      this.tunnelExitElapsed += delta;
+      const departure = sampleKobeTunnelExit(
+        this.tunnelExitElapsed,
+        this.tunnelExitStartX,
+        this.echoExitX,
+        KOBE_CONFIG.tunnelExitDuration,
+      );
+      ({ x, walking, hidden } = departure);
+      this.cameraFollowOffset = departure.cameraFollow;
+      this.tunnelExitFov = departure.fov;
+      this.echo.scale.copy(this.echoRestScale).multiplyScalar(departure.scale);
+    } else if (this.tunnelPanicElapsed !== null) {
+      this.tunnelPanicElapsed += delta;
+      const panic = sampleKobeTunnelPanic(
+        this.tunnelPanicElapsed,
+        this.tunnelPanicStartX,
+        this.echoAnchor.x,
+        this.echoTunnelX,
+      );
+      ({ x, walking, hidden } = panic);
+      this.cameraFollowOffset = panic.cameraFollow;
+      if (panic.complete) {
+        this.tunnelPanicElapsed = null;
+        this.echoCycleElapsed = 0;
+        time = 0;
+      }
+    } else {
+      const duration = KOBE_CONFIG.echoCycleDuration;
+      this.echoCycleElapsed = (this.echoCycleElapsed + delta) % duration;
+      time = this.echoCycleElapsed;
+      ({ x, walking } = sampleKobeEchoCycle(time, this.echoAnchor.x, this.echoFarX));
+      this.cameraFollowOffset = 0;
+    }
     this.echo.position.x = x;
     this.echo.position.y = this.echoAnchor.y;
+    this.echo.visible = !hidden;
 
     const pushDuration = KOBE_CONFIG.echoTravelDistance / KOBE_CONFIG.conveyorWorldSpeed;
     const pushEnd = ECHO_PUSH_START + pushDuration;
-    const returnStart = pushEnd + ECHO_HOLD_DURATION;
-    const phase = (time - returnStart) * 5.4;
+    if (walking) this.echoMotionElapsed += delta;
+    const phase = this.echoMotionElapsed * 10.8;
+    this.echo.position.z = this.echoAnchor.z + (walking ? Math.sin(phase * 0.5) * 0.045 : 0);
     this.echoLegs.forEach((leg, index) => {
       const offset = index === 0 || index === 3 ? 0 : Math.PI;
       const swing = walking ? Math.sin(phase + offset) : 0;
@@ -241,8 +416,14 @@ export class KobeWorld {
     });
     if (this.echoBody && this.echoBodyRest) {
       this.echoBody.position.copy(this.echoBodyRest);
-      if (walking) this.echoBody.position.y += Math.abs(Math.sin(phase)) * 0.035;
-      else if (time >= ECHO_PUSH_START && time < pushEnd) {
+      if (this.echoBodyRestQuaternion) this.echoBody.quaternion.copy(this.echoBodyRestQuaternion);
+      if (walking) {
+        this.echoBody.position.y += Math.abs(Math.sin(phase)) * 0.055;
+        this.echoBody.quaternion.multiply(
+          this.tempQuaternion.setFromAxisAngle(Z_AXIS, Math.sin(phase * 0.5) * 0.035),
+        );
+      }
+      else if (this.tunnelPanicElapsed === null && time >= ECHO_PUSH_START && time < pushEnd) {
         const progress = THREE.MathUtils.clamp((time - ECHO_PUSH_START) / pushDuration, 0, 1);
         this.echoBody.position.y -= Math.sin(Math.PI * progress) * 0.04;
       }
@@ -294,6 +475,7 @@ export class KobeWorld {
     materials.forEach((material) => material.dispose());
     this.deepLightGeometry?.dispose();
     this.deepLightMaterial?.dispose();
+    this.archivePosters?.dispose();
     this.materialSystem.dispose();
     this.detach();
   }

@@ -74,15 +74,16 @@ export class WorldInteractionExperience {
   start(region) {
     const content = region?.content ?? NEVADA_INTERACTIONS[region?.name];
     if (!content || this.active) return false;
-    const isHamina = Boolean(region.content);
-    const cueIds = objectCueIds(isHamina ? 'hamina' : 'nevada', region.name);
+    const interactionWorld = content.world ?? (region.content ? 'hamina' : 'nevada');
+    const isHamina = interactionWorld === 'hamina';
+    const cueIds = objectCueIds(interactionWorld, region.name);
     const phraseTimes = content.phrases.map(([korean], index) =>
       (cueDurationMs(cueIds[index]) / 1000 || captionDurationSeconds(korean) * 0.55)
       + (index === content.phrases.length - 1 ? 0 : 0.12));
     const narrationDuration = phraseTimes.reduce((sum, value) => sum + value, 0);
     this.active = {
       region, content, elapsed: 0, phraseIndex: -1, phraseTimes, cueIds,
-      isHamina,
+      isHamina, interactionWorld,
       narrationDuration, effectDuration: Math.max(content.effectDuration, narrationDuration + 0.45),
       visualStarted: false, visualEnded: false,
       photoUrl: null, idleAfterNarration: 0,
@@ -250,7 +251,8 @@ export class WorldInteractionExperience {
         this.onPhraseStart(active, nextIndex);
         const [korean, local] = content.phrases[nextIndex];
         this.caption.showOverride(korean, local);
-        this.cuePlayer.play(active.cueIds[nextIndex]);
+        const cueId = active.cueIds[nextIndex];
+        if (cueId) this.cuePlayer.play(cueId);
       } else {
         this.onNarrationEnd(active);
         this.caption.hideOverride();

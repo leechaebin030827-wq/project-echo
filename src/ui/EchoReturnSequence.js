@@ -2,13 +2,37 @@ import * as THREE from 'three';
 import { INTRO_TEXT, TIMING } from '../intro/config.js';
 import { RETURN_LINES } from '../content/WorldUiCopy.js';
 import { cueDurationMs } from '../audio/EchoCuePlayer.js';
-import { differenceHash, selectReturnFrames } from './ReturnFrameSelection.js';
+import { visitorFaceCutout } from '../world/shared/BillboardFaceTexture.js';
+import {
+  createMemoryComposition, differenceHash, missingReturnWorlds, selectReturnFrames,
+} from './ReturnFrameSelection.js';
 
 const WIDTH = 450;
 const HEIGHT = 800;
 const FRAME_COUNT = 10;
 const MAX_CANDIDATES = 60;
 const ENDING_IMAGES = Array.from({ length: 5 }, (_, index) => `/ending/ending-${index + 1}.png`);
+const WORLD_MEMORY_BACKDROPS = Object.freeze({
+  nevada: ['/ending/ending-2.png', '/ending/ending-3.png', '/ending/ending-4.png'],
+  hamina: ['/ending/ending-1.png'],
+  lightcable: ['/ending/ending-5.png'],
+  kobe: ['/textures/kobe/tunnel/base-color.png'],
+});
+const WORLD_MEMORY_TINTS = Object.freeze({
+  nevada: ['#d47f45', '#121938'],
+  hamina: ['#b7eaff', '#173347'],
+  lightcable: ['#1fd1df', '#031b37'],
+  kobe: ['#ffb347', '#21101b'],
+});
+
+function loadImage(source) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Could not load return backdrop: ${source}`));
+    image.src = source;
+  });
+}
 
 export class EchoReturnSequence {
   constructor(stage, renderer) {
@@ -133,6 +157,132 @@ export class EchoReturnSequence {
     return selectReturnFrames(this.candidates, FRAME_COUNT);
   }
 
+  drawCover(image, composition) {
+    const imageWidth = image.naturalWidth || image.width;
+    const imageHeight = image.naturalHeight || image.height;
+    const scale = Math.max(WIDTH / imageWidth, HEIGHT / imageHeight) * composition.backgroundZoom;
+    const sourceWidth = WIDTH / scale;
+    const sourceHeight = HEIGHT / scale;
+    const sx = THREE.MathUtils.clamp(imageWidth * composition.backgroundX - sourceWidth * .5,
+      0, Math.max(0, imageWidth - sourceWidth));
+    const sy = THREE.MathUtils.clamp(imageHeight * composition.backgroundY - sourceHeight * .5,
+      0, Math.max(0, imageHeight - sourceHeight));
+    this.context.drawImage(image, sx, sy, sourceWidth, sourceHeight, 0, 0, WIDTH, HEIGHT);
+  }
+
+  drawKobeDepth() {
+    const { context } = this;
+    context.save();
+    const vanishingX = WIDTH * .5;
+    const vanishingY = HEIGHT * .38;
+    context.strokeStyle = 'rgba(255, 183, 83, .3)';
+    context.lineWidth = 2;
+    for (let index = -5; index <= 5; index += 1) {
+      context.beginPath();
+      context.moveTo(vanishingX, vanishingY);
+      context.lineTo(vanishingX + index * WIDTH * .22, HEIGHT);
+      context.stroke();
+    }
+    for (let index = 0; index < 9; index += 1) {
+      const progress = index / 8;
+      const y = vanishingY + progress ** 1.8 * (HEIGHT - vanishingY);
+      context.globalAlpha = .15 + progress * .2;
+      context.beginPath();
+      context.moveTo(WIDTH * (.5 - progress * .55), y);
+      context.lineTo(WIDTH * (.5 + progress * .55), y);
+      context.stroke();
+    }
+    context.restore();
+  }
+
+  drawMemoryFace(face, composition) {
+    if (!face?.width || !face?.height) return;
+    const { context } = this;
+    const ratio = face.width / face.height;
+    const height = HEIGHT * composition.faceScale;
+    const width = height * ratio;
+    const draw = (x, y, scale, alpha, blur, blend = 'screen') => {
+      context.save();
+      context.translate(x, y);
+      context.rotate(composition.rotation);
+      context.scale(composition.mirror ? -1 : 1, 1);
+      context.globalAlpha = alpha;
+      context.globalCompositeOperation = blend;
+      context.filter = `grayscale(.18) contrast(1.12) saturate(.76) blur(${blur}px)`;
+      context.drawImage(face, -width * scale * .5, -height * scale * .5,
+        width * scale, height * scale);
+      context.restore();
+    };
+    const x = WIDTH * composition.faceX;
+    const y = HEIGHT * composition.faceY;
+    draw(x - WIDTH * .14, y - HEIGHT * .12, .62, .2, 2.4);
+    draw(x + WIDTH * .13, y + HEIGHT * .08, .82, .28, 1.5);
+    draw(x, y, 1, .82, .35, 'lighten');
+  }
+
+  makeFallbackFace(frame, points) {
+    const cutout = visitorFaceCutout(frame, points);
+    if (cutout) return cutout;
+    if (!frame?.width || !frame?.height) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 420;
+    const context = canvas.getContext('2d');
+    const cropWidth = Math.min(frame.width, frame.height * canvas.width / canvas.height);
+    context.beginPath();
+    context.ellipse(canvas.width * .5, canvas.height * .48, canvas.width * .46,
+      canvas.height * .48, 0, 0, Math.PI * 2);
+    context.clip();
+    context.drawImage(frame, (frame.width - cropWidth) * .5, 0, cropWidth, frame.height,
+      0, 0, canvas.width, canvas.height);
+    return canvas;
+  }
+
+  async addMissingWorldMemories(visitorFrame, facePoints) {
+    const missingWorlds = missingReturnWorlds(this.candidates);
+    if (!missingWorlds.length || !visitorFrame) return;
+    const face = this.makeFallbackFace(visitorFrame, facePoints);
+    if (!face) return;
+    const times = this.candidates.map((frame) => frame.time).filter(Number.isFinite);
+    const firstTime = times.length ? Math.min(...times) : performance.now() - 1000;
+    const lastTime = times.length ? Math.max(...times) : performance.now();
+    await Promise.all(missingWorlds.map(async (world, index) => {
+      const sources = WORLD_MEMORY_BACKDROPS[world];
+      const source = sources[Math.floor(Math.random() * sources.length)];
+      let image;
+      try { image = await loadImage(source); } catch { return; }
+      const composition = createMemoryComposition(world);
+      this.context.save();
+      this.context.clearRect(0, 0, WIDTH, HEIGHT);
+      this.drawCover(image, composition);
+      if (world === 'kobe') this.drawKobeDepth();
+      const [light, dark] = WORLD_MEMORY_TINTS[world];
+      const tint = this.context.createLinearGradient(0, 0, WIDTH, HEIGHT);
+      tint.addColorStop(0, `${light}66`);
+      tint.addColorStop(.62, 'rgba(0, 0, 0, 0)');
+      tint.addColorStop(1, `${dark}bb`);
+      this.context.fillStyle = tint;
+      this.context.fillRect(0, 0, WIDTH, HEIGHT);
+      this.drawMemoryFace(face, composition);
+      const vignette = this.context.createRadialGradient(WIDTH * .5, HEIGHT * .48, HEIGHT * .08,
+        WIDTH * .5, HEIGHT * .48, HEIGHT * .68);
+      vignette.addColorStop(.55, 'rgba(0,0,0,0)');
+      vignette.addColorStop(1, 'rgba(0,0,0,.72)');
+      this.context.fillStyle = vignette;
+      this.context.fillRect(0, 0, WIDTH, HEIGHT);
+      this.context.restore();
+      const span = Math.max(1, lastTime - firstTime);
+      this.candidates.push({
+        id: `memory:${world}:${index}:${Math.round(performance.now())}`,
+        kind: 'memory', world, score: 84,
+        time: firstTime + Math.random() * span,
+        sceneHash: this.hashRegion(0, 0, WIDTH, HEIGHT),
+        faceHash: this.hashRegion(WIDTH * .12, HEIGHT * .12, WIDTH * .76, HEIGHT * .62),
+        source: this.canvas.toDataURL('image/jpeg', .88),
+      });
+    }));
+  }
+
   delay(ms) {
     return new Promise((resolve) => {
       const timer = window.setTimeout(() => {
@@ -143,19 +293,22 @@ export class EchoReturnSequence {
     });
   }
 
-  async play({ onTypingStart = () => {}, onTypingEnd = () => {} } = {}) {
+  async play({
+    onTypingStart = () => {}, onTypingEnd = () => {}, visitorFrame = null, facePoints = null,
+  } = {}) {
     // Start loading the closing photographs before the timed flash sequence.
     ENDING_IMAGES.forEach((source) => {
       const image = new Image();
       image.src = source;
     });
+    await this.addMissingWorldMemories(visitorFrame, facePoints);
     const frames = this.selectFrames();
     const track = this.overlay.querySelector('.echo-return-track');
     track.replaceChildren();
     for (const [index, frame] of frames.entries()) {
       const card = document.createElement('img');
       card.src = frame.source;
-      card.alt = `관람 중 기록된 얼굴 ${index + 1}`;
+      card.alt = `관람 중 기록되거나 재구성된 얼굴 ${index + 1}`;
       track.append(card);
     }
     this.overlay.classList.add('visible');

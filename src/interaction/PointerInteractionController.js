@@ -100,7 +100,8 @@ export class PointerInteractionController {
     const echoDistance = state === EXPERIENCE_STATES.ECHO_ORBIT
       ? this.getEchoHitDistance(event.clientX, event.clientY)
       : Infinity;
-    if (echoDistance < Math.min(
+    const kobeObjectHasPriority = interactiveObject?.cameraMode?.startsWith('kobe-');
+    if (!kobeObjectHasPriority && echoDistance < Math.min(
       character ? this.picker.lastHitDistance : Infinity,
       interactiveObject ? this.interactivePicker.lastHitDistance : Infinity,
     )) {
@@ -108,7 +109,8 @@ export class PointerInteractionController {
       interactiveObject = null;
     }
     if (interactiveObject && character) {
-      if (this.picker.lastHitDistance < this.interactivePicker.lastHitDistance) interactiveObject = null;
+      if (kobeObjectHasPriority) character = null;
+      else if (this.picker.lastHitDistance < this.interactivePicker.lastHitDistance) interactiveObject = null;
       else character = null;
     }
     this.active = {

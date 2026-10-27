@@ -73,6 +73,65 @@ export const HAMINA_CHARACTER_DIALOGUE = Object.freeze([
 
 // Caption text is separate from the timed transition in ExperienceController.
 export const PACIFIC_NARRATION_START_MS = 4100;
+export const KOBE_ENTRY_FOLLOWUP = Object.freeze([
+  Object.freeze({
+    cueId: 'K17',
+    korean: '어라? 잠시만요. 스미마셍.',
+    local: 'あれ？ ちょっと待ってください。すみません。',
+  }),
+  Object.freeze({
+    cueId: 'K18',
+    korean: '우리가 조금 일찍 도착했나 봐요.',
+    local: '私たち、少し早く着いてしまったみたいです。',
+  }),
+  Object.freeze({
+    cueId: 'K19',
+    korean: '여긴 원래 흙을 옮기던 길이래요.',
+    local: 'ここはもともと、土砂を運んでいた道だそうです。',
+  }),
+  Object.freeze({
+    cueId: 'K20',
+    korean: '이제 이곳에 데이터센터가 들어설 거래요!',
+    local: 'これからここに、データセンターが造られるそうです！',
+  }),
+]);
+
+export const KOBE_TUNNEL_NARRATION = Object.freeze([
+  Object.freeze({
+    atMs: 0,
+    cueId: 'JP-T01',
+    korean: '제가 한번 들어가볼게요.',
+    local: 'ちょっと中に入ってみますね。',
+  }),
+  Object.freeze({
+    atMs: 8900,
+    cueId: 'JP-T02',
+    korean: '제가 본 건…',
+    local: '私が見たものは……',
+  }),
+  Object.freeze({
+    atMs: 10500,
+    cueId: 'JP-T03',
+    korean: '아무것도 없어요.',
+    local: '何もありません。',
+  }),
+  Object.freeze({
+    atMs: 11950,
+    cueId: 'JP-T04',
+    korean: '비어 있네요.',
+    local: '空っぽですね。',
+  }),
+  Object.freeze({
+    atMs: 13200,
+    cueId: 'JP-T05',
+    korean: '마치 무언가 들어올 것처럼.',
+    local: 'まるで、何かが入ってくるのを待っているみたいです。',
+  }),
+]);
+
+export const KOBE_TUNNEL_ENTRY_CAPTION_CLEAR_MS = 2700;
+export const KOBE_TUNNEL_NARRATION_CLEAR_MS = 17450;
+
 export const PACIFIC_ARRIVAL_NARRATION = Object.freeze([
   Object.freeze({ atMs: 0, korean: '프로젝트 에코가…', local: 'Project ECHO is…' }),
   Object.freeze({ atMs: 2600, korean: '여기가 어디죠?', local: 'Where are we?' }),

@@ -246,7 +246,7 @@ body:has(#intro-root:not([hidden])) .developer-shortcut-panel {
   height: 1920px;
   overflow: hidden;
   isolation: isolate;
-  background: #040844;
+  background: #c7a8cd;
   text-align: left;
   transform: scale(2);
   transform-origin: top left;
@@ -258,8 +258,8 @@ body:has(#intro-root:not([hidden])) .developer-shortcut-panel {
   z-index: 1;
   inset: 0;
   background:
-    repeating-linear-gradient(90deg, transparent 0 calc(var(--array-column-size) - 1px), rgba(2, 3, 35, .34) calc(var(--array-column-size) - 1px) var(--array-column-size)),
-    repeating-linear-gradient(0deg, transparent 0 calc(var(--array-row-size) - 1px), rgba(2, 3, 35, .34) calc(var(--array-row-size) - 1px) var(--array-row-size));
+    repeating-linear-gradient(90deg, transparent 0 calc(var(--array-column-size) - 1px), rgba(70, 48, 78, .22) calc(var(--array-column-size) - 1px) var(--array-column-size)),
+    repeating-linear-gradient(0deg, transparent 0 calc(var(--array-row-size) - 1px), rgba(70, 48, 78, .22) calc(var(--array-row-size) - 1px) var(--array-row-size));
   transition: background 500ms ease;
   content: '';
 }

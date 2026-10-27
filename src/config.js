@@ -87,8 +87,18 @@ export const HAMINA_CONFIG = Object.freeze({
 
 export const KOBE_CONFIG = Object.freeze({
   modelUrl: '/models/Kobe.runtime.glb',
-  echoTravelDistance: 8.4,
-  echoCycleDuration: 16.8,
+  echoScale: 0.94,
+  // Keep the tunnel target selectable while ECHO is being carried away.
+  // ECHO only becomes interactive again during the closest part of its cycle.
+  echoHoverMaxCameraDistance: 7.05,
+  echoTravelDistance: 4.6,
+  echoCycleDuration: 9.5,
+  tunnelInteractionDistance: 12.6,
+  tunnelPanicDistance: 34,
+  tunnelCameraFollowDistance: 20.5,
+  tunnelExitDistance: 56,
+  tunnelExitCameraFollowDistance: 44,
+  tunnelExitDuration: 4.2,
   conveyorWorldSpeed: 1.25,
   echoVerticalOffset: 0.5,
   cameraDistanceFromAxis: 6.35,

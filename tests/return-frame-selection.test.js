@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { differenceHash, hashDistance, selectReturnFrames } from '../src/ui/ReturnFrameSelection.js';
+import {
+  createMemoryComposition, differenceHash, hashDistance, missingReturnWorlds, selectReturnFrames,
+} from '../src/ui/ReturnFrameSelection.js';
 
 test('return montage keeps one frame per person and per visually similar crop', () => {
   const zeros = '0'.repeat(64);
@@ -40,4 +42,25 @@ test('return montage represents every visited world before repeating one world',
 
   assert.deepEqual(new Set(selected.map((frame) => frame.world)),
     new Set(['nevada', 'hamina', 'lightcable']));
+});
+
+test('return montage reports worlds that have no recorded frame', () => {
+  const candidates = [
+    { world: 'nevada', source: 'n' },
+    { world: 'kobe', source: '' },
+    { world: 'hamina', source: 'h' },
+  ];
+  assert.deepEqual(missingReturnWorlds(candidates), ['lightcable', 'kobe']);
+});
+
+test('memory compositions stay inside intentional camera bounds', () => {
+  const values = [0, .99, .25, .75, .1, .9, .4, .6];
+  let index = 0;
+  const composition = createMemoryComposition('kobe', () => values[index++ % values.length]);
+  assert.ok(composition.backgroundZoom >= 1.08 && composition.backgroundZoom <= 1.32);
+  assert.ok(composition.backgroundX >= .18 && composition.backgroundX <= .82);
+  assert.ok(composition.backgroundY >= .2 && composition.backgroundY <= .8);
+  assert.ok(composition.faceX >= .2 && composition.faceX <= .8);
+  assert.ok(composition.faceY >= .35 && composition.faceY <= .72);
+  assert.ok(composition.faceScale >= .5 && composition.faceScale <= .68);
 });

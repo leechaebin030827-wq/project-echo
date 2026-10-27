@@ -46,8 +46,8 @@ export const WORLD_PRESENTATION = Object.freeze({
     ]),
     weather: 'none',
     defaultCaption: Object.freeze({
-      korean: '흐르는 바닥을 거슬러, 에코가 자신의 자리로 돌아옵니다.',
-      local: 'Against the moving floor, ECHO returns to its axis.',
+      korean: '클라우드 너머, 이곳에서 당신을 목격했어요.',
+      local: '雲の向こう、ここであなたを見つけました。',
     }),
   }),
 });
