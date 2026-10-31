@@ -4,7 +4,7 @@ import { KOBE_ARCHIVE_INTERACTIONS } from '../../content/KobeInteractions.js';
 const ATLAS_URL = '/textures/kobe/archive/poster-atlas-source.png';
 const ATLAS_WIDTH = 1536;
 const ATLAS_HEIGHT = 1024;
-const POSTER_DISPLAY_SCALE = 0.86;
+const POSTER_DISPLAY_SCALE = 0.72;
 const CROP_PADDING = 9;
 
 const POSTERS = Object.freeze([
@@ -119,7 +119,12 @@ export async function createKobeArchivePosters(root, tunnelWall) {
       focusTarget: center.clone(),
       focusSize: size.clone(),
       focusRadius: radius,
-      focusDistance: Math.max(1.7, width * 0.9),
+      // The experience is portrait-first, so horizontal FOV is much narrower
+      // than vertical FOV. Leave enough distance to show the entire sheet plus
+      // a small wall margin instead of cropping its left and right edges.
+      // Stay within the narrow tunnel. The camera widens its lens for poster
+      // focus, so it can frame the whole sheet without crossing the far wall.
+      focusDistance: THREE.MathUtils.clamp(width * 1.25, 1.8, 2.3),
       // Approach diagonally from the tunnel entrance. A purely sideways move
       // can put the camera inside ECHO while it travels along the conveyor.
       focusDirection: new THREE.Vector3(0.7, 0, -definition.side).normalize(),

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as THREE from 'three';
 import {
-  computeFishViewPose, getSurfaceEchoMotion, LightCableWorld,
+  computeFishViewPose, crossesPacificSurface, getSurfaceEchoMotion, LightCableWorld,
 } from '../src/world/pacific/LightCableWorld.js';
 
 test('fish viewpoint stays outside the subject and keeps an unobstructed gaze on ECHO', () => {
@@ -41,6 +41,12 @@ test('surface ECHO accelerates into the water and eases into swimming', () => {
   assert.equal(impact.swimBlend, 0);
   assert.ok(swimming.swimBlend > .9);
   assert.ok(swimming.pitch > impact.pitch, 'ECHO should level out while sinking');
+});
+
+test('Pacific splash triggers only on the frame crossing the water surface', () => {
+  assert.equal(crossesPacificSurface(3.6, 3.69), false);
+  assert.equal(crossesPacificSurface(3.69, 3.71), true);
+  assert.equal(crossesPacificSurface(3.71, 3.8), false);
 });
 
 test('fish hover proxy keeps following the same moving fish after a view click', () => {

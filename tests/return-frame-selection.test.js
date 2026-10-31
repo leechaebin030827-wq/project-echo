@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  createMemoryComposition, differenceHash, hashDistance, missingReturnWorlds, selectReturnFrames,
+  createMemoryComposition, differenceHash, hashDistance, missingReturnWorlds,
+  selectReturnDisplayFrames, selectReturnFrames,
 } from '../src/ui/ReturnFrameSelection.js';
 
 test('return montage keeps one frame per person and per visually similar crop', () => {
@@ -50,7 +51,33 @@ test('return montage reports worlds that have no recorded frame', () => {
     { world: 'kobe', source: '' },
     { world: 'hamina', source: 'h' },
   ];
-  assert.deepEqual(missingReturnWorlds(candidates), ['lightcable', 'kobe']);
+  assert.deepEqual(missingReturnWorlds(candidates), ['lightcable', 'kobe', 'southafrica']);
+});
+
+test('closing montage keeps captured faces, billboard, fragments, and visited scenes without duplicates', () => {
+  const frames = [
+    { id: 'A', kind: 'portrait', world: 'nevada', score: 100, time: 1, source: 'capture-a' },
+    { id: 'A', kind: 'portrait', world: 'hamina', score: 90, time: 2, source: 'capture-a-again' },
+    { id: 'B', kind: 'portrait', world: 'hamina', score: 80, time: 3, source: 'capture-b' },
+    { id: 'billboard:nevada', kind: 'billboard', world: 'nevada', score: 260, time: 4, source: 'billboard' },
+    { id: 'photo-fragments:hamina', kind: 'photo-fragments', world: 'hamina', score: 260, time: 5, source: 'fragments' },
+    { id: 'world:kobe', kind: 'world', world: 'kobe', score: 68, time: 6, source: 'scene' },
+    { id: 'memory:kobe', kind: 'memory', world: 'kobe', score: 120, time: 7, source: 'reconstructed' },
+  ];
+  assert.deepEqual(selectReturnDisplayFrames(frames).map((frame) => frame.source),
+    ['capture-a', 'capture-b', 'billboard', 'fragments', 'scene']);
+});
+
+test('closing montage adds one reconstructed face only when no face was captured', () => {
+  const frames = [
+    { id: 'world:nevada', kind: 'world', world: 'nevada', score: 100, time: 1, source: 'scene' },
+    { id: 'memory:nevada', kind: 'memory', world: 'nevada', score: 80, time: 2, source: 'memory-a' },
+    { id: 'memory:kobe', kind: 'memory', world: 'kobe', score: 80, time: 3, source: 'memory-b' },
+  ];
+  assert.deepEqual(selectReturnDisplayFrames(frames).map((frame) => frame.source),
+    ['scene', 'memory-a']);
+  assert.deepEqual(selectReturnDisplayFrames(frames.slice(1)).map((frame) => frame.source),
+    ['memory-a', 'memory-b']);
 });
 
 test('memory compositions stay inside intentional camera bounds', () => {

@@ -1,24 +1,23 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { ECHO_TRAVEL_RIG_URL } from '../config.js';
+import { ECHO_RIG_URL } from '../config.js';
 
 const WIDTH = 720;
 const HEIGHT = 1280;
 const CAMERA_LAYOUTS = Object.freeze([
-  Object.freeze({ columns: 3, rows: 5 }),
-  Object.freeze({ columns: 2, rows: 2 }),
   Object.freeze({ columns: 1, rows: 1 }),
   Object.freeze({ columns: 2, rows: 2 }),
+  Object.freeze({ columns: 3, rows: 5 }),
 ]);
-const LAYOUT_DURATION = 15;
-const BACKGROUND_COLORS = ['#c7a8cd', '#d9aaa8', '#b8cfc2', '#dfbd9e', '#b9c4df'].map(
+const LAYOUT_DURATION = 6;
+const BACKGROUND_COLORS = ['#2733d0', '#303ee5', '#3647f0', '#222bb8', '#3c46da'].map(
   (color) => new THREE.Color(color),
 );
-const PLANE_TOP_COLORS = ['#ecd7e8', '#f0d0cb', '#dbe8df', '#f3dcc5', '#d8dcf0'].map(
+const PLANE_TOP_COLORS = ['#5868ff', '#6272ff', '#5261f2', '#6b78ff', '#485af0'].map(
   (color) => new THREE.Color(color),
 );
-const PLANE_BOTTOM_COLORS = ['#ae8bb4', '#c08f98', '#93b3a4', '#c89f7c', '#929fc4'].map(
+const PLANE_BOTTOM_COLORS = ['#222ba8', '#2834c2', '#1d268f', '#313bc8', '#252fb0'].map(
   (color) => new THREE.Color(color),
 );
 
@@ -27,6 +26,7 @@ function createSubCameras(columns, rows) {
   const viewportWidth = WIDTH / columns;
   const viewportHeight = HEIGHT / rows;
   const tileAspect = viewportWidth / viewportHeight;
+  const cameraDistance = columns === 1 ? 5.7 : tileAspect < 0.7 ? 4.85 : 3.65;
 
   for (let row = 0; row < rows; row += 1) {
     for (let column = 0; column < columns; column += 1) {
@@ -40,7 +40,7 @@ function createSubCameras(columns, rows) {
       camera.position.set(
         (((column + 0.5) / columns) - 0.5) * 2.25,
         (0.5 - ((row + 0.5) / rows)) * 2.55,
-        3.15,
+        cameraDistance,
       );
       camera.lookAt(0, 0, 0);
       camera.updateMatrixWorld();
@@ -55,9 +55,9 @@ function createSubCameras(columns, rows) {
 
 function createEchoMaterial() {
   const material = new THREE.MeshPhysicalMaterial({
-    color: '#f8e6f1',
-    emissive: '#b778ae',
-    emissiveIntensity: 0.92,
+    color: '#b9efff',
+    emissive: '#226fd1',
+    emissiveIntensity: 1.2,
     roughness: 0.1,
     metalness: 0,
     transmission: 0.12,
@@ -90,7 +90,7 @@ function createEchoMaterial() {
       '#include <opaque_fragment>',
       `float xrayFacing = abs(dot(normalize(normal), normalize(vViewPosition)));
       float xrayFresnel = pow(1.0 - xrayFacing, 2.05);
-      outgoingLight += vec3(0.92, 0.54, 0.72) * (0.25 + xrayFresnel * 1.45);
+      outgoingLight += vec3(0.18, 0.7, 1.0) * (0.3 + xrayFresnel * 1.65);
       diffuseColor.a *= clamp(0.38 + xrayFresnel * 1.55, 0.0, 1.0);
       #include <opaque_fragment>`,
     );
@@ -105,7 +105,7 @@ export function createCoverCameraArrayScene(canvas) {
     renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
-      alpha: false,
+      alpha: true,
       powerPreference: 'high-performance',
     });
   } catch {
@@ -117,19 +117,20 @@ export function createCoverCameraArrayScene(canvas) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.18;
+  renderer.setClearColor(0x000000, 0);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#c7a8cd');
-  const camera = new THREE.ArrayCamera(createSubCameras(3, 5));
+  scene.background = null;
+  const camera = new THREE.ArrayCamera(createSubCameras(1, 1));
   camera.position.z = 2.65;
   camera.layers.enable(1);
   scene.add(camera);
 
-  scene.add(new THREE.AmbientLight('#efd7ea', 1.72));
-  const keyLight = new THREE.DirectionalLight('#fff2e7', 4.6);
+  scene.add(new THREE.AmbientLight('#718aff', 1.9));
+  const keyLight = new THREE.DirectionalLight('#dff7ff', 5.2);
   keyLight.position.set(2.4, 3.4, 5.5);
   scene.add(keyLight);
-  const rimLight = new THREE.DirectionalLight('#aa98cb', 2.5);
+  const rimLight = new THREE.DirectionalLight('#385dff', 3.1);
   rimLight.position.set(-4, -1, 2);
   scene.add(rimLight);
 
@@ -196,6 +197,7 @@ export function createCoverCameraArrayScene(canvas) {
     backgroundMaterial,
   );
   background.position.z = -2.25;
+  background.visible = false;
   scene.add(background);
 
   const echoRoot = new THREE.Group();
@@ -208,23 +210,17 @@ export function createCoverCameraArrayScene(canvas) {
   let destroyed = false;
   let layoutIndex = 0;
   let layoutCameras = camera.cameras;
-  let blinkingCameraIndices = [];
-  let blinkEndsAt = 0;
-  let nextBlinkAt = 1.1;
+  let modelReadyAt = null;
   const clock = new THREE.Clock();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const legMotion = new THREE.Quaternion();
   const legEuler = new THREE.Euler();
-  const animatedBackground = new THREE.Color();
 
   const applyCameraLayout = (nextLayoutIndex) => {
     const { columns, rows } = CAMERA_LAYOUTS[nextLayoutIndex];
     layoutCameras = createSubCameras(columns, rows);
     camera.cameras = layoutCameras;
     backgroundMaterial.uniforms.gridSize.value.set(columns, rows);
-    blinkingCameraIndices = [];
-    blinkEndsAt = 0;
-    nextBlinkAt = clock.getElapsedTime() + 2.5 + Math.random() * 3;
     const cover = canvas.parentElement;
     cover?.style.setProperty('--array-column-size', `${100 / columns}%`);
     cover?.style.setProperty('--array-row-size', `${100 / rows}%`);
@@ -235,53 +231,39 @@ export function createCoverCameraArrayScene(canvas) {
 
   const render = () => {
     const elapsed = clock.getElapsedTime();
+    const layoutElapsed = modelReadyAt === null ? 0 : elapsed - modelReadyAt;
     if (echoMaterial) echoMaterial.userData.wiggleTime.value = elapsed;
     const nextLayoutIndex = reducedMotion
       ? 0
-      : Math.floor(elapsed / LAYOUT_DURATION) % CAMERA_LAYOUTS.length;
+      : Math.floor(layoutElapsed / LAYOUT_DURATION) % CAMERA_LAYOUTS.length;
     if (nextLayoutIndex !== layoutIndex) applyCameraLayout(nextLayoutIndex);
-    if (!reducedMotion && elapsed >= nextBlinkAt) {
-      const blinkCount = Math.random() < 0.56 ? 1 : 2;
-      const chosen = new Set();
-      while (chosen.size < Math.min(blinkCount, layoutCameras.length)) {
-        chosen.add(Math.floor(Math.random() * layoutCameras.length));
-      }
-      blinkingCameraIndices = [...chosen];
-      blinkEndsAt = elapsed + 0.1 + Math.random() * 0.12;
-      nextBlinkAt = blinkEndsAt + 2.8 + Math.random() * 4.2;
-    }
-    if (!reducedMotion && blinkingCameraIndices.length > 0) {
-      if (elapsed < blinkEndsAt) {
-        layoutCameras.forEach((subcamera, index) => {
-          if (blinkingCameraIndices.includes(index)) subcamera.layers.disable(1);
-          else subcamera.layers.enable(1);
-        });
-      } else {
-        blinkingCameraIndices = [];
-        layoutCameras.forEach((subcamera) => subcamera.layers.enable(1));
-      }
-    }
-    const colorProgress = (elapsed * 0.11) % BACKGROUND_COLORS.length;
-    const colorIndex = Math.floor(colorProgress);
-    scene.background = animatedBackground.copy(BACKGROUND_COLORS[colorIndex]);
     backgroundMaterial.uniforms.colorProgress.value = elapsed * 0.11;
     if (!reducedMotion) {
-      echoRoot.rotation.x = -0.16 + Math.sin(elapsed * 0.27) * 0.1;
-      echoRoot.rotation.y = elapsed * 0.24;
-      echoRoot.rotation.z = Math.sin(elapsed * 0.31) * 0.16;
-      echoRoot.position.y = Math.sin(elapsed * 0.72) * 0.06;
+      // Keep the cover actor grounded and let it roam like the original opening ECHO.
+      // The slow figure-eight reads as walking from every camera layout.
+      const walkTime = elapsed * 0.72;
+      const walkX = Math.sin(walkTime * 0.72) * 0.2;
+      const walkZ = Math.sin(walkTime * 0.41) * 0.07;
+      const velocityX = Math.cos(walkTime * 0.72) * 0.2 * 0.72;
+      const velocityZ = Math.cos(walkTime * 0.41) * 0.07 * 0.41;
+      const heading = Math.atan2(velocityX, velocityZ);
+      const stepPhase = elapsed * 2.45;
+      const bodyBob = Math.abs(Math.sin(stepPhase)) * 0.035;
+      echoRoot.position.set(walkX, -0.08 + bodyBob, walkZ);
+      echoRoot.rotation.set(-0.08 + Math.sin(stepPhase * 2) * 0.018, heading, 0);
 
       legJoints.forEach(({ joint, rest, legIndex, section }) => {
-        const phase = legIndex * Math.PI * 0.5;
-        const stride = Math.sin(elapsed * 1.12 + phase);
-        const curl = Math.sin(elapsed * 1.12 + phase + 0.72);
+        const phase = legIndex === 0 || legIndex === 3 ? 0 : Math.PI;
+        const stride = Math.sin(stepPhase + phase);
+        const lift = Math.max(0, Math.sin(stepPhase + phase));
+        const curl = Math.sin(stepPhase + phase + 0.68);
         const side = legIndex % 2 === 0 ? 1 : -1;
         if (section === 'Upper') {
-          legEuler.set(stride * 0.11, side * curl * 0.045, stride * side * 0.075);
+          legEuler.set(stride * 0.2 - lift * 0.07, side * curl * 0.065, stride * side * 0.12);
         } else if (section === 'Lower') {
-          legEuler.set(-stride * 0.17 + 0.035, 0, curl * side * 0.045);
+          legEuler.set(-stride * 0.3 + lift * 0.16 + 0.055, 0, curl * side * 0.085);
         } else {
-          legEuler.set(curl * 0.13, stride * side * 0.035, 0);
+          legEuler.set(curl * 0.2 - lift * 0.08, stride * side * 0.055, 0);
         }
         legMotion.setFromEuler(legEuler);
         joint.quaternion.copy(rest).multiply(legMotion);
@@ -308,7 +290,7 @@ export function createCoverCameraArrayScene(canvas) {
     frame = requestAnimationFrame(animate);
   };
 
-  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(ECHO_TRAVEL_RIG_URL)
+  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(ECHO_RIG_URL)
     .then(({ scene: loadedScene }) => {
       if (destroyed) return;
       echoModel = loadedScene;
@@ -337,6 +319,7 @@ export function createCoverCameraArrayScene(canvas) {
       echoModel.position.copy(center).multiplyScalar(-1);
       echoRoot.scale.setScalar(scale);
       echoRoot.add(echoModel);
+      modelReadyAt = clock.getElapsedTime();
       render();
     })
     .catch((error) => console.warn('[Cover camera array] ECHO rig unavailable', error));

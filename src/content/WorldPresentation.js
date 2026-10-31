@@ -50,4 +50,15 @@ export const WORLD_PRESENTATION = Object.freeze({
       local: '雲の向こう、ここであなたを見つけました。',
     }),
   }),
+  southafrica: Object.freeze({
+    entryWords: Object.freeze([
+      Object.freeze({ text: 'CAPE TOWN,', className: 'world-entry-word--nevada' }),
+      Object.freeze({ text: 'SOUTH AFRICA', className: 'world-entry-word--usa' }),
+    ]),
+    weather: 'none',
+    defaultCaption: Object.freeze({
+      korean: '클라우드 너머, 이곳에서 당신을 목격했어요.',
+      local: 'Beyond the cloud, I saw you here.',
+    }),
+  }),
 });

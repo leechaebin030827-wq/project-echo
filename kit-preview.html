@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CT2 kit inspection</title>
+    <style>
+      body { margin: 0; background: #e2e1dc; color: #182027; font: 14px system-ui; }
+      canvas { display: block; }
+      aside { position: fixed; top: 12px; left: 12px; background: #fffc; padding: 9px 12px; z-index: 2; }
+    </style>
+  </head>
+  <body>
+    <aside id="label"></aside>
+    <script type="module">
+      import * as THREE from 'three';
+      import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+      import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+      import { SouthAfricaWorld } from './src/world/southafrica/SouthAfricaWorld.js';
+
+      const siteMode = new URLSearchParams(location.search).get('kit') === 'site';
+      const kit = new URLSearchParams(location.search).get('kit') === 'security' ? 'security' : 'plant';
+      document.querySelector('#label').textContent = `${siteMode ? 'CT2 site' : `${kit}_5.glb`} · drag to orbit · scroll to zoom`;
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(siteMode ? '#b8d2df' : '#e2e1dc');
+      const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, .01, 100);
+      camera.position.set(0, 1.5, 6.2);
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.setPixelRatio(Math.min(siteMode ? 1 : 2, devicePixelRatio));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      document.body.append(renderer.domElement);
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      if (siteMode) {
+        camera.near = .3;
+        camera.far = 2500;
+        camera.position.set(105, 78, 140);
+        camera.updateProjectionMatrix();
+        scene.fog = new THREE.Fog('#bdc8bd', 170, 700);
+        const world = await new SouthAfricaWorld(scene).load();
+        if (new URLSearchParams(location.search).get('surroundings') === 'off') {
+          world.root.getObjectByName('CT2DistrictSurroundings').visible = false;
+        }
+        world.addLighting();
+        controls.target.set(0, 0, -22);
+        const view = new URLSearchParams(location.search).get('view');
+        if (view === 'aerial') {
+          camera.position.set(-86, 68, 92);
+          controls.target.set(-12, 3, -54);
+        } else if (view === 'ground') {
+          camera.position.set(8, 5.2, 42);
+          controls.target.set(0, 5, -55);
+        } else if (view === 'outward') {
+          camera.position.set(0, 5.2, 18);
+          controls.target.set(0, 3, 175);
+        }
+      } else {
+        scene.add(new THREE.HemisphereLight('#ffffff', '#777777', 2.3));
+        const sun = new THREE.DirectionalLight('#ffffff', 3);
+        sun.position.set(-2, 4, 5);
+        scene.add(sun);
+        const grid = new THREE.GridHelper(3, 30, '#a5aaac', '#c6c9ca');
+        grid.position.y = -.23;
+        scene.add(grid);
+        const gltf = await new GLTFLoader().loadAsync(`/models/southafrica/${kit}_5.runtime.glb`);
+        scene.add(gltf.scene);
+        const bounds = new THREE.Box3().setFromObject(gltf.scene);
+        controls.target.copy(bounds.getCenter(new THREE.Vector3()));
+      }
+      controls.update();
+      addEventListener('resize', () => {
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(innerWidth, innerHeight);
+      });
+      let statsCaptured = false;
+      renderer.setAnimationLoop(() => {
+        controls.update();
+        renderer.render(scene, camera);
+        if (!statsCaptured) {
+          document.body.dataset.renderCalls = String(renderer.info.render.calls);
+          document.body.dataset.renderTriangles = String(renderer.info.render.triangles);
+          statsCaptured = true;
+        }
+      });
+    </script>
+  </body>
+</html>

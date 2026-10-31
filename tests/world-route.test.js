@@ -4,8 +4,10 @@ import {
   createRandomWorldRoute, createWorldRoute, DEFAULT_WORLD_ROUTE, WORLD_IDS,
 } from '../src/app/WorldRoute.js';
 
-test('the current experience visits Nevada, Pacific, Hamina, then Kobe', () => {
-  assert.deepEqual(createWorldRoute(), ['nevada', 'lightcable', 'hamina', 'kobe']);
+test('the current experience visits Nevada, Pacific, Hamina, Kobe, then South Africa', () => {
+  assert.deepEqual(createWorldRoute(), [
+    'nevada', 'lightcable', 'hamina', 'kobe', 'southafrica',
+  ]);
   assert.deepEqual([...DEFAULT_WORLD_ROUTE].sort(), [...WORLD_IDS].sort());
 });
 
@@ -22,20 +24,20 @@ test('the preserved random route still offers every valid visit order', () => {
   }
   assert.equal(orders.size, 4);
   assert.deepEqual(createWorldRoute('?worldOrder=random', () => 0, true),
-    ['nevada', 'hamina', 'lightcable', 'kobe']);
+    ['nevada', 'hamina', 'lightcable', 'kobe', 'southafrica']);
 });
 
 test('developer order override accepts only a full permutation with a land world first', () => {
   assert.deepEqual(
-    createWorldRoute('?worldOrder=hamina,lightcable,nevada,kobe', () => 0, true),
-    ['hamina', 'lightcable', 'nevada', 'kobe'],
+    createWorldRoute('?worldOrder=hamina,lightcable,nevada,kobe,southafrica', () => 0, true),
+    ['hamina', 'lightcable', 'nevada', 'kobe', 'southafrica'],
   );
   assert.deepEqual(
-    createWorldRoute('?worldOrder=lightcable,hamina,nevada,kobe', () => 0, true),
+    createWorldRoute('?worldOrder=lightcable,hamina,nevada,kobe,southafrica', () => 0, true),
     [...DEFAULT_WORLD_ROUTE],
   );
   assert.deepEqual(
-    createWorldRoute('?worldOrder=lightcable,lightcable,nevada,kobe', () => 0, true),
+    createWorldRoute('?worldOrder=lightcable,lightcable,nevada,kobe,southafrica', () => 0, true),
     [...DEFAULT_WORLD_ROUTE],
   );
 });

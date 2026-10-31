@@ -22,6 +22,8 @@ const X_AXIS = new THREE.Vector3(1, 0, 0);
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
 const IMPACT_AT = 3.7;
+export const crossesPacificSurface = (previousTime, currentTime) =>
+  previousTime < IMPACT_AT && currentTime >= IMPACT_AT;
 const SINK_END = 7.6;
 const QUESTION_AT = (PACIFIC_NARRATION_START_MS + PACIFIC_ARRIVAL_NARRATION[1].atMs) / 1000;
 const QUESTION_ZOOM_IN_END = QUESTION_AT + 2.2;
@@ -1136,11 +1138,13 @@ export class LightCableWorld {
   }
 
   update(delta) {
+    const previousTime = this.elapsed;
     this.elapsed += Math.min(delta, .1);
     this.water.material.uniforms.time.value = this.elapsed;
     this.sky.material.uniforms.cloudDrift.value = this.elapsed * .000055;
     this.planktonMaterial.uniforms.time.value = this.elapsed;
     const time = this.elapsed;
+    if (crossesPacificSurface(previousTime, time)) this.onSurfaceImpact?.();
     this.updateImpactEffects(time);
     if (time < DIVE_START) {
       this.phase = 'surface';

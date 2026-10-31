@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getSkyVisibility, getSolarTimes } from '../src/world/shared/SkyDetail.js';
+import { getLocalSkyHour, getSkyVisibility, getSolarTimes } from '../src/world/shared/SkyDetail.js';
 
 test('stars emerge after dusk and disappear before daylight', () => {
   const noon = getSkyVisibility(12);
@@ -13,6 +13,14 @@ test('stars emerge after dusk and disappear before daylight', () => {
   assert.equal(midnight.daylight, 0);
   assert.equal(midnight.stars, 1);
   assert.equal(getSkyVisibility(4).stars, 1);
+});
+
+test('Cape Town sky follows South African local time', () => {
+  const instant = new Date('2026-10-28T10:30:00Z');
+  const sky = getLocalSkyHour('southafrica', instant);
+  assert.equal(sky.timeZone, 'Africa/Johannesburg');
+  assert.equal(sky.localTime, '12:30');
+  assert.ok(sky.solarTimes.sunrise < sky.solarTimes.sunset);
 });
 
 test('Hamina daylight follows the seasons and differs from Nevada', () => {

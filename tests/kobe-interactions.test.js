@@ -22,3 +22,20 @@ test('all nine Kobe archive posters have Korean lines with Japanese subtitles', 
     assert.equal(objectCueIds('kobe', name).length, content.phrases.length);
   });
 });
+
+test('long Kobe poster narration is split into short timed caption cards', () => {
+  const expected = {
+    'Tunnel Archive 04': 1,
+    'Tunnel Archive 05': 0,
+    'Tunnel Archive 07': 1,
+    'Tunnel Archive 09': 0,
+  };
+  for (const [name, phraseIndex] of Object.entries(expected)) {
+    const segments = KOBE_ARCHIVE_INTERACTIONS[name].captionSegments[phraseIndex];
+    assert.equal(segments.length, 2);
+    segments.forEach(([korean, japanese]) => {
+      assert.ok(korean.length <= 20, `${name} Korean caption is too long`);
+      assert.ok(japanese.length <= 24, `${name} Japanese caption is too long`);
+    });
+  }
+});

@@ -29,6 +29,16 @@ const canvasToBlob = (canvas) => new Promise((resolve, reject) => {
   }, 'image/png');
 });
 
+export function deleteVisitorPhotoArchive() {
+  if (!('indexedDB' in window)) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const request = window.indexedDB.deleteDatabase(DATABASE_NAME);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error ?? new Error('Photo archive could not be deleted.'));
+    request.onblocked = () => reject(new Error('Photo archive deletion was blocked by another tab.'));
+  });
+}
+
 export async function archiveVisitorPhoto(canvas) {
   if (!canvas?.width || !canvas?.height) return null;
   const blob = await canvasToBlob(canvas);

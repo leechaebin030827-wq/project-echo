@@ -49,6 +49,12 @@ export const KOBE_ARCHIVE_INTERACTIONS = Object.freeze({
       ['이곳에 데이터센터를 만들겠다고, 2026년 10월 6일에 발표했대요!', 'ここにデータセンターを造ると、2026年10月6日に発表したそうです！'],
       ['그런데 컴퓨터들은 아직 출근 전인가 봐요.', 'でも、コンピューターたちはまだ出勤前みたいですね。'],
     ],
+    captionSegments: Object.freeze({
+      1: Object.freeze([
+        Object.freeze(['이곳에 데이터센터를 만들겠다고', 'ここにデータセンターを造ると、']),
+        Object.freeze(['2026년 10월 6일에 발표했대요!', '2026年10月6日に発表したそうです！']),
+      ]),
+    }),
     effectDuration: 2,
   }),
   'Tunnel Archive 05': Object.freeze({
@@ -61,6 +67,12 @@ export const KOBE_ARCHIVE_INTERACTIONS = Object.freeze({
       ['저는 겉옷부터 챙길게요.', '私はまず上着を用意します。'],
       ['으으!', 'ぶるぶる！'],
     ],
+    captionSegments: Object.freeze({
+      0: Object.freeze([
+        Object.freeze(['어? 여긴 일 년 내내', 'あれ？ここは一年中、']),
+        Object.freeze(['15도에서 20도 사이래요!', '15度から20度の間だそうです！']),
+      ]),
+    }),
     effectDuration: 2,
   }),
   'Tunnel Archive 06': Object.freeze({
@@ -85,6 +97,12 @@ export const KOBE_ARCHIVE_INTERACTIONS = Object.freeze({
       ['나머지는요?', '残りは？'],
       ['음… 저도 궁금해요!', 'うーん……私も気になります！'],
     ],
+    captionSegments: Object.freeze({
+      1: Object.freeze([
+        Object.freeze(['그중 3킬로미터를', 'そのうち3キロメートルを、']),
+        Object.freeze(['데이터센터로 사용할 계획이래요.', 'データセンターとして使う計画だそうです。']),
+      ]),
+    }),
     effectDuration: 2,
   }),
   'Tunnel Archive 08': Object.freeze({
@@ -104,10 +122,16 @@ export const KOBE_ARCHIVE_INTERACTIONS = Object.freeze({
     label: '터널의 새로운 역할',
     hover: KOBE_ARCHIVE_HOVER,
     phrases: [
-      ['흑을 옮기던 곳이 이제는 데이터를 위한 시설이 된대요.', '土砂を運んでいた場所が、今度はデータのための施設になるそうです。'],
+      ['흙을 옮기던 곳이 이제는 데이터를 위한 시설이 된대요.', '土砂を運んでいた場所が、今度はデータのための施設になるそうです。'],
       ['이 터널은 두 번째 삶을 준비 중이군요!', 'このトンネルは、第二の人生を準備しているんですね！'],
       ['당신도 나중에 다시 와볼래요?', 'あなたもいつか、また来てみませんか？'],
     ],
+    captionSegments: Object.freeze({
+      0: Object.freeze([
+        Object.freeze(['흙을 옮기던 곳이', '土砂を運んでいた場所が、']),
+        Object.freeze(['이제는 데이터를 위한 시설이 된대요.', '今度はデータのための施設になるそうです。']),
+      ]),
+    }),
     effectDuration: 2,
   }),
 });

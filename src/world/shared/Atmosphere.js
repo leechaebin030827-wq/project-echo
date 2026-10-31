@@ -6,6 +6,7 @@ const SUN_DIRECTIONS = Object.freeze({
   nevada: new THREE.Vector3(-0.5, 0.79, 0.34).normalize(),
   hamina: new THREE.Vector3(-0.49, 0.8, 0.35).normalize(),
   kobe: new THREE.Vector3(-0.35, 0.62, 0.7).normalize(),
+  southafrica: new THREE.Vector3(-0.58, 0.67, 0.46).normalize(),
 });
 
 // The normal world camera looks slightly downward and both locations have a
@@ -15,6 +16,7 @@ const SKY_LATITUDE_OFFSETS = Object.freeze({
   nevada: 0.18,
   hamina: 0.15,
   kobe: 0.15,
+  southafrica: 0.18,
 });
 
 const SKY_PALETTES = Object.freeze({
@@ -35,6 +37,12 @@ const SKY_PALETTES = Object.freeze({
     dawn: ['#09131a', '#102029', '#192f39', '#243e48', '#304f59', '#3d626d', '#3d626d', '#3d626d', '#3d626d'],
     day: ['#0d1d26', '#152c35', '#203d47', '#2b4f59', '#39636e', '#4a7984', '#4a7984', '#4a7984', '#4a7984'],
     dusk: ['#08121a', '#10242c', '#19343d', '#244650', '#305963', '#3d6974', '#3d6974', '#3d6974', '#3d6974'],
+  },
+  southafrica: {
+    night: ['#061124', '#0a1830', '#14243a', '#223247', '#304050', '#3d4853', '#444b52', '#444b52', '#444b52'],
+    dawn: ['#392343', '#673c55', '#9d5d5c', '#cc7e62', '#e9a675', '#f2c28a', '#efd09c', '#efd09c', '#efd09c'],
+    day: ['#1d5d9c', '#3279ae', '#62a0c3', '#96bfd0', '#c8d6d4', '#e3d7be', '#dfcba9', '#dfcba9', '#dfcba9'],
+    dusk: ['#2b224e', '#5f3a5b', '#9e5b59', '#d07a58', '#eb9b68', '#eeb67b', '#d9ad83', '#d9ad83', '#d9ad83'],
   },
 });
 
@@ -118,7 +126,17 @@ export class Atmosphere {
     // A flat color remains only as a fallback behind the dome. Using the
     // gradient texture directly as scene.background made it screen-locked.
     this.scene.background = new THREE.Color(this.currentColors[0]);
-    this.scene.fog = null;
+    this.updateWorldFog();
+  }
+
+  updateWorldFog() {
+    if (this.mode !== 'southafrica') {
+      this.scene.fog = null;
+      return;
+    }
+    const color = new THREE.Color(this.currentColors[7]).lerp(new THREE.Color('#a5b8ac'), .38);
+    if (!this.scene.fog?.isFog) this.scene.fog = new THREE.Fog(color, 170, 700);
+    else this.scene.fog.color.set(color);
   }
 
   getGradient(mode) {
@@ -164,6 +182,9 @@ export class Atmosphere {
     this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
     if (this.background) this.background.needsUpdate = true;
     if (this.scene.background?.isColor) this.scene.background.set(colors[0]);
+    if (this.scene.fog?.isFog && this.mode === 'southafrica') {
+      this.scene.fog.color.set(colors[7]).lerp(new THREE.Color('#a5b8ac'), .38);
+    }
   }
 
   createGradientBackground() {
@@ -297,7 +318,7 @@ export class Atmosphere {
     this.skyDome.material.uniforms.daylight.value = this.worldTimes[mode].daylight;
     this.skyDome.material.uniforms.starVisibility.value = this.worldTimes[mode].stars;
     this.configureSun(mode);
-    this.scene.fog = null;
+    this.updateWorldFog();
   }
 
   update(delta, camera) {
@@ -321,8 +342,11 @@ export class Atmosphere {
         SKY_LATITUDE_OFFSETS[this.transition.mode],
         eased,
       );
-      this.skyDome.material.uniforms.worldBlend.value = this.transition.mode === 'hamina'
-        ? eased : 1 - eased;
+      this.skyDome.material.uniforms.worldBlend.value = THREE.MathUtils.lerp(
+        this.mode === 'hamina' ? 1 : 0,
+        this.transition.mode === 'hamina' ? 1 : 0,
+        eased,
+      );
       this.skyDome.material.uniforms.daylight.value = THREE.MathUtils.lerp(
         this.worldTimes[this.mode].daylight,
         this.worldTimes[this.transition.mode].daylight,

@@ -16,7 +16,7 @@ const smooth = (value) => {
 export class WorldInteractionExperience {
   constructor({ stage, camera, caption, cuePlayer, postProcessing, getOriginalPhoto, getVisitorSession = () => null,
     isFocusSettled = () => true, onNarrationStart = () => {}, onPhraseStart = () => {},
-    onNarrationEnd = () => {}, onClose }) {
+    onNarrationEnd = () => {}, onClose, onUiHover = () => {}, onUiClick = () => {} }) {
     this.stage = stage;
     this.camera = camera;
     this.caption = caption;
@@ -29,6 +29,8 @@ export class WorldInteractionExperience {
     this.onPhraseStart = onPhraseStart;
     this.onNarrationEnd = onNarrationEnd;
     this.onClose = onClose;
+    this.onUiHover = onUiHover;
+    this.onUiClick = onUiClick;
     this.active = null;
     this.audio = new Audio('/audio/water_cooler.mp3');
     this.audio.preload = 'none';
@@ -45,7 +47,6 @@ export class WorldInteractionExperience {
       <div class="world-interaction__visual" aria-hidden="true"></div>
       <div class="world-interaction__actions">
         <button type="button" class="world-interaction__research-button" aria-label="${RESEARCH_UI.view}" title="${RESEARCH_UI.view}" hidden>↗</button>
-        <button type="button" class="world-interaction__close" aria-label="${RESEARCH_UI.returnToWorld}" title="${RESEARCH_UI.returnToWorld}">×</button>
       </div>
       <section class="world-interaction__card" hidden aria-label="Research record">
         <div class="world-interaction__card-index"></div>
@@ -53,15 +54,16 @@ export class WorldInteractionExperience {
         <p class="world-interaction__card-fact"></p>
         <p class="world-interaction__card-interpretation"></p>
         <a class="world-interaction__source" target="_blank" rel="noopener noreferrer">${RESEARCH_UI.source}</a>
-        <button type="button" class="world-interaction__card-close" aria-label="${RESEARCH_UI.close}" title="${RESEARCH_UI.close}">×</button>
       </section>`;
     stage.append(this.root);
     this.visual = this.root.querySelector('.world-interaction__visual');
     this.researchButton = this.root.querySelector('.world-interaction__research-button');
     this.card = this.root.querySelector('.world-interaction__card');
-    this.root.querySelector('.world-interaction__close').addEventListener('click', () => this.close());
     this.researchButton.addEventListener('click', () => this.openResearch());
-    this.root.querySelector('.world-interaction__card-close').addEventListener('click', () => this.closeResearch());
+    this.root.querySelectorAll('button').forEach((button) => {
+      button.addEventListener('pointerenter', () => this.onUiHover());
+      button.addEventListener('click', () => this.onUiClick());
+    });
     this.onKeyDown = (event) => {
       if (event.key !== 'Escape' || !this.active) return;
       if (!this.card.hidden) this.closeResearch();
@@ -82,7 +84,8 @@ export class WorldInteractionExperience {
       + (index === content.phrases.length - 1 ? 0 : 0.12));
     const narrationDuration = phraseTimes.reduce((sum, value) => sum + value, 0);
     this.active = {
-      region, content, elapsed: 0, phraseIndex: -1, phraseTimes, cueIds,
+      region, content, elapsed: 0, phraseIndex: -1, captionSegmentIndex: -1,
+      phraseTimes, cueIds,
       isHamina, interactionWorld,
       narrationDuration, effectDuration: Math.max(content.effectDuration, narrationDuration + 0.45),
       visualStarted: false, visualEnded: false,
@@ -234,14 +237,17 @@ export class WorldInteractionExperience {
     const narrationTime = elapsed - 0.15;
     if (narrationTime < 0) return;
     let boundary = 0;
+    let phraseStart = 0;
     let nextIndex = content.phrases.length;
     for (let index = 0; index < active.phraseTimes.length; index += 1) {
       boundary += active.phraseTimes[index];
       if (narrationTime < boundary) { nextIndex = index; break; }
+      phraseStart = boundary;
     }
     if (nextIndex !== active.phraseIndex) {
       const previousIndex = active.phraseIndex;
       active.phraseIndex = nextIndex;
+      active.captionSegmentIndex = -1;
       if (nextIndex < content.phrases.length) {
         if (active.isHamina && active.region.name === 'Forest'
           && nextIndex === content.phrases.length - 2) {
@@ -249,8 +255,6 @@ export class WorldInteractionExperience {
         }
         if (previousIndex < 0) this.onNarrationStart(active);
         this.onPhraseStart(active, nextIndex);
-        const [korean, local] = content.phrases[nextIndex];
-        this.caption.showOverride(korean, local);
         const cueId = active.cueIds[nextIndex];
         if (cueId) this.cuePlayer.play(cueId);
       } else {
@@ -259,6 +263,28 @@ export class WorldInteractionExperience {
         this.researchButton.hidden = !content.research || (!active.isHamina
           && ['Cooler', 'Money'].includes(active.region.name));
         if (active.region.name === 'Money') active.moneyClosingAt = elapsed;
+      }
+    }
+    if (nextIndex < content.phrases.length) {
+      const segments = content.captionSegments?.[nextIndex] ?? [content.phrases[nextIndex]];
+      const weights = segments.map(([, local]) => Math.max(1, local.length));
+      const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+      const phraseProgress = THREE.MathUtils.clamp(
+        (narrationTime - phraseStart) / active.phraseTimes[nextIndex], 0, 0.9999,
+      );
+      const weightedProgress = phraseProgress * totalWeight;
+      let segmentBoundary = 0;
+      let segmentIndex = segments.length - 1;
+      for (let index = 0; index < segments.length; index += 1) {
+        segmentBoundary += weights[index];
+        if (weightedProgress < segmentBoundary) {
+          segmentIndex = index;
+          break;
+        }
+      }
+      if (segmentIndex !== active.captionSegmentIndex) {
+        active.captionSegmentIndex = segmentIndex;
+        this.caption.showOverride(...segments[segmentIndex]);
       }
     }
     if (nextIndex === content.phrases.length) {

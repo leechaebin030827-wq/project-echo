@@ -116,7 +116,7 @@ test('distant Kobe poster focus and return stay inside the tunnel ceiling', () =
     center,
     focusTarget: center.clone(),
     focusDirection: new THREE.Vector3(0.7, 0, 1).normalize(),
-    focusDistance: 3,
+    focusDistance: 2.3,
     bounds: new THREE.Box3().setFromCenterAndSize(center, size),
     focusBounds: new THREE.Box3().setFromCenterAndSize(center, size),
     size,
@@ -126,6 +126,7 @@ test('distant Kobe poster focus and return stay inside the tunnel ceiling', () =
 
   controller.focusInteractiveObject(region);
   assert.equal(controller.transition.arcHeight, 0);
+  assert.ok(controller.transition.destination.distanceTo(center) <= 2.31);
   camera.position.copy(controller.transition.destination);
   controller.target.copy(controller.transition.destinationTarget);
   controller.returnFromInteractiveObject();

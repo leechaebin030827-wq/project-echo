@@ -204,7 +204,7 @@ button { -webkit-tap-highlight-color: transparent; }
   contain: strict;
   isolation: isolate;
   border-radius: calc(var(--crt-curvature) * 4.5cqw);
-  backdrop-filter: contrast(1.035) saturate(1.166) brightness(.985);
+  backdrop-filter: contrast(1.035) saturate(1.166) brightness(1.015);
 }
 
 .crt-texture-overlay > span {
@@ -278,11 +278,11 @@ button { -webkit-tap-highlight-color: transparent; }
   background: radial-gradient(
     ellipse at center,
     transparent 0 58%,
-    rgba(0, 0, 0, calc(var(--crt-curvature) * .11)) 77%,
-    rgba(0, 0, 0, calc(var(--crt-curvature) * .58)) 100%
+    rgba(0, 0, 0, calc(var(--crt-curvature) * .055)) 77%,
+    rgba(0, 0, 0, calc(var(--crt-curvature) * .20)) 100%
   );
   box-shadow:
-    inset 0 0 calc(var(--crt-curvature) * 8cqw) rgba(0, 0, 0, .72),
+    inset 0 0 calc(var(--crt-curvature) * 8cqw) rgba(0, 0, 0, .20),
     inset 0 0 calc(var(--crt-glow) * 2.5cqw) rgba(151, 218, 255, .12),
     inset 0 0 0 1px rgba(205, 232, 255, .09);
 }
@@ -327,7 +327,6 @@ button { -webkit-tap-highlight-color: transparent; }
   color: #fff;
   pointer-events: none;
   mix-blend-mode: difference;
-  filter: drop-shadow(0 0 .12em rgba(0,0,0,.35));
   transition: opacity 120ms ease, width 180ms ease, height 180ms ease;
   will-change: transform;
 }
@@ -346,9 +345,8 @@ button { -webkit-tap-highlight-color: transparent; }
 .interaction-cursor[data-mode="data-particle"] {
   width: auto;
   height: auto;
-  color: #91f5ef;
-  mix-blend-mode: normal;
-  filter: drop-shadow(0 0 .55em rgba(60, 231, 235, .8));
+  color: #fff;
+  mix-blend-mode: difference;
 }
 
 .interaction-cursor[data-mode="data-particle"] .interaction-cursor__glyph {
@@ -439,7 +437,6 @@ button { -webkit-tap-highlight-color: transparent; }
   background: transparent;
   color: #fff;
   mix-blend-mode: difference;
-  filter: drop-shadow(0 0 .12em rgba(0, 0, 0, .35));
 }
 .interaction-cursor[data-mode="interactive-object"]::before,
 .interaction-cursor[data-mode="dance-group"]::before {
@@ -504,25 +501,6 @@ button { -webkit-tap-highlight-color: transparent; }
 .echo-action-menu.lightcable-menu {
   z-index: 12;
 }
-
-.pacific-view-return {
-  position: absolute;
-  z-index: 13;
-  left: 50%;
-  bottom: 7cqw;
-  transform: translateX(-50%);
-  padding: 1.5cqw 2.3cqw;
-  border: 1px solid rgba(197, 239, 249, .7);
-  background: rgba(3, 24, 39, .68);
-  color: #eefbff;
-  font: 500 clamp(11px, 2.4cqw, 18px)/1.2 "Helvetica Neue", "Apple SD Gothic Neo", Arial, sans-serif;
-  white-space: nowrap;
-  backdrop-filter: blur(8px);
-  cursor: pointer;
-}
-
-.pacific-view-return[hidden] { display: none; }
-.pacific-view-return:hover { background: rgba(29, 85, 105, .86); }
 
 .pacific-photo-viewer {
   position: absolute;
@@ -1138,6 +1116,44 @@ button { -webkit-tap-highlight-color: transparent; }
 .world-jump-overlay.split-active .world-jump-grid { opacity: 1; }
 .world-jump-overlay.dissolve-active .world-jump-grid { opacity: 0; }
 
+.kobe-arrival-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  visibility: hidden;
+  opacity: 0;
+  background: #020304;
+  pointer-events: none;
+}
+.kobe-arrival-curtain.is-darkening {
+  visibility: visible;
+  animation: kobe-arrival-darken 3.6s ease-in forwards;
+}
+.kobe-arrival-curtain.is-flickering {
+  visibility: visible;
+  animation: kobe-arrival-lights 2.4s steps(1, end) forwards;
+}
+.stage:has(.kobe-arrival-curtain.is-darkening) .echo-caption {
+  z-index: 41;
+}
+@keyframes kobe-arrival-darken {
+  0%, 22% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes kobe-arrival-lights {
+  0%, 12% { opacity: 1; }
+  17% { opacity: .58; }
+  23% { opacity: 1; }
+  32% { opacity: .32; }
+  37% { opacity: 1; }
+  48% { opacity: .15; }
+  53% { opacity: .9; }
+  62% { opacity: .06; }
+  68% { opacity: .42; }
+  76% { opacity: .04; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
 .echo-caption {
   position: absolute;
   z-index: 8;
@@ -1150,8 +1166,6 @@ button { -webkit-tap-highlight-color: transparent; }
   color: #fff;
   text-align: center;
   font-family: "Helvetica Neue", "Apple SD Gothic Neo", Arial, sans-serif;
-  -webkit-text-stroke: .185185cqw rgba(33, 42, 61, .78);
-  paint-order: stroke fill;
   mix-blend-mode: difference;
   transition: opacity 130ms linear, transform 420ms cubic-bezier(.22, 1, .36, 1);
   pointer-events: none;
@@ -1159,15 +1173,6 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .echo-caption.visible { opacity: 1; transform: translate(-50%, 0); }
 .stage.entry-overlay-active .echo-caption { opacity: 0; visibility: hidden; }
-.stage[data-world="lightcable"] .echo-caption {
-  mix-blend-mode: normal;
-  -webkit-text-stroke: 0;
-  text-shadow: none;
-}
-.stage.ritual-cinematic .echo-caption {
-  mix-blend-mode: normal;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, .9), 0 0 18px rgba(0, 0, 0, .65);
-}
 .echo-caption p { margin: 0; }
 .echo-caption-korean {
   font-size: 5cqw;
@@ -1210,25 +1215,8 @@ button { -webkit-tap-highlight-color: transparent; }
   border: 0;
   background: transparent;
 }
-.data-archive-photo-close {
-  position: absolute;
-  top: 5%;
-  right: 5%;
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(255,255,255,.6);
-  border-radius: 50%;
-  background: #17232a;
-  color: white;
-  font: 26px/1 Arial, sans-serif;
-  cursor: pointer;
-}
-
 /* Object scenes close through Escape or their existing scene interaction. */
-.world-interaction__close,
-.world-interaction__card-close,
 .data-archive-close,
-.data-archive-photo-close,
 .stage:has(.world-interaction.visible) .interaction-cursor[data-mode="blocked"] {
   display: none;
 }

@@ -175,9 +175,20 @@ function createTitle(callbacks) {
   const artwork = document.createElement('span');
   artwork.className = 'start-title__camera-array';
   artwork.setAttribute('aria-hidden', 'true');
+  const backgroundVideo = document.createElement('video');
+  backgroundVideo.className = 'start-title__background-video';
+  backgroundVideo.src = '/intro/assets/opening/opening-background-pingpong.mp4';
+  backgroundVideo.autoplay = true;
+  backgroundVideo.loop = true;
+  backgroundVideo.muted = true;
+  backgroundVideo.defaultPlaybackRate = 0.5;
+  backgroundVideo.playbackRate = 0.5;
+  backgroundVideo.playsInline = true;
+  backgroundVideo.preload = 'auto';
   const cameraArrayCanvas = document.createElement('canvas');
   cameraArrayCanvas.className = 'start-title__camera-array-canvas';
-  artwork.append(cameraArrayCanvas);
+  artwork.append(backgroundVideo, cameraArrayCanvas);
+  backgroundVideo.play().catch(() => {});
   coverAssets.forEach(([filename, x, y]) => {
     const image = document.createElement('img');
     image.className = 'start-title__camera-array-asset';
@@ -203,10 +214,14 @@ function createTitle(callbacks) {
   const cameraArrayScene = createCoverCameraArrayScene(cameraArrayCanvas);
   button.coverScene = {
     stop() {
+      backgroundVideo.pause();
       cameraArrayScene.stop();
       coverTypewriter.stop();
     },
     destroy() {
+      backgroundVideo.pause();
+      backgroundVideo.removeAttribute('src');
+      backgroundVideo.load();
       cameraArrayScene.destroy();
       coverTypewriter.destroy();
     },

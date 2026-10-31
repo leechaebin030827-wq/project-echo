@@ -13,7 +13,7 @@ import { CinematicCameraController } from '../src/camera/CinematicCameraControll
 import { PointerInteractionController } from '../src/interaction/PointerInteractionController.js';
 import { sampleKobeConveyorDisplacement } from '../src/world/kobe/KobeMaterialSystem.js';
 import {
-  KobeWorld, sampleKobeEchoCycle, sampleKobeTunnelExit, sampleKobeTunnelPanic,
+  KobeWorld, sampleKobeArrivalLight, sampleKobeEchoCycle, sampleKobeTunnelExit, sampleKobeTunnelPanic,
 } from '../src/world/kobe/KobeWorld.js';
 import { paddedPosterCrop } from '../src/world/kobe/KobeArchivePosters.js';
 
@@ -88,6 +88,14 @@ test('Kobe tunnel panic and camera chase run only as a separate triggered sequen
   assert.deepEqual(sampleKobeTunnelPanic(8.9, start, anchor, deep), {
     x: anchor, walking: false, cameraFollow: 0, hidden: false, complete: true,
   });
+});
+
+test('Kobe arrival lights pulse before settling fully on', () => {
+  assert.equal(sampleKobeArrivalLight(0), 0);
+  assert.ok(sampleKobeArrivalLight(.35) > 0);
+  assert.equal(sampleKobeArrivalLight(.5), 0);
+  assert.ok(sampleKobeArrivalLight(1.5) > .8);
+  assert.equal(sampleKobeArrivalLight(2.4), 1);
 });
 
 test('Kobe world exit accelerates ECHO and the camera deep into the tunnel', () => {

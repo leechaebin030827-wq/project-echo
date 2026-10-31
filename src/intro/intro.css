@@ -236,8 +236,8 @@ body:has(#intro-root:not([hidden])) .developer-shortcut-panel {
   transition: opacity 900ms ease, visibility 0s linear 900ms;
 }
 .start-title__camera-array {
-  --array-column-size: 33.3333%;
-  --array-row-size: 20%;
+  --array-column-size: 100%;
+  --array-row-size: 100%;
   position: absolute;
   top: 0;
   left: 0;
@@ -246,7 +246,7 @@ body:has(#intro-root:not([hidden])) .developer-shortcut-panel {
   height: 1920px;
   overflow: hidden;
   isolation: isolate;
-  background: #c7a8cd;
+  background: #040844;
   text-align: left;
   transform: scale(2);
   transform-origin: top left;
@@ -255,17 +255,26 @@ body:has(#intro-root:not([hidden])) .developer-shortcut-panel {
 }
 .start-title__camera-array::after {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   inset: 0;
   background:
-    repeating-linear-gradient(90deg, transparent 0 calc(var(--array-column-size) - 1px), rgba(70, 48, 78, .22) calc(var(--array-column-size) - 1px) var(--array-column-size)),
-    repeating-linear-gradient(0deg, transparent 0 calc(var(--array-row-size) - 1px), rgba(70, 48, 78, .22) calc(var(--array-row-size) - 1px) var(--array-row-size));
+    repeating-linear-gradient(90deg, transparent 0 calc(var(--array-column-size) - 1px), rgba(2, 3, 35, .34) calc(var(--array-column-size) - 1px) var(--array-column-size)),
+    repeating-linear-gradient(0deg, transparent 0 calc(var(--array-row-size) - 1px), rgba(2, 3, 35, .34) calc(var(--array-row-size) - 1px) var(--array-row-size));
   transition: background 500ms ease;
   content: '';
 }
-.start-title__camera-array-canvas {
+.start-title__background-video {
   position: absolute;
   z-index: 0;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.start-title__camera-array-canvas {
+  position: absolute;
+  z-index: 1;
   inset: 0;
   display: block;
   width: 100%;
@@ -273,19 +282,21 @@ body:has(#intro-root:not([hidden])) .developer-shortcut-panel {
 }
 .start-title__camera-array-asset {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   display: block;
   max-width: none;
   mix-blend-mode: difference;
+  opacity: 0;
 }
 .start-title__camera-array p {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   margin: 0;
   color: #fff;
   font-family: "SM3JGothic 03", "SM3JGothic", "Apple SD Gothic Neo", sans-serif;
   font-weight: 400;
   mix-blend-mode: difference;
+  opacity: 0;
 }
 .start-title__quote {
   top: 901px;
@@ -354,8 +365,7 @@ body:has(#intro-root:not([hidden])) .developer-shortcut-panel {
   transform: translateX(-50%);
   color: #fff;
   text-align: center;
-  -webkit-text-stroke: 4px rgba(33, 42, 61, .78);
-  paint-order: stroke fill;
+  mix-blend-mode: difference;
   pointer-events: none;
 }
 .camera-guidance p { margin: 0; }
@@ -434,8 +444,6 @@ body:has(#intro-root:not([hidden])) .developer-shortcut-panel {
   transform: translateX(-50%);
   color: #fff;
   text-align: center;
-  -webkit-text-stroke: 4px rgba(33, 42, 61, .78);
-  paint-order: stroke fill;
   opacity: 0;
   transition: opacity 130ms linear;
 }

@@ -6,8 +6,16 @@ import { IntroExperience } from './intro/IntroExperience.js';
 import { CAPTIONS, IntroState } from './intro/config.js';
 import { VintageFilmOverlay } from './ui/VintageFilmOverlay.js';
 import { CrtTextureOverlay } from './ui/CrtTextureOverlay.js';
+import { deleteVisitorPhotoArchive } from './face/VisitorPhotoArchive.js';
+import { WorldUiAudio } from './audio/WorldUiAudio.js';
 
 const params = new URLSearchParams(window.location.search);
+if (import.meta.env.DEV && params.get('clearVisitorPhotos') === '1') {
+  await deleteVisitorPhotoArchive();
+  const cleanUrl = new URL(window.location.href);
+  cleanUrl.searchParams.delete('clearVisitorPhotos');
+  window.history.replaceState(null, '', cleanUrl);
+}
 const stage = document.querySelector('#stage');
 const vintageFilmOverlay = new VintageFilmOverlay(stage);
 const crtTextureOverlay = new CrtTextureOverlay(stage);
@@ -45,6 +53,9 @@ experience.initialize({ introMode: !worldQa }).catch((error) => {
 
 let intro = null;
 let worldAudio = null;
+const worldUiAudio = new WorldUiAudio();
+experience.onWorldHover = () => worldUiAudio.playHover();
+experience.onWorldClick = () => worldUiAudio.playClick();
 experience.onPacificCreatureAudioChange = (active) => worldAudio?.setUnderwaterMusic(active);
 let developerShortcutRunning = false;
 let developerShortcutPanel = null;
@@ -56,6 +67,7 @@ const developerShortcuts = [
   ['2', 'Hamina 즉시 진입'],
   ['3', 'Pacific 즉시 진입'],
   ['4', 'Kobe 즉시 진입'],
+  ['5', 'South Africa 즉시 진입'],
   ['O', '현재 육지 월드 오비트'],
   ['J', '다음 월드로 이동'],
   ['D', 'Data Center 상호작용'],
@@ -97,10 +109,11 @@ const openDeveloperPreset = (preset) => {
   next.search = '';
   next.searchParams.set('worldQa', '1');
   const orders = {
-    nevada: 'nevada,lightcable,hamina,kobe',
-    hamina: 'hamina,lightcable,nevada,kobe',
-    pacific: 'nevada,lightcable,hamina,kobe',
-    kobe: 'kobe,nevada,lightcable,hamina',
+    nevada: 'nevada,lightcable,hamina,kobe,southafrica',
+    hamina: 'hamina,lightcable,nevada,kobe,southafrica',
+    pacific: 'nevada,lightcable,hamina,kobe,southafrica',
+    kobe: 'kobe,nevada,lightcable,hamina,southafrica',
+    southafrica: 'southafrica,nevada,lightcable,hamina,kobe',
   };
   next.searchParams.set('worldOrder', orders[preset.world] ?? orders.nevada);
   for (const [key, value] of Object.entries(preset.params ?? {})) {
@@ -130,8 +143,6 @@ if (worldQa) {
     },
   });
   worldAudio = intro.controller.audio;
-  experience.onWorldHover = () => worldAudio?.playUi('uiHover');
-  experience.onWorldClick = () => worldAudio?.playUi('uiClick');
   experience.onReturnTypingStart = () => worldAudio?.playTyping();
   experience.onReturnTypingEnd = () => worldAudio?.stopTyping();
   if (introHandoffQa) {
@@ -172,7 +183,12 @@ const handleDeveloperWorldShortcut = async (event) => {
     Digit2: { world: 'hamina', params: { orbitQa: '1' } },
     Digit3: { world: 'pacific', params: { lightCableQa: '1' } },
     Digit4: { world: 'kobe', params: { orbitQa: '1' } },
-    KeyO: { world: experience.currentWorld === 'hamina' ? 'hamina' : 'nevada', params: { orbitQa: '1' } },
+    Digit5: { world: 'southafrica', params: { orbitQa: '1' } },
+    KeyO: {
+      world: ['nevada', 'hamina', 'kobe', 'southafrica'].includes(experience.currentWorld)
+        ? experience.currentWorld : 'nevada',
+      params: { orbitQa: '1' },
+    },
     KeyD: { world: experience.currentWorld === 'hamina' ? 'hamina' : 'nevada', params: { dataCenterQa: '1' } },
     KeyM: { world: 'nevada', params: { moneyQa: '1' } },
     KeyF: { world: 'nevada', params: { orbitQa: '1', focusQa: 'A01' } },

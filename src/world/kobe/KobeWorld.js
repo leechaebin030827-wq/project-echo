@@ -18,6 +18,17 @@ const smooth = (value) => {
   return t * t * (3 - 2 * t);
 };
 
+export function sampleKobeArrivalLight(time) {
+  if (time < .28) return 0;
+  if (time < .42) return .48;
+  if (time < .56) return 0;
+  if (time < .75) return .72;
+  if (time < .87) return .04;
+  if (time < 1.1) return .88;
+  if (time < 1.24) return .08;
+  return THREE.MathUtils.lerp(.82, 1, smooth((time - 1.24) / 1.16));
+}
+
 const getKobeCycleTiming = (anchorX, farX) => {
   const pushDuration = Math.abs(farX - anchorX) / KOBE_CONFIG.conveyorWorldSpeed;
   const pushEnd = ECHO_PUSH_START + pushDuration;
@@ -119,6 +130,7 @@ export class KobeWorld {
     this.lightFixtures = [];
     this.materialSystem = new KobeMaterialSystem();
     this.elapsed = 0;
+    this.arrivalFlickerElapsed = null;
     this.echoCycleElapsed = 0;
     this.tunnelPanicElapsed = null;
     this.tunnelExitElapsed = null;
@@ -432,6 +444,12 @@ export class KobeWorld {
 
   updateLights(delta) {
     this.elapsed += delta;
+    if (this.arrivalFlickerElapsed !== null) {
+      this.arrivalFlickerElapsed += delta;
+      if (this.arrivalFlickerElapsed >= 2.4) this.arrivalFlickerElapsed = null;
+    }
+    const arrivalBrightness = this.arrivalFlickerElapsed === null
+      ? 1 : sampleKobeArrivalLight(this.arrivalFlickerElapsed);
     for (const fixture of this.lightFixtures) {
       let brightness = 1;
       if (fixture.mode === 'off') brightness = 0;
@@ -444,10 +462,19 @@ export class KobeWorld {
         brightness = slow * quick;
       }
       fixture.materials.forEach((material) => {
-        material.emissiveIntensity = 4.8 * brightness;
+        material.emissiveIntensity = 4.8 * brightness * arrivalBrightness;
       });
-      if (fixture.pointLight) fixture.pointLight.intensity = 2.5 * brightness;
+      if (fixture.pointLight) fixture.pointLight.intensity = 2.5 * brightness * arrivalBrightness;
     }
+    this.deepLightMaterial?.color.set('#ffd59a').multiplyScalar(arrivalBrightness);
+    this.deepTunnelLights?.children.forEach((child) => {
+      if (child.isPointLight) child.intensity = .72 * arrivalBrightness;
+    });
+  }
+
+  startArrivalFlicker() {
+    this.arrivalFlickerElapsed = 0;
+    this.updateLights(0);
   }
 
   update(delta) {

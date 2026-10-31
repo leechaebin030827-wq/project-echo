@@ -21,6 +21,7 @@ export class Ps1VertexSnap {
   }
 
   install(root, { character = false } = {}) {
+    if (root?.userData?.disableVertexSnap) return;
     root?.traverse((object) => {
       if (!object.isMesh || object.userData?.isHitVolume) return;
       const materials = Array.isArray(object.material) ? object.material : [object.material];

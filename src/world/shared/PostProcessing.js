@@ -94,7 +94,9 @@ const EchoGradeShader = {
       color = max(color, vec3(0.0));
 
       float vignette = smoothstep(0.45, 0.82, distance(vUv, vec2(0.5)));
-      color *= 1.0 - vignette * 0.047 * (1.0 - portraitFocus * 0.65);
+      float edgeGrade = vignette * (1.0 - portraitFocus * 0.65);
+      color = mix(vec3(luma(color)), color, 1.0 + edgeGrade * 0.28);
+      color *= 1.0 - edgeGrade * 0.10;
       color = mix(color, vec3(1.0) - clamp(color, 0.0, 1.0), coolerInvert);
       float grain = noise(floor(vUv * resolution * 0.72) + floor(time * 7.0));
       color += (grain - 0.5) * 0.009 * (1.0 - portraitFocus * 0.5);

@@ -1,6 +1,8 @@
 const FACE_DISTANCE = 13;
 const SCENE_DISTANCE = 9;
-export const RETURN_WORLDS = Object.freeze(['nevada', 'hamina', 'lightcable', 'kobe']);
+export const RETURN_WORLDS = Object.freeze([
+  'nevada', 'hamina', 'lightcable', 'kobe', 'southafrica',
+]);
 
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 
@@ -15,6 +17,7 @@ export function createMemoryComposition(world, random = Math.random) {
     hamina: [{ x: .34, y: .5 }, { x: .66, y: .57 }],
     lightcable: [{ x: .5, y: .43 }, { x: .68, y: .58 }],
     kobe: [{ x: .5, y: .48 }, { x: .62, y: .57 }],
+    southafrica: [{ x: .48, y: .5 }, { x: .6, y: .54 }],
   };
   const options = anchors[world] ?? anchors.kobe;
   const anchor = options[Math.floor(clamp(random(), 0, .999999) * options.length)];
@@ -56,10 +59,22 @@ export function hashDistance(first, second) {
 }
 
 function isSimilar(first, second) {
+  if ((first.id && first.id === second.id) || first.source === second.source) return true;
   if (first.world && second.world && first.world !== second.world) return false;
-  return first.id === second.id || first.source === second.source
-    || hashDistance(first.faceHash, second.faceHash) <= FACE_DISTANCE
+  return hashDistance(first.faceHash, second.faceHash) <= FACE_DISTANCE
     || hashDistance(first.sceneHash, second.sceneHash) <= SCENE_DISTANCE;
+}
+
+export function selectReturnDisplayFrames(candidates, limit = 10) {
+  const recorded = candidates.filter((frame) => frame.kind !== 'memory' && frame.source);
+  const reconstructedFaces = candidates.filter((frame) => frame.kind === 'memory' && frame.source);
+  if (!recorded.length) return selectReturnFrames(reconstructedFaces, limit);
+  const hasRecordedFace = recorded.some((frame) => frame.kind === 'portrait');
+  // One reconstructed face may fill a face-free playthrough; real scenes stay primary.
+  return selectReturnFrames([
+    ...recorded,
+    ...(!hasRecordedFace ? reconstructedFaces.slice(0, 1) : []),
+  ], limit);
 }
 
 export function selectReturnFrames(candidates, limit = 10) {

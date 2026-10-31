@@ -4,7 +4,7 @@ import { RETURN_LINES } from '../content/WorldUiCopy.js';
 import { cueDurationMs } from '../audio/EchoCuePlayer.js';
 import { visitorFaceCutout } from '../world/shared/BillboardFaceTexture.js';
 import {
-  createMemoryComposition, differenceHash, missingReturnWorlds, selectReturnFrames,
+  createMemoryComposition, differenceHash, RETURN_WORLDS, selectReturnDisplayFrames,
 } from './ReturnFrameSelection.js';
 
 const WIDTH = 450;
@@ -17,12 +17,14 @@ const WORLD_MEMORY_BACKDROPS = Object.freeze({
   hamina: ['/ending/ending-1.png'],
   lightcable: ['/ending/ending-5.png'],
   kobe: ['/textures/kobe/tunnel/base-color.png'],
+  southafrica: ['/ending/ending-2.png', '/ending/ending-4.png'],
 });
 const WORLD_MEMORY_TINTS = Object.freeze({
   nevada: ['#d47f45', '#121938'],
   hamina: ['#b7eaff', '#173347'],
   lightcable: ['#1fd1df', '#031b37'],
   kobe: ['#ffb347', '#21101b'],
+  southafrica: ['#e5b66a', '#2b2618'],
 });
 
 function loadImage(source) {
@@ -55,6 +57,7 @@ export class EchoReturnSequence {
     this.candidates = [];
     this.lastCaptureAt = -Infinity;
     this.lastSceneCaptureAt = -Infinity;
+    this.featuredScenes = new Set();
     this.head = new THREE.Vector3();
     this.forward = new THREE.Vector3();
     this.toCamera = new THREE.Vector3();
@@ -69,23 +72,7 @@ export class EchoReturnSequence {
     const height = this.stage.clientHeight;
     if (!height || !source.width) return;
     if (now - this.lastSceneCaptureAt >= 1800) {
-      const targetRatio = WIDTH / HEIGHT;
-      const sourceRatio = source.width / source.height;
-      const cropWidth = sourceRatio > targetRatio ? source.height * targetRatio : source.width;
-      const cropHeight = sourceRatio > targetRatio ? source.height : source.width / targetRatio;
-      const sx = (source.width - cropWidth) * .5;
-      const sy = (source.height - cropHeight) * .5;
-      this.context.drawImage(source, sx, sy, cropWidth, cropHeight, 0, 0, WIDTH, HEIGHT);
-      const sceneHash = this.hashRegion(0, 0, WIDTH, HEIGHT);
-      const previous = [...this.candidates].reverse().find((frame) =>
-        frame.kind === 'world' && frame.world === world);
-      if (!previous || previous.sceneHash !== sceneHash) {
-        this.candidates.push({
-          id: `world:${world}:${Math.round(now)}`, kind: 'world', world,
-          score: 68, time: now, sceneHash, faceHash: null,
-          source: this.canvas.toDataURL('image/jpeg', 0.86),
-        });
-      }
+      this.recordScene(world, 'world', 68, now);
       this.lastSceneCaptureAt = now;
     }
     if (!entities?.length) {
@@ -140,12 +127,7 @@ export class EchoReturnSequence {
       });
     }
     this.lastCaptureAt = now;
-    if (this.candidates.length > MAX_CANDIDATES) {
-      const weakest = this.candidates.reduce((index, item, next) => (
-        item.score < this.candidates[index].score ? next : index
-      ), 0);
-      this.candidates.splice(weakest, 1);
-    }
+    this.trimCandidates();
   }
 
   hashRegion(x, y, width, height) {
@@ -153,8 +135,58 @@ export class EchoReturnSequence {
     return differenceHash(this.hashContext.getImageData(0, 0, 9, 8));
   }
 
+  recordScene(world, kind, score, now = performance.now()) {
+    const source = this.renderer.domElement;
+    if (this.cancelled || !source.width || !source.height) return false;
+    const targetRatio = WIDTH / HEIGHT;
+    const sourceRatio = source.width / source.height;
+    const cropWidth = sourceRatio > targetRatio ? source.height * targetRatio : source.width;
+    const cropHeight = sourceRatio > targetRatio ? source.height : source.width / targetRatio;
+    this.context.drawImage(source,
+      (source.width - cropWidth) * .5, (source.height - cropHeight) * .5,
+      cropWidth, cropHeight, 0, 0, WIDTH, HEIGHT);
+    const sceneHash = this.hashRegion(0, 0, WIDTH, HEIGHT);
+    const previous = [...this.candidates].reverse().find((frame) =>
+      frame.kind === kind && frame.world === world);
+    if (previous?.sceneHash === sceneHash) return false;
+    this.candidates.push({
+      id: `${kind}:${world}:${Math.round(now)}`, kind, world, score, time: now,
+      sceneHash, faceHash: null, source: this.canvas.toDataURL('image/jpeg', .86),
+    });
+    this.trimCandidates();
+    return true;
+  }
+
+  trimCandidates() {
+    if (this.candidates.length <= MAX_CANDIDATES) return;
+    const bucket = (frame) => frame.kind === 'portrait'
+      ? `portrait:${frame.id}` : `${frame.kind}:${frame.world}`;
+    const counts = new Map();
+    for (const frame of this.candidates) {
+      const key = bucket(frame);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    let weakest = -1;
+    for (const [index, frame] of this.candidates.entries()) {
+      if ((counts.get(bucket(frame)) ?? 0) < 2) continue;
+      if (weakest < 0 || frame.score < this.candidates[weakest].score) weakest = index;
+    }
+    if (weakest < 0) {
+      weakest = this.candidates.reduce((index, item, next) => (
+        item.score < this.candidates[index].score ? next : index
+      ), 0);
+    }
+    this.candidates.splice(weakest, 1);
+  }
+
+  recordFeaturedScene(world, kind, now = performance.now()) {
+    const key = `${world}:${kind}`;
+    if (this.featuredScenes.has(key)) return;
+    if (this.recordScene(world, kind, 260, now)) this.featuredScenes.add(key);
+  }
+
   selectFrames() {
-    return selectReturnFrames(this.candidates, FRAME_COUNT);
+    return selectReturnDisplayFrames(this.candidates, FRAME_COUNT);
   }
 
   drawCover(image, composition) {
@@ -239,14 +271,20 @@ export class EchoReturnSequence {
   }
 
   async addMissingWorldMemories(visitorFrame, facePoints) {
-    const missingWorlds = missingReturnWorlds(this.candidates);
-    if (!missingWorlds.length || !visitorFrame) return;
+    if (this.candidates.some((frame) => frame.kind === 'portrait' && frame.source)
+      || !visitorFrame) return;
+    const missingWorlds = RETURN_WORLDS.filter((world) => !this.candidates.some((frame) =>
+      frame.kind === 'memory' && frame.world === world && frame.source));
+    if (!missingWorlds.length) return;
+    const hasRecordedScenes = this.candidates.some((frame) => frame.kind !== 'memory' && frame.source);
+    const fallbackWorlds = hasRecordedScenes
+      ? [missingWorlds[Math.floor(Math.random() * missingWorlds.length)]] : missingWorlds;
     const face = this.makeFallbackFace(visitorFrame, facePoints);
     if (!face) return;
     const times = this.candidates.map((frame) => frame.time).filter(Number.isFinite);
     const firstTime = times.length ? Math.min(...times) : performance.now() - 1000;
     const lastTime = times.length ? Math.max(...times) : performance.now();
-    await Promise.all(missingWorlds.map(async (world, index) => {
+    await Promise.all(fallbackWorlds.map(async (world, index) => {
       const sources = WORLD_MEMORY_BACKDROPS[world];
       const source = sources[Math.floor(Math.random() * sources.length)];
       let image;

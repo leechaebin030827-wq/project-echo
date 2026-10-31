@@ -69,14 +69,11 @@ export class DataCenterArchive {
     this.element.className = 'data-archive-photo-viewer';
     this.element.setAttribute('aria-hidden', 'true');
     this.element.innerHTML = `
-      <button class="data-archive-photo-backdrop" type="button" aria-label="${ARCHIVE_UI.photoClose}"></button>
-      <button class="data-archive-photo-close" type="button" aria-label="${ARCHIVE_UI.photoClose}">×</button>`;
-    this.closeButton = this.element.querySelector('.data-archive-photo-close');
+      <button class="data-archive-photo-backdrop" type="button" aria-label="${ARCHIVE_UI.photoClose}"></button>`;
+    this.closeButton = this.element.querySelector('.data-archive-photo-backdrop');
     this.closePhoto = this.closePhoto.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.closeButton.addEventListener('click', this.closePhoto);
-    this.closeButton.addEventListener('pointerenter', this.onHover);
-    this.element.querySelector('.data-archive-photo-backdrop').addEventListener('click', this.closePhoto);
     window.addEventListener('keydown', this.handleKeyDown);
     this.stage.append(this.element);
   }

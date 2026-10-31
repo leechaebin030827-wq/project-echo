@@ -95,6 +95,7 @@ export class CinematicCameraController {
     this.echoSize.copy(world.echoSize);
     this.echoSphere = world.echoSphere;
     this.worldSize.copy(world.size);
+    this.overviewTarget = world.overviewTarget ?? null;
     this.kobeFixedCamera = world.root?.name === 'KobeWorld';
     if (this.kobeFixedCamera) {
       this.kobeCameraPosition = world.cameraPosition.clone();
@@ -136,7 +137,8 @@ export class CinematicCameraController {
       this.farHeight = this.echoCenter.y
         + (this.nearHeight - this.echoCenter.y) * this.config.landIntroHeightFromNear;
     }
-    this.nevadaIntroAngle = null;
+    this.nevadaIntroAngle = Number.isFinite(world.preferredArrivalAngle)
+      ? world.preferredArrivalAngle : null;
     this.nevadaIntroTarget = null;
     if (world.root?.name === 'NevadaWorld' && world.interactiveRegions?.length) {
       const dataCenter = world.interactiveRegions.find((region) => region.name === 'Data Center');
@@ -351,9 +353,16 @@ export class CinematicCameraController {
       this.echoCenter.z + Math.sin(angle) * radius,
     );
     if (targetOverride) this.target.copy(targetOverride);
-    else this.target.copy(this.echoCenter).add(this.tempA.set(
-      0, this.echoSize.y * this.orbitTargetHeightRatio, 0,
-    ));
+    else {
+      this.target.copy(this.echoCenter).add(this.tempA.set(
+        0, this.echoSize.y * this.orbitTargetHeightRatio, 0,
+      ));
+      if (this.overviewTarget) {
+        const blend = THREE.MathUtils.smoothstep(radius,
+          this.nearRadius + 2, Math.max(this.nearRadius + 3, this.farRadius));
+        this.target.lerp(this.overviewTarget, blend);
+      }
+    }
     this.camera.lookAt(this.target);
   }
 
@@ -590,7 +599,10 @@ export class CinematicCameraController {
   }
 
   applyInteractiveMotion(delta) {
-    if (this.kobeFixedCamera) return;
+    const kobePosterFocus = this.kobeFixedCamera
+      && this.state === EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS
+      && this.interactiveFocus?.cameraMode === 'kobe-poster';
+    if (this.kobeFixedCamera && !kobePosterFocus) return;
     this.ambientElapsed += delta;
     const interactiveState = [
       EXPERIENCE_STATES.ECHO_ORBIT,
@@ -634,7 +646,9 @@ export class CinematicCameraController {
     );
 
     const desiredBreathAmplitude = settledFocus
-      ? (this.state === EXPERIENCE_STATES.CHARACTER_FOCUS
+      ? (kobePosterFocus
+        ? THREE.MathUtils.clamp(this.camera.position.distanceTo(this.target) * 0.015, 0.075, 0.13)
+        : this.state === EXPERIENCE_STATES.CHARACTER_FOCUS
         ? THREE.MathUtils.clamp(this.camera.position.distanceTo(this.target) * 0.01, 0.018, 0.05)
         : THREE.MathUtils.clamp(this.camera.position.distanceTo(this.target) * 0.012, 0.065, 0.18))
       : 0;
@@ -1242,7 +1256,11 @@ export class CinematicCameraController {
     const kobeTunnelHover = this.kobeFixedCamera
       && this.state === EXPERIENCE_STATES.ECHO_ORBIT
       && this.hoverTarget?.cameraMode === 'kobe-tunnel';
+    const kobePosterFocus = this.kobeFixedCamera
+      && this.state === EXPERIENCE_STATES.INTERACTIVE_OBJECT_FOCUS
+      && this.interactiveFocus?.cameraMode === 'kobe-poster';
     const portraitZoom = kobeTunnelHover ? 1.2
+      : kobePosterFocus ? 0.64
       : this.state === EXPERIENCE_STATES.GROUP_DANCE_FOCUS
       && this.danceHeroIndex >= 0 ? 1.78
       : this.state === EXPERIENCE_STATES.ECHO_RITUAL_SPIN ? 1.15
